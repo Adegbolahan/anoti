@@ -1,0 +1,115 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments (if anyone tests with venv)
+venv/
+ENV/
+env/
+.venv
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Claude Code Local Settings
+# IMPORTANT: These contain user-specific paths and should not be committed
+.claude/settings.local.json
+templates/.claude/settings.local.json
+
+# Test/Temporary directories
+/test-output/
+/tmp/
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Environment files (if anyone adds them)
+.env
+.env.local
+.env.*.local
+
+# Coverage reports (if testing is added later)
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Documentation builds (if Sphinx/MkDocs added later)
+docs/_build/
+site/
+
+# Project-specific ignores
+# Uncomment if you create test scaffolds in the repo
+# /test-scaffold/
+# /test-project/

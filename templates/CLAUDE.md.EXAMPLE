@@ -1,0 +1,498 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**[Project Name]** is a [brief description - e.g., "multi-tenant SaaS platform", "mobile app", "API service"] that [primary purpose].
+
+**Vision:** "[One-sentence future-state vision that guides decisions]"
+
+**Problem Solved:** [2-3 sentences describing the user pain point and how this solution addresses it. Be specific about the value delivered.]
+
+**Current State:** This repository is **[status - e.g., "scaffolded and ready for Phase 1 implementation", "in active development", "production with X users"]**. [Brief context about what's defined/ready.]
+
+### Target Users & Business Model
+
+**Primary Market:** [Define target user personas - e.g., "Enterprise developers", "Non-technical small business owners", "Consumer end-users"]
+
+**Onboarding Philosophy:** (Optional - include if onboarding is critical to your product)
+- **[Fast/Express Mode] ([X]% of users):** [Brief description - e.g., "3-step wizard, <3 minutes, templates, auto-setup"]
+- **[Advanced/Custom Mode] ([X]% of users):** [Brief description - e.g., "Full customization, custom config"]
+
+**Why This Matters:**
+- [Key constraint affecting development - e.g., "Target users are NOT tech-savvy - they need simple UI"]
+- [Critical feature or dependency - e.g., "Templates are CRITICAL for onboarding success"]
+- [Success metric - e.g., "85%+ onboarding completion rate"]
+
+### Key Documents
+
+- **📊 User Stories Tracking:** See `docs/high-level-user-stories.md` ⭐ **START HERE**
+  - **High-level progress tracker** for all [X] user stories
+  - **Status tracking:** ✅ Complete ([X]), 🚧 In Progress ([X]), 📝 Planned ([X])
+  - **Plan tracking:** Links to implementation plans in `/docs/plans/`
+  - **Phase breakdown:** [Brief status by phase]
+  - **Links to detailed specs** in `/docs/features/`
+- **Product Specification:** See `[filename]` for system design and tech stack
+- **Detailed User Stories:** See `/docs/features/` for individual user story specifications
+  - Each story includes: context, acceptance criteria, implementation notes, API specs, plan metadata
+  - Each story links to its implementation plan in `/docs/plans/`
+  - Original summary: `[filename]` ([X] user stories across [Y] epics)
+- **Implementation Plans:** See `/docs/plans/` for detailed implementation plans
+  - Plans created during Phase 3 (Planning) of feature workflow
+  - Each plan includes: requirements, technical approach, database changes, component architecture, testing strategy, implementation checklist
+  - Plan files follow naming convention: `us-XXX-plan.md`
+  - Plans track estimated vs actual effort for better future estimates
+- **[Domain-Specific Doc]:** See `[filename]` for [additional context - e.g., "industry templates", "API schemas"]
+
+---
+
+## ⚠️ CRITICAL: Read Standards BEFORE Coding
+
+**BEFORE implementing ANY feature, you MUST read these standards documents:**
+
+### 📖 Required Reading (in `/docs/`)
+
+1. **`docs/coding-standards.md`** ⭐ MANDATORY
+   - Language-specific conventions ([Python, TypeScript, etc.])
+   - File naming patterns (snake_case, kebab-case, PascalCase)
+   - Function/class/variable naming rules
+   - Import ordering, error handling, logging patterns
+   - **Read this FIRST before writing any code**
+
+2. **`docs/component-patterns.md`** (For [React/Vue/Svelte] components)
+   - Component composition patterns
+   - Props conventions and destructuring
+   - Custom hooks patterns
+   - Performance optimization (React.memo, useMemo, useCallback)
+   - Error boundaries and error handling
+   - **Read before building any [framework] component**
+
+3. **`docs/state-management-patterns.md`** (For [Redux/Pinia/Zustand])
+   - [State library] for API integration (server state)
+   - [State library] for global client state
+   - Selectors and memoization
+   - Async thunks for complex flows
+   - When to use global vs local state
+   - **Read before implementing state management**
+
+4. **`docs/styling-patterns.md`** (For [Tailwind/CSS-in-JS/etc])
+   - Component styling patterns and variants
+   - Theme and design tokens (colors, spacing, typography)
+   - Responsive design (mobile-first)
+   - Accessibility (focus states, ARIA, semantic HTML)
+   - Utility composition and best practices
+   - **Read before styling any component**
+
+5. **`docs/api-patterns.md`** (For API development)
+   - [Multi-tenant authorization patterns (CRITICAL for security) - if applicable]
+   - REST API design patterns (CRUD, pagination, error handling)
+   - Request/response formats
+   - [Webhook patterns - if applicable]
+   - **Read before implementing any API endpoint**
+
+6. **`docs/database-patterns.md`** (For database work)
+   - [Row-Level Security (RLS) patterns (CRITICAL for multi-tenancy) - if applicable]
+   - Complete schema definitions [with RLS policies - if applicable]
+   - Query patterns ([Python/TypeScript/etc] & [ORM])
+   - Migration patterns
+   - **Read before writing any database query**
+
+7. **`docs/testing-patterns.md`** (For all code)
+   - Test pyramid (unit, integration, E2E)
+   - Testing patterns for [Python, TypeScript, React, etc.]
+   - [RLS policy testing (multi-tenant isolation) - if applicable]
+   - Coverage requirements ([X]%+ overall)
+   - **Read before writing tests**
+
+8. **`docs/error-handling-patterns.md`** (For all code)
+   - Error handling in API endpoints (try/catch, error middleware)
+   - Frontend error boundaries and user-facing messages
+   - Retry logic and exponential backoff
+   - Error logging with correlation IDs
+   - **Read before implementing any error handling**
+
+9. **`docs/performance-patterns.md`** (For optimization)
+   - Database query optimization (N+1 prevention, indexes)
+   - Caching strategies (Redis, CDN, browser cache)
+   - Frontend performance (React.memo, useMemo, useCallback)
+   - Pagination and lazy loading
+   - **Read before optimizing performance-critical code**
+
+10. **`docs/async-patterns.md`** (For async operations)
+    - Promise patterns (async/await, error handling)
+    - Parallel vs sequential execution
+    - Race conditions and prevention
+    - Debouncing/throttling user input
+    - **Read before writing async code**
+
+11. **`docs/logging-patterns.md`** (For observability)
+    - Structured logging format (JSON with context)
+    - Log levels (DEBUG, INFO, WARN, ERROR)
+    - What to log (and what NOT to log - PII)
+    - Correlation IDs for request tracing
+    - **Read before adding logging statements**
+
+### 🚨 Why This Matters
+
+- **Consistency:** Following standards ensures all code follows the same patterns
+- **Security:** [Multi-tenant isolation/Security] patterns prevent data leaks
+- **Quality:** Testing patterns ensure comprehensive coverage
+- **Efficiency:** Don't reinvent the wheel - patterns are already established
+
+### ✅ Development Workflow
+
+**For EVERY feature:**
+1. ✅ **Check user story status** in `docs/high-level-user-stories.md` to see if it's complete, in progress, or planned
+2. ✅ **Read detailed spec** in `/docs/features/us-XXX-*.md` for acceptance criteria and implementation notes
+3. ✅ **Read implementation plan** in `/docs/plans/us-XXX-plan.md` (if exists) for technical approach and checklist
+4. ✅ Read relevant standards documents in `/docs/`
+5. ✅ Review existing similar code for established patterns
+6. ✅ Implement following the standards and plan
+7. ✅ Write tests per testing-patterns.md
+8. ✅ Verify quality gates pass
+9. ✅ **Update plan tracking:**
+   - Update `docs/plans/us-XXX-plan.md` with actual effort
+   - Update `docs/features/us-XXX-*.md` plan metadata
+   - Update `docs/high-level-user-stories.md` with status and commit hash
+
+**If you deviate from standards:**
+- Document WHY in code comments
+- Update the standard if the new pattern is better
+- Get user approval for major changes
+
+---
+
+## 📚 Detailed Documentation
+
+All detailed information has been organized into topic-specific documents:
+
+### Architecture & Design
+- **`docs/architecture.md`** - System architecture, tech stack, [multi-tenant design - if applicable], data flow
+- **`docs/roadmap.md`** - Phased implementation plan (Phases 1-[X])
+- **`docs/implementation-notes.md`** - Critical gotchas, common pitfalls, security/performance checklists
+
+### Development Process
+- **`docs/feature-development-process.md`** ⭐ - Complete SOP for feature development (10 steps)
+- **`docs/user-story-standards.md`** - How to write effective user stories with acceptance criteria
+- **`docs/documentation-standard.md`** - Documentation conventions, markdown standards, writing guidelines
+- **`docs/development.md`** - Setup instructions, dev commands, environment variables
+- **`docs/git-workflow.md`** - Branching strategy, commit conventions, PR process, pre-commit hooks
+
+### Standards & Patterns
+- **`docs/coding-standards.md`** - Language conventions, naming patterns
+- **`docs/component-patterns.md`** - [React/Vue/etc] component patterns
+- **`docs/state-management-patterns.md`** - [Redux/Pinia/etc] patterns
+- **`docs/styling-patterns.md`** - [Tailwind/CSS-in-JS/etc] patterns
+- **`docs/api-patterns.md`** - API design, [multi-tenant auth - if applicable], webhook patterns
+- **`docs/database-patterns.md`** - Database schema, [RLS policies - if applicable], query patterns
+- **`docs/testing-patterns.md`** - Testing strategies and coverage requirements
+- **`docs/error-handling-patterns.md`** - Error handling across stack
+- **`docs/performance-patterns.md`** - Performance optimization patterns
+- **`docs/async-patterns.md`** - Async/await and concurrency patterns
+- **`docs/logging-patterns.md`** - Logging and observability patterns
+
+---
+
+## Feature Development Process (Summary)
+
+Follow this process for **EVERY** feature (see `docs/feature-development-process.md` for details):
+
+### 10-Step Process
+
+1. **Standards Review** - Read relevant docs in `/docs/` before coding
+2. **Requirements** - Write user story with acceptance criteria
+3. **Design** - Create wireframes, sequence diagrams, data models
+4. **Backend/Database** - Create migrations, implement API, define [RLS - if applicable]
+5. **Implementation** - Build following standards documents
+6. **Complete Implementation** - Handle all edge cases (loading, error, empty states)
+7. **Tests** - Write unit, integration, component tests ([X]%+ coverage)
+8. **Documentation** - Update JSDoc, API docs, ADRs
+9. **Review** - Run quality checklist (lint, test, build, manual test)
+10. **Commit** - Create commit with Conventional Commits format
+
+**Key Principle:** ONLY mark complete after ALL quality gates pass.
+
+---
+
+## Feature Development Workflow Commands
+
+This project includes Claude Code slash commands that guide you through a streamlined 3-phase feature development workflow:
+
+### 🚀 Quick Start with `/implement`
+
+Run `/implement` to start the complete workflow:
+
+```
+/implement
+```
+
+This orchestrates all 3 phases automatically with approval gates between each phase.
+
+### 📋 Individual Phase Commands
+
+Or run each phase individually for more control:
+
+1. **Phase 1+2: Discovery** → `/discovery`
+   - **Requirements Gathering:**
+     - Explores current app state (database, API, components)
+     - Reads user story documentation
+     - Asks informed clarifying questions
+   - **Architecture Review:**
+     - Reads relevant standards documents
+     - Reviews database schema and RLS policies
+     - Explores API layer patterns and components
+   - Presents comprehensive discovery summary
+
+2. **Phase 3: Plan & Validate** → `/plan-and-validate`
+   - **Planning:**
+     - Creates detailed 10-section implementation plan
+     - Defines database changes, API layer, components
+     - Identifies edge cases and testing strategy
+   - **Validation (MANDATORY):**
+     - Auto-validates against database schema
+     - Auto-validates type definitions
+     - Auto-validates standards compliance
+     - Auto-fixes issues found
+   - Presents validated plan for approval
+
+3. **Phase 4: Implementation** → `/start-implementation`
+   - Creates todos from plan checklist
+   - Implements database migrations
+   - Implements API layer
+   - Implements components
+   - Adds polish and accessibility
+   - Tests comprehensively
+   - Documents and commits
+
+### ⚡ Navigation Helper
+
+Use `/next` to automatically proceed to the next phase after completing a phase.
+
+### 💡 Why Use These Commands?
+
+- **Consistency:** Ensures every feature follows the same thorough process
+- **Quality:** Forces standards review before coding
+- **Completeness:** Prevents skipping critical steps (testing, error handling, edge cases)
+- **Traceability:** Links requirements → architecture → plan → implementation
+- **Efficiency:** Automated workflow saves time and reduces cognitive load
+
+---
+
+## Claude Code Agent Usage
+
+### When to Use Specialized Agents
+
+**DO use agents for:**
+- Complex multi-step implementation (3+ distinct steps)
+- Codebase exploration ("Where are API routes defined?")
+- Breaking down ambiguous requirements
+- Security reviews or performance analysis
+- Creating comprehensive test suites
+
+**DON'T use agents for:**
+- Reading a specific file path (use Read tool)
+- Searching for specific class/function (use Glob/Grep)
+- Single straightforward tasks
+- Trivial operations
+
+### Recommended Agents for This Project
+
+**Explore Agent** - Use frequently for codebase navigation
+- Finding files by pattern (e.g., `**/*service.py`)
+- Searching for keywords (e.g., "authentication", "webhook")
+- Understanding code structure before making changes
+
+**backend-api-engineer** - For API implementation
+- Creating REST/GraphQL endpoints
+- Implementing authentication/authorization
+- Designing database schemas
+- Writing migrations
+
+**solution-architect** - For architectural decisions
+- Technology stack selection
+- System design questions
+- Scalability planning
+- Integration patterns
+
+**security-privacy-engineer** - For security reviews
+- [RLS policy design - if applicable]
+- Authentication/authorization review
+- API security audit
+- Compliance checks ([multi-tenancy isolation - if applicable])
+
+**qa-automation-engineer** - For comprehensive testing
+- Test strategy design
+- Writing automated tests (unit/integration/E2E)
+- Test coverage analysis
+
+**technical-documentation-writer** - For documentation
+- API documentation (OpenAPI/Swagger)
+- Architecture Decision Records (ADRs)
+- Deployment runbooks
+
+---
+
+## [Security Non-Negotiables / Multi-Tenant Security]
+
+**NEVER compromise on security. This is non-negotiable.**
+
+### Non-Negotiables
+
+1. **[Language] strict mode enabled** ([TypeScript strict, Python type hints, etc.])
+2. **All external inputs validated** with [Zod/Pydantic/validation library]
+3. **Never commit secrets** (.env excluded from repo, in .gitignore)
+4. **Use least-privilege access control**
+
+### [Multi-Tenant Security - Include if applicable, otherwise skip this section]
+
+**CRITICAL: ALL database queries MUST filter by client_id/tenant_id**
+
+```python
+# ❌ WRONG - no tenant isolation
+conversations = db.query(Conversation).all()
+
+# ✅ CORRECT - filtered by current user's tenant
+conversations = db.query(Conversation).filter(
+    Conversation.client_id == current_user.client_id
+).all()
+```
+
+**ALL [database] tables MUST have RLS policies:**
+
+```sql
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can only access their client's conversations"
+ON conversations FOR ALL
+USING (client_id = auth.jwt() ->> 'client_id');
+```
+
+**See `docs/implementation-notes.md` for detailed security patterns and common pitfalls.**
+
+---
+
+## Quick Start
+
+### Install Dependencies
+
+```bash
+[package_manager install command]  # e.g., make install, npm install, pip install -r requirements.txt
+```
+
+### Start Development
+
+```bash
+[dev command]  # e.g., make dev, npm run dev, docker-compose up
+```
+
+### Access URLs
+
+- **Frontend:** http://localhost:[PORT]
+- **Backend API:** http://localhost:[PORT]
+- **API Docs:** http://localhost:[PORT]/docs
+- **[Additional services]:** http://localhost:[PORT]
+
+See `docs/development.md` for complete setup instructions and all commands.
+
+---
+
+## Next Steps for Implementation
+
+To begin [Phase 1] implementation:
+
+1. **Set Up Environment** - Follow `docs/development.md` for setup
+2. **Read Standards** - Review all docs in `/docs/` relevant to your task
+3. **Review Roadmap** - See `docs/roadmap.md` for phased approach
+4. **Start with [Phase 1]** - [Brief description of initial phase focus]
+   - [US-XXX: Key user story]
+   - [US-XXX: Key user story]
+   - [US-XXX: Key user story]
+5. **Follow Process** - Use `docs/feature-development-process.md` for every feature
+6. **Use Agents** - Leverage Claude Code agents for complex tasks
+
+**Implementation Order (Critical Path):**
+1. [First critical feature/dependency]
+2. [Second critical step]
+3. [Third step]
+4. [Etc.]
+5. Follow phased roadmap (see `docs/roadmap.md`)
+
+**[Why X First - if specific ordering matters]:**
+- [Reason 1 - e.g., "Templates required for onboarding"]
+- [Reason 2 - e.g., "Unblocks Phase 2 completely"]
+- [Reason 3 - e.g., "Requires content creation time"]
+
+---
+
+## Git Workflow (Summary)
+
+**Branching:** Feature branches (`feature/<description>`)
+**Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, etc.) **with user story reference**
+**Pre-commit Hooks:** ✅ Configured (lint, format, type-check, tests, build)
+**Merge Strategy:** [Squash and merge / Merge commits / Rebase]
+
+**REQUIRED:** All commits implementing user stories MUST include:
+```
+Implements: docs/features/us-XXX-<story-name>.md
+```
+
+**Example:**
+```bash
+git commit -m "feat: add [feature name]
+
+- [Implementation detail]
+- [Implementation detail]
+- Tests: [X]% coverage
+
+Implements: docs/features/us-XXX-<story-name>.md
+
+ 
+
+```
+
+**Why This Matters:**
+- Provides traceability between code and requirements
+- Required for updating `docs/high-level-user-stories.md`
+- Helps code reviewers check against acceptance criteria
+
+See `docs/git-workflow.md` for complete workflow and conventions.
+
+---
+
+## Documentation Index
+
+**Essential Reading:**
+- ⭐ `docs/high-level-user-stories.md` - **User stories progress tracker** (START HERE)
+- ⭐ `docs/feature-development-process.md` - How to build features
+- ⭐ `docs/coding-standards.md` - Code conventions
+- ⭐ `docs/user-story-standards.md` - How to write user stories
+
+**Architecture & Planning:**
+- `docs/architecture.md` - System design and tech stack
+- `docs/roadmap.md` - Implementation phases
+- `docs/high-level-user-stories.md` - User stories progress tracker ([X] stories)
+- `/docs/features/` - Detailed specs for each user story
+- `[original-stories-file]` - Original user stories summary
+
+**Development:**
+- `docs/development.md` - Setup and dev commands
+- `docs/implementation-notes.md` - Gotchas and best practices
+- `docs/git-workflow.md` - Git conventions
+- `docs/documentation-standard.md` - Documentation conventions and writing guidelines
+
+**Standards & Patterns:**
+- `docs/component-patterns.md` - [React/Vue/etc] patterns
+- `docs/state-management-patterns.md` - [Redux/Pinia/etc] patterns
+- `docs/styling-patterns.md` - [Tailwind/CSS-in-JS/etc] patterns
+- `docs/api-patterns.md` - API patterns
+- `docs/database-patterns.md` - Database/[RLS - if applicable] patterns
+- `docs/testing-patterns.md` - Testing patterns
+- `docs/error-handling-patterns.md` - Error handling patterns
+- `docs/performance-patterns.md` - Performance optimization patterns
+- `docs/async-patterns.md` - Async/concurrency patterns
+- `docs/logging-patterns.md` - Logging patterns
+
+---
+
+**This document will evolve as the project is implemented. Update it when new patterns emerge or architectural decisions are made.**

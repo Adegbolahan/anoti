@@ -1,6 +1,6 @@
 {
   "name": "project-scaffolder",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Scaffold new projects with Claude Code documentation, skills, and workflow commands",
   "author": {
     "name": "Getting Started with Claude",

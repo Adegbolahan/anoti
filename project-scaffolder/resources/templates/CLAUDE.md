@@ -55,20 +55,46 @@ Skills are interactive documentation that Claude activates on-demand:
 - **Maintainable:** Update skills as patterns evolve
 - **Consistent:** Same knowledge base for all development
 
+### 🔧 Skills Maintenance (IMPORTANT)
+
+**Claude MUST keep skills accurate and up-to-date.**
+
+**After completing any feature, review affected skills:**
+
+1. **Add** new patterns discovered during implementation
+2. **Update** outdated information that no longer applies
+3. **Remove** incorrect or misleading guidance
+4. **Consolidate** redundant sections
+
+**When to update skills:**
+
+- New tech stack patterns established
+- Better approaches discovered
+- Original guidance caused issues
+- Project conventions changed
+
+**How to propose skill updates:**
+
+```
+"I noticed the [skill-name] skill says X, but we're actually doing Y.
+Should I update the skill to reflect this?"
+```
+
+**Never let skills become stale** - they should always reflect current project reality.
+
 ---
 
 ## Quick Start for Claude
 
 ### Key Files & Purposes
 
-| File/Directory               | Purpose                                     |
-| ---------------------------- | ------------------------------------------- |
-| `CLAUDE.md`                  | This file - project hub and quick reference |
-| `.claude-plugin/plugin.json` | Plugin manifest (points to .claude/)        |
-| `.claude/commands/`          | Workflow commands for feature development   |
-| `.claude/hooks/hooks.json`   | Enforces story → plan → approve → build     |
-| `.claude/skills/`            | Interactive skills for guidance             |
-| `.claude/project/`           | Project tracking (features, plans, roadmap) |
+| File/Directory          | Purpose                                     |
+| ----------------------- | ------------------------------------------- |
+| `CLAUDE.md`             | This file - project hub and quick reference |
+| `.claude/settings.json` | Hooks for auto-formatting                   |
+| `.claude/commands/`     | Workflow commands for feature development   |
+| `.claude/skills/`       | Interactive skills for guidance             |
+| `.claude/project/`      | Project tracking (features, plans, roadmap) |
 
 ### Project Tracking
 
@@ -110,7 +136,7 @@ All project management files are in `.claude/project/`:
 
 ## Feature Development Workflow
 
-This project enforces a structured workflow via hooks:
+This project follows a structured workflow (see `development-workflow` skill):
 
 ```
 1. Story  → Create in .claude/project/features/
@@ -228,9 +254,8 @@ git commit -m "feat: add [feature name]
 ```
 [PROJECT_NAME]/
 ├── CLAUDE.md                    # This file
-├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest (points to .claude/)
 ├── .claude/
+│   ├── settings.json            # Auto-formatting hooks
 │   ├── commands/                # Workflow commands
 │   │   ├── implement.md
 │   │   ├── discovery.md
@@ -238,12 +263,10 @@ git commit -m "feat: add [feature name]
 │   │   ├── start-implementation.md
 │   │   ├── review-implementation.md
 │   │   └── next.md
-│   ├── hooks/
-│   │   └── hooks.json           # Workflow enforcement
 │   ├── skills/                  # Interactive skills
 │   │   ├── development-workflow/
-│   │   ├── project-standards/   # Full mode only
-│   │   └── exploration-helpers/ # Full mode only
+│   │   ├── project-standards/
+│   │   └── exploration-helpers/
 │   └── project/                 # Project tracking
 │       ├── features/            # User story specs (us-XXX-name.md)
 │       ├── plans/               # Implementation plans (us-XXX-plan.md)

@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "getting-started-claude-marketplace",
+  "name": "getting-started-claude",
   "version": "1.0.0",
   "description": "A curated collection of Claude Code plugins for project scaffolding, documentation, and development workflows.",
   "owner": {

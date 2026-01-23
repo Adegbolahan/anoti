@@ -4,7 +4,7 @@
       "hooks": [
         {
           "type": "prompt",
-          "prompt": "If user asks to implement/build/create/add a feature:\n1. Check if user story exists in .claude/project/features/\n2. If no story: Create one first, add to high-level-user-stories.md\n3. Check if plan exists in .claude/project/plans/\n4. If no plan: Create one, get user approval before coding\n5. Only start implementation after story + plan + approval\n\nSuggest: \"Let me first create a user story and plan for approval.\""
+          "prompt": "If user asks to implement/build/create/add a feature:\n1. Check if user story exists in .claude/project/features/\n2. If no story: Read high-level-user-stories.md, get next US-XXX number (auto-increment), create story\n3. Check if plan exists in .claude/project/plans/\n4. If no plan: Create one with same US-XXX number, get user approval before coding\n5. Only start implementation after story + plan + approval\n\nSuggest: \"Let me first create a user story (US-XXX) and plan for approval.\""
         }
       ]
     }
@@ -15,7 +15,7 @@
       "hooks": [
         {
           "type": "prompt",
-          "prompt": "File naming conventions:\n- Stories: .claude/project/features/us-XXX-short-name.md (lowercase)\n- Plans: .claude/project/plans/us-XXX-plan.md (lowercase)\n- Display: US-XXX (uppercase in tables/text)\nSuggest correct location and naming if incorrect."
+          "prompt": "For story/plan files in .claude/project/:\n\n1. AUTO-INCREMENT: Read high-level-user-stories.md, find highest US-XXX number, use next number (e.g., if US-003 exists, use US-004)\n\n2. NAMING:\n- Stories: .claude/project/features/us-XXX-short-name.md (lowercase)\n- Plans: .claude/project/plans/us-XXX-plan.md (lowercase)\n- Display: US-XXX (uppercase in tables/text)\n\n3. If user specifies a number, use it. Otherwise auto-increment."
         }
       ]
     }
@@ -35,7 +35,7 @@
       "hooks": [
         {
           "type": "prompt",
-          "prompt": "After editing high-level-user-stories.md or roadmap.md:\n- Verify counts match statuses\n- Ensure links valid\n- Update phase progress"
+          "prompt": "After editing high-level-user-stories.md or roadmap.md:\n- Verify counts match statuses\n- Ensure links valid\n- Update phase progress\n- Update 'Last Updated: [DATE]' to today's date (YYYY-MM-DD)"
         }
       ]
     }

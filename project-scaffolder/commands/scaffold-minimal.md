@@ -115,6 +115,8 @@ In all copied files:
 - `[PROJECT_NAME]` → project name
 - `[DESCRIPTION]` → description (or "A new project")
 - `[PROJECT_NAME_KEBAB]` → kebab-case name
+- `[SCAFFOLD_DATE]` → today's date (YYYY-MM-DD)
+- `[DATE]` → today's date (YYYY-MM-DD)
 
 ### Step 5: Report Results
 

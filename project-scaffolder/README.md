@@ -6,7 +6,9 @@ Claude Code plugin that scaffolds projects with documentation, skills, commands,
 
 - **`/scaffold <path>`** - Full project structure
 - **`/scaffold-minimal <path>`** - Essential files only
+- **`/scaffold-update <path>`** - Update existing projects to latest version
 - **Hooks** - Auto-manage features, plans, and tracking files
+- **Version Tracking** - Track scaffold version for updates
 - **Template Customizer Agent** - Adapt templates to your stack
 
 ## What Gets Scaffolded
@@ -53,6 +55,7 @@ cp -r project-scaffolder ~/.claude/plugins/
 /scaffold ../my-project
 /scaffold ../api --name "API Service" --tech-stack "fastapi"
 /scaffold-minimal ../quick-project
+/scaffold-update ../existing-project
 ```
 
 ## Arguments
@@ -73,13 +76,37 @@ When scaffolding into an existing directory, you'll be prompted:
 - **Overwrite** - Replace all Claude Code files
 - **Abort** - Cancel scaffolding
 
+## Updating Existing Projects
+
+Projects scaffolded with version tracking can be updated:
+
+```
+/scaffold-update ../my-project
+```
+
+**What gets updated:**
+
+- Hooks, commands, skills (safe to update)
+
+**What's preserved:**
+
+- CLAUDE.md (your customizations)
+- Project tracking files (stories, plans, roadmap)
+
+**Version tracking:**
+
+- `scaffoldVersion` in `.claude-plugin/plugin.json`
+- `scaffoldDate` records when scaffolded
+
 ## Hooks
 
 The plugin includes hooks that:
 
 - **Detect feature intent** - When user asks to build/implement a feature, enforces: story → plan → approve → build
+- **Auto-increment US-XXX** - Automatically assigns next user story number
 - **Guide file locations** - Stories → `.claude/project/features/`, Plans → `.claude/project/plans/`
 - **Maintain tracking** - Updates high-level-user-stories.md and roadmap.md
+- **Auto-update timestamps** - Updates "Last Updated" dates automatically
 - **Verify consistency** - Counts, links, phase progress
 
 ## Project Tracking

@@ -1,20 +1,11 @@
 {
   "UserPromptSubmit": [
     {
+      "matcher": ".*",
       "hooks": [
         {
           "type": "prompt",
           "prompt": "If user asks to implement/build/create/add a feature:\n1. Check if user story exists in .claude/project/features/\n2. If no story: Create one first, add to high-level-user-stories.md\n3. Check if plan exists in .claude/project/plans/\n4. If no plan: Create one, get user approval before coding\n5. Only start implementation after story + plan + approval\n\nSuggest: \"Let me first create a user story and plan for approval.\""
-        }
-      ]
-    }
-  ],
-  "SessionStart": [
-    {
-      "hooks": [
-        {
-          "type": "prompt",
-          "prompt": "If scaffolded project (has CLAUDE.md and skills/) but missing .claude/project/, offer to create tracking structure."
         }
       ]
     }
@@ -52,6 +43,7 @@
   ],
   "Stop": [
     {
+      "matcher": ".*",
       "hooks": [
         {
           "type": "prompt",

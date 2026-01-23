@@ -1,5 +1,5 @@
 {
-  "scaffoldVersion": "1.0.0",
+  "scaffoldVersion": "1.0.2",
   "scaffoldDate": "[SCAFFOLD_DATE]",
   "hooks": {
     "PreToolUse": [

@@ -1,0 +1,28 @@
+{
+  "scaffoldVersion": "1.0.0",
+  "scaffoldDate": "[SCAFFOLD_DATE]",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "When writing to .claude/project/features/ or .claude/project/plans/:\n- Auto-increment: Find highest US-XXX in high-level-user-stories.md, use next number\n- Stories: us-XXX-short-name.md (lowercase filename)\n- Plans: us-XXX-plan.md (lowercase filename)\n- Display: US-XXX (uppercase in tables/text)"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "After creating files in .claude/project/features/ or .claude/project/plans/:\n1. Update high-level-user-stories.md table with new entry\n2. Update Overview counts\n3. Link plan to story if both exist"
+          }
+        ]
+      }
+    ]
+  }
+}

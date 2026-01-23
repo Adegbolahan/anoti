@@ -13,22 +13,40 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write(.claude/project/**)",
+        "matcher": "Write(.claude/project/features/**)",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "File naming conventions:\n- Stories: .claude/project/features/us-XXX-short-name.md (lowercase)\n- Plans: .claude/project/plans/us-XXX-plan.md (lowercase)\n- Display: US-XXX (uppercase in tables/text)\nSuggest correct location and naming if incorrect."
+            "prompt": "For user story files:\n- NAMING: us-XXX-short-name.md (lowercase)\n- DISPLAY: US-XXX (uppercase in tables/text)\nSuggest correct naming if incorrect."
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.claude/project/plans/**)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "For plan files:\n- NAMING: us-XXX-plan.md (lowercase)\n- DISPLAY: US-XXX (uppercase in tables/text)\nSuggest correct naming if incorrect."
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Write(.claude/project/**)",
+        "matcher": "Write(.claude/project/features/**)",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "After creating story/plan in .claude/project/:\n1. Update high-level-user-stories.md table\n2. Update Overview counts\n3. Link plan in story's Plan column"
+            "prompt": "After creating user story:\n1. Update high-level-user-stories.md table\n2. Update Overview counts\n3. Set initial status to 'Planned'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(.claude/project/plans/**)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "After creating plan:\n1. Update high-level-user-stories.md - link plan in Plan column\n2. Update Overview counts if needed"
           }
         ]
       },

@@ -4,7 +4,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Write(.claude/project/**)",
         "hooks": [
           {
             "type": "prompt",
@@ -15,7 +15,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Write(.claude/project/**)",
         "hooks": [
           {
             "type": "prompt",

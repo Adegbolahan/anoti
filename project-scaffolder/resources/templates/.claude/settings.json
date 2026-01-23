@@ -1,46 +1,4 @@
 {
   "scaffoldVersion": "1.0.2",
-  "scaffoldDate": "[SCAFFOLD_DATE]",
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write(.claude/project/features/**)",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "For user story files:\n- Auto-increment: Find highest US-XXX in high-level-user-stories.md, use next number\n- Naming: us-XXX-short-name.md (lowercase filename)\n- Display: US-XXX (uppercase in tables/text)"
-          }
-        ]
-      },
-      {
-        "matcher": "Write(.claude/project/plans/**)",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "For plan files:\n- Match: Use same US-XXX number as corresponding user story\n- Naming: us-XXX-plan.md (lowercase filename)\n- Display: US-XXX (uppercase in tables/text)"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write(.claude/project/features/**)",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "After creating user story:\n1. Update high-level-user-stories.md table with new entry\n2. Update Overview counts"
-          }
-        ]
-      },
-      {
-        "matcher": "Write(.claude/project/plans/**)",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "After creating plan:\n1. Link plan in high-level-user-stories.md Plan column\n2. Update Overview counts if needed"
-          }
-        ]
-      }
-    ]
-  }
+  "scaffoldDate": "[SCAFFOLD_DATE]"
 }

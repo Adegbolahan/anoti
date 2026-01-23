@@ -33,6 +33,33 @@ version: 1.0.0
 - **Filenames:** lowercase (`us-001`)
 - **Display:** UPPERCASE (`US-001`)
 
+### Auto-Increment User Story IDs
+
+When creating a new user story:
+
+1. Read `high-level-user-stories.md` to find the highest US-XXX number
+2. Use the next number (e.g., if US-003 exists, use US-004)
+3. If user specifies a number, use that instead
+
+### After Creating Files
+
+**After creating a user story:**
+
+1. Update `high-level-user-stories.md` table with new entry
+2. Update Overview counts
+3. Set initial status to 'Planned'
+
+**After creating a plan:**
+
+1. Link plan in `high-level-user-stories.md` Plan column
+2. Update Overview counts if needed
+
+**After completing a feature:**
+
+1. Update story status in `high-level-user-stories.md`
+2. Add commit hash to the story
+3. Update `roadmap.md` phase progress
+
 ---
 
 ## Workflow Commands

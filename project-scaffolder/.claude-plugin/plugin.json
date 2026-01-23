@@ -1,0 +1,16 @@
+{
+  "name": "project-scaffolder",
+  "version": "1.0.0",
+  "description": "Scaffold new projects with Claude Code documentation, skills, and workflow commands",
+  "author": {
+    "name": "Getting Started with Claude",
+    "url": "https://github.com/Adegbolahan/getting-started-claude"
+  },
+  "keywords": [
+    "scaffolding",
+    "documentation",
+    "templates",
+    "project-setup",
+    "claude-code"
+  ]
+}

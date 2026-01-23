@@ -1,0 +1,53 @@
+{
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "If user asks to implement/build/create/add a feature:\n1. Check if user story exists in .claude/project/features/\n2. If no story: Create one first, add to high-level-user-stories.md\n3. Check if plan exists in .claude/project/plans/\n4. If no plan: Create one, get user approval before coding\n5. Only start implementation after story + plan + approval\n\nSuggest: \"Let me first create a user story and plan for approval.\""
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "File naming conventions:\n- Stories: .claude/project/features/us-XXX-short-name.md (lowercase)\n- Plans: .claude/project/plans/us-XXX-plan.md (lowercase)\n- Display: US-XXX (uppercase in tables/text)\nSuggest correct location and naming if incorrect."
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "After creating story/plan in .claude/project/:\n1. Update high-level-user-stories.md table\n2. Update Overview counts\n3. Link plan in story's Plan column"
+        }
+      ]
+    },
+    {
+      "matcher": "Edit",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "After editing high-level-user-stories.md or roadmap.md:\n- Verify counts match statuses\n- Ensure links valid\n- Update phase progress"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "Before completing feature:\n1. Update story status in high-level-user-stories.md\n2. Add commit hash\n3. Update roadmap.md phase progress\n4. Review skills - remove unhelpful, suggest new ones"
+        }
+      ]
+    }
+  ]
+}

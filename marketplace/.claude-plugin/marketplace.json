@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "getting-started-claude-marketplace",
+  "version": "1.0.0",
+  "description": "A curated collection of Claude Code plugins for project scaffolding, documentation, and development workflows.",
+  "owner": {
+    "name": "Getting Started with Claude",
+    "url": "https://github.com/Adegbolahan/getting-started-claude"
+  },
+  "plugins": [
+    {
+      "name": "project-scaffolder",
+      "description": "Scaffold projects with CLAUDE.md documentation, workflow commands, skills, hooks, and project tracking. Includes /scaffold and /scaffold-minimal commands.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Getting Started with Claude"
+      },
+      "source": "../project-scaffolder",
+      "category": "development",
+      "keywords": [
+        "scaffolding",
+        "documentation",
+        "templates",
+        "project-setup",
+        "workflow"
+      ]
+    }
+  ]
+}

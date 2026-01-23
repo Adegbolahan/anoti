@@ -15,7 +15,7 @@
       "author": {
         "name": "Getting Started with Claude"
       },
-      "source": "../project-scaffolder",
+      "source": "./project-scaffolder",
       "category": "development",
       "keywords": [
         "scaffolding",

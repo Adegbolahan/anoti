@@ -6,10 +6,8 @@ A plugin marketplace and collection of Claude Code plugins for project scaffoldi
 
 ```
 getting-started-claude/
-├── marketplace/                  # Plugin marketplace
-│   ├── .claude-plugin/
-│   │   └── marketplace.json      # Marketplace registry
-│   └── README.md                 # Marketplace documentation
+├── .claude-plugin/
+│   └── marketplace.json          # Marketplace registry
 ├── project-scaffolder/           # Scaffolding plugin
 │   ├── .claude-plugin/
 │   │   └── plugin.json           # Plugin manifest
@@ -25,7 +23,7 @@ getting-started-claude/
 ### Install the Marketplace
 
 ```
-/plugin marketplace add https://github.com/Adegbolahan/getting-started-claude/marketplace
+/plugin marketplace add https://github.com/Adegbolahan/getting-started-claude
 ```
 
 ### Browse Available Plugins
@@ -148,7 +146,7 @@ After scaffolding, ask the template-customizer agent:
 
 1. Create your plugin following [Claude Code plugin structure](https://docs.anthropic.com/en/docs/claude-code/plugins)
 2. Add your plugin directory to this repository
-3. Update `marketplace/.claude-plugin/marketplace.json`:
+3. Update `.claude-plugin/marketplace.json`:
 
 ```json
 {
@@ -158,7 +156,7 @@ After scaffolding, ask the template-customizer agent:
       "description": "What your plugin does",
       "version": "1.0.0",
       "author": { "name": "Your Name" },
-      "source": "../your-plugin-directory",
+      "source": "./your-plugin-directory",
       "category": "development",
       "keywords": ["relevant", "keywords"]
     }

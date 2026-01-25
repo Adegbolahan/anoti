@@ -11,10 +11,28 @@ Combines requirements gathering and architecture review.
 ### Phase 1: Requirements
 
 1. **Quick Overview** - Project structure and tech stack
-2. **Read User Story** - Find in `.claude/project/high-level-user-stories.md`, read spec from `.claude/project/features/us-XXX-name.md`
+2. **Check for User Story** - Look in `.claude/project/high-level-user-stories.md` for existing story
 3. **Explore Current State** - Use `exploration-helpers` skill for database/codebase exploration
 4. **Ask Questions** - Use AskUserQuestion for clarification
 5. **Present Summary** - Document requirements
+
+### Phase 1.5: Story Creation Decision
+
+**After requirements are gathered, ask the user:**
+
+```
+Requirements gathered. Would you like me to:
+
+1. Create a new user story (US-XXX) in .claude/project/features/
+2. Update an existing user story
+3. Skip story creation and proceed to architecture
+```
+
+If creating a story:
+
+- Follow `development-workflow` skill for auto-increment and naming
+- Update `high-level-user-stories.md` with new entry
+- Set status to 'Planned'
 
 ### Phase 2: Architecture
 

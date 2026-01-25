@@ -1,5 +1,5 @@
 {
-  "scaffoldVersion": "1.0.5",
+  "scaffoldVersion": "1.0.6",
   "scaffoldDate": "[SCAFFOLD_DATE]",
   "hooks": {
     "PostToolUse": [

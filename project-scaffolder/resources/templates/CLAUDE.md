@@ -182,7 +182,6 @@ none → discovery_started → discovery_complete → plan_created → plan_appr
 - **Plan file written** → auto-advances to `plan_created` (warns if no story file exists)
 - **User says "approved"** → auto-advances to `plan_approved`
 - **Source code edited before approval** → warning displayed
-- **Source code edited after approval** → auto-advances to `implementation_in_progress`
 - **`/review` run** → advances to `under_review`, launches 4 parallel sub-agent reviews
 - **Review finds blockers** → advances to `changes_requested`, stores findings, auto-fixes
 - **Source code edited during `changes_requested`** → shows fix reminder (does NOT reset to `implementation_in_progress`)

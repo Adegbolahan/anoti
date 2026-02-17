@@ -26,7 +26,8 @@ set -euo pipefail
 
 command -v jq >/dev/null 2>&1 || { echo "workflow-state: jq is required but not installed. Install with: brew install jq (macOS) or apt-get install jq (Linux)"; exit 1; }
 
-STATE_FILE="$(cd "$(dirname "$0")" && pwd)/.workflow-state.json"
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "$(git rev-parse --show-toplevel)/.claude/project")"
+STATE_FILE="$SCRIPT_DIR/.workflow-state.json"
 
 phase_rank() {
   case "${1:-none}" in

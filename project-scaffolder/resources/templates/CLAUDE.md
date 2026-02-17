@@ -22,6 +22,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## General Principles
+
+- **Verify before fixing** — Always read the actual code before claiming something is broken or unimplemented. Never confirm or deny claims about the codebase without thorough examination.
+- **Minimal targeted fixes** — Do not modify config files, schemas, or infrastructure unless the fix specifically requires it. When in doubt, ask before making broad changes.
+- **Never fabricate details** — Never guess secret names, ARNs, environment variable names, or API endpoints. Always read the actual configuration files to find correct values.
+- **Match existing patterns** — When fixing tests, match the existing test setup patterns and mocking conventions already in the project.
+
+---
+
 ## ⚠️ CRITICAL: Read Skills BEFORE Coding
 
 **BEFORE implementing ANY feature, Claude will automatically activate relevant skills based on context.**
@@ -31,18 +40,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Skills are interactive documentation that Claude activates on-demand:
 
 1. **`.claude/skills/development-workflow/`** ⭐ CORE
-   - Feature development process (10-step SOP)
+   - Feature development process (5-phase workflow with mandatory gates)
    - Git workflow and conventions
    - Implementation planning templates
    - **Triggers:** "How do I implement features?", "Git workflow?", "Create implementation plan"
 
-2. **`.claude/skills/project-standards/`** (Full mode only)
+2. **`.claude/skills/project-standards/`**
    - User story format and acceptance criteria
    - Documentation conventions
    - Code review standards
    - **Triggers:** "User story format?", "Documentation standards?", "Acceptance criteria?"
 
-3. **`.claude/skills/exploration-helpers/`** (Full mode only)
+3. **`.claude/skills/exploration-helpers/`**
    - Database exploration patterns
    - Codebase navigation guidance
    - Type validation approaches
@@ -91,7 +100,7 @@ Should I update the skill to reflect this?"
 | File/Directory          | Purpose                                     |
 | ----------------------- | ------------------------------------------- |
 | `CLAUDE.md`             | This file - project hub and quick reference |
-| `.claude/settings.json` | Hooks for auto-formatting                   |
+| `.claude/settings.json` | Hooks for formatting, safety, and workflow  |
 | `.claude/commands/`     | Workflow commands for feature development   |
 | `.claude/skills/`       | Interactive skills for guidance             |
 | `.claude/project/`      | Project tracking (features, plans, roadmap) |
@@ -106,6 +115,7 @@ All project management files are in `.claude/project/`:
 | `roadmap.md`                 | Phased implementation plan                                |
 | `features/`                  | User story specifications (`us-XXX-name.md`)              |
 | `plans/`                     | Implementation plans (`us-XXX-plan.md`)                   |
+| `workflow-state.sh`          | Workflow phase state machine (used by hooks)              |
 
 ### Tech Stack
 
@@ -136,52 +146,53 @@ All project management files are in `.claude/project/`:
 
 ## Feature Development Workflow
 
-This project follows a structured workflow (see `development-workflow` skill):
+This project follows a structured 5-phase workflow (see `development-workflow` skill):
 
 ```
-1. Story  → Create in .claude/project/features/
-2. Plan   → Create in .claude/project/plans/
-3. Approve → Get user approval before coding
-4. Build  → Implement following the plan
+Phase 0: Discovery   → Research, ask questions, create story spec (MANDATORY GATE)
+Phase 1: Plan        → File inventory, contracts, risks → save plan → get approval → context handoff (MANDATORY)
+Phase 2: Implement   → Build in dependency order, tests alongside code
+Phase 3: Review      → Sub-agent review → auto-fix → re-review loop (COMMIT BLOCKED until passed)
+Phase 4: Commit      → Update tracking, conventional commit, report
 ```
 
-**When you ask to build a feature, Claude will first create the story and plan.**
+**Mandatory gates:**
 
-### 🚀 Quick Start with `/implement`
+- **No Phase 1 without a written story file** in `.claude/project/features/`. Resolve all questions first, then create the spec.
+- **No Phase 2 without plan approval AND context handoff** — summarize ACs, integration points, risks, and file order before writing code.
+- **No Phase 4 (commit) without review passing** — `/review` launches 4 parallel sub-agents, auto-fixes blockers, and re-reviews in a loop until clean. Hooks BLOCK `git commit` until `review_passed`.
+- **Never start coding without approved plan**
 
-Run `/implement` to start the complete workflow:
+### Commands
+
+| Command      | Purpose                                                                          |
+| ------------ | -------------------------------------------------------------------------------- |
+| `/implement` | Full feature workflow: discovery → plan → implement → review cycle → commit      |
+| `/review`    | 4-track sub-agent review with automated fix loop until all blockers are resolved |
+
+### Workflow Phase Tracking
+
+Phase progression is automated via hooks in `.claude/settings.json` and tracked by `.claude/project/workflow-state.sh`:
 
 ```
-/implement
+none → discovery_started → discovery_complete → plan_created → plan_approved → implementation_in_progress → under_review ↔ changes_requested → review_passed → complete
 ```
 
-This orchestrates all phases automatically with approval gates.
+- **Story file written** → auto-advances to `discovery_complete`
+- **Plan file written** → auto-advances to `plan_created` (warns if no story file exists)
+- **User says "approved"** → auto-advances to `plan_approved`
+- **Source code edited before approval** → warning displayed
+- **Source code edited after approval** → auto-advances to `implementation_in_progress`
+- **`/review` run** → advances to `under_review`, launches 4 parallel sub-agent reviews
+- **Review finds blockers** → advances to `changes_requested`, stores findings, auto-fixes
+- **Source code edited during `changes_requested`** → shows fix reminder (does NOT reset to `implementation_in_progress`)
+- **Review passes** → advances to `review_passed`, clears findings
+- **Git commit** → auto-advances to `complete` (only from `review_passed`)
+- **Commit blocked** → hooks BLOCK `git commit` during `implementation_in_progress`, `under_review`, or `changes_requested`
 
-### 📋 Individual Phase Commands
+Run `.claude/project/workflow-state.sh clear` between stories to reset.
 
-1. **Phase 1+2: Discovery** → `/discovery`
-   - Explores current app state
-   - Reads documentation and standards
-   - Asks clarifying questions
-
-2. **Phase 3: Plan & Validate** → `/plan-and-validate`
-   - Creates detailed implementation plan
-   - Validates against schema and types
-   - Presents plan for approval
-
-3. **Phase 4: Implementation** → `/start-implementation`
-   - Implements from approved plan
-   - Tests comprehensively
-   - Documents and commits
-
-4. **Phase 4.5: Review** → `/review-implementation`
-   - Reviews code quality
-   - Checks standards compliance
-   - Validates test coverage
-
-### ⚡ Navigation Helper
-
-Use `/next` to automatically proceed to the next phase.
+Phase tracking is automated via hooks (see `.claude/settings.json`). Commits are BLOCKED until review passes.
 
 ---
 
@@ -227,6 +238,7 @@ Use `/next` to automatically proceed to the next phase.
 - **backend-api-engineer** - API implementation
 - **solution-architect** - Architectural decisions
 - **qa-automation-engineer** - Testing strategy
+- **security-privacy-engineer** - Security reviews
 
 ---
 
@@ -241,11 +253,12 @@ git commit -m "feat: add [feature name]
 
 - [Implementation detail]
 - [Implementation detail]
-
 "
 ```
 
 **Types:** `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
+
+**IMPORTANT:** Never use `--no-verify` to bypass pre-commit hooks. Always fix the root cause.
 
 ---
 
@@ -255,14 +268,10 @@ git commit -m "feat: add [feature name]
 [PROJECT_NAME]/
 ├── CLAUDE.md                    # This file
 ├── .claude/
-│   ├── settings.json            # Auto-formatting hooks
+│   ├── settings.json            # Hooks for formatting, safety, workflow
 │   ├── commands/                # Workflow commands
-│   │   ├── implement.md
-│   │   ├── discovery.md
-│   │   ├── plan-and-validate.md
-│   │   ├── start-implementation.md
-│   │   ├── review-implementation.md
-│   │   └── next.md
+│   │   ├── implement.md         # Full 5-phase feature workflow
+│   │   └── review.md            # Sub-agent review with auto-fix loop
 │   ├── skills/                  # Interactive skills
 │   │   ├── development-workflow/
 │   │   ├── project-standards/
@@ -270,10 +279,24 @@ git commit -m "feat: add [feature name]
 │   └── project/                 # Project tracking
 │       ├── features/            # User story specs (us-XXX-name.md)
 │       ├── plans/               # Implementation plans (us-XXX-plan.md)
+│       ├── workflow-state.sh    # Phase state machine
 │       ├── high-level-user-stories.md  # Progress tracker
 │       └── roadmap.md           # Project roadmap
 └── [your source code...]
 ```
+
+---
+
+## Pre-Commit Verification Checklist
+
+Before committing any changes:
+
+1. **TYPE SAFETY**: Run type checking. Zero errors.
+2. **LINT**: Run linter. Zero warnings.
+3. **TESTS**: Run test suite. All pass. Never dismiss failures as "pre-existing" without proof.
+4. **APPROACH**: Before modifying any config file or infrastructure code, state the intended change and WHY. Prefer minimal targeted fixes over broad refactors.
+
+Only proceed with `git commit` (never use `--no-verify`) after ALL checks pass.
 
 ---
 

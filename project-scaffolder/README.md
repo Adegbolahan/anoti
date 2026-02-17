@@ -14,15 +14,11 @@ Claude Code plugin that scaffolds projects with documentation, skills, commands,
 ```
 project/
 ├── CLAUDE.md                    # Project hub
-└── .claude/                     # All Claude Code files
-    ├── settings.json            # Hooks + version tracking
-    ├── commands/                # 6 workflow commands
-    │   ├── implement.md
-    │   ├── discovery.md
-    │   ├── plan-and-validate.md
-    │   ├── start-implementation.md
-    │   ├── review-implementation.md
-    │   └── next.md
+└── .claude/
+    ├── settings.json            # Hooks for formatting, safety, workflow
+    ├── commands/                # 2 workflow commands
+    │   ├── implement.md         # Full 5-phase feature workflow
+    │   └── review.md            # Pre-commit review
     ├── skills/
     │   ├── development-workflow/
     │   ├── project-standards/
@@ -30,6 +26,7 @@ project/
     └── project/
         ├── features/
         ├── plans/
+        ├── workflow-state.sh    # Phase state machine
         ├── high-level-user-stories.md
         └── roadmap.md
 ```
@@ -43,6 +40,7 @@ Just run the command - Claude will ask what it needs:
 ```
 
 Claude will ask:
+
 - Where to create the project
 - How to handle existing files (if any)
 
@@ -51,6 +49,7 @@ Claude will ask:
 ```
 
 Claude will:
+
 - Detect the project in current directory
 - Show what's changed
 - Update files (preserving your customizations)
@@ -62,15 +61,15 @@ Claude will:
 - **Safe updates** - Preserves CLAUDE.md and project tracking
 - **Version tracking** - Knows when updates are available
 
-## Hooks (Non-blocking)
+## Hooks
 
-Scaffolded projects include hooks that:
+Scaffolded projects include a full hook suite:
 
-- **Auto-increment US-XXX** - Assigns next user story number
-- **Guide file naming** - Stories/plans go in correct locations
-- **Maintain tracking** - Updates progress files
-
-Hooks only trigger on `.claude/project/` file writes.
+- **Safety guardrails** - Blocks force-push, --no-verify, git reset --hard, env file edits
+- **Workflow phase tracking** - Auto-advances through discovery → plan → approval → implementation → complete
+- **Auto-formatting** - Prettier/Black/Rustfmt after edits
+- **Type checking** - Runs tsc after TypeScript file edits
+- **Workflow gates** - Warns when editing source code before plan is approved
 
 ## Skills
 
@@ -87,6 +86,7 @@ claude --plugin-dir /path/to/project-scaffolder
 ```
 
 Or via marketplace:
+
 ```
 /plugin install project-scaffolder@getting-started-claude
 ```

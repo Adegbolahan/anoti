@@ -1,7 +1,7 @@
 {
   "name": "project-scaffolder",
-  "version": "1.0.6",
-  "description": "Scaffold new projects with Claude Code documentation, skills, and workflow commands",
+  "version": "2.1.0",
+  "description": "Scaffold new projects with Claude Code documentation, 5-phase workflow, review cycle with commit gate, safety hooks, and project tracking",
   "author": {
     "name": "Getting Started with Claude",
     "url": "https://github.com/Adegbolahan/getting-started-claude"

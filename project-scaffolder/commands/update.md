@@ -12,6 +12,7 @@ Update Claude Code files in an existing project to the latest template version.
 ### Step 1: Determine Target
 
 Check if current directory has `.claude/settings.json`:
+
 - If yes → Use current directory
 - If no → Ask user for project path
 
@@ -20,6 +21,7 @@ Check if current directory has `.claude/settings.json`:
 **Check project has been scaffolded:**
 
 Read `.claude/settings.json` and extract:
+
 - `scaffoldVersion` (e.g., "1.0.0")
 - `scaffoldDate` (e.g., "2024-01-15")
 
@@ -30,12 +32,14 @@ Read template's `.claude/settings.json` from `${CLAUDE_PLUGIN_ROOT}/resources/te
 ### Step 3: Compare Versions
 
 **If versions match:**
+
 ```
 Project is up to date (version X.X.X)
 No updates needed.
 ```
 
 **If project is older:**
+
 ```
 Update available!
 
@@ -46,6 +50,7 @@ Latest:  Y.Y.Y
 ### Step 4: Show Update Options
 
 **Use AskUserQuestion:**
+
 ```
 What would you like to update?
 
@@ -60,14 +65,36 @@ Options:
 ### Step 5: Identify Files to Update
 
 **Always preserve (never overwrite):**
+
 - CLAUDE.md (user customizations)
-- .claude/project/* (user stories, plans, roadmap)
+- .claude/project/\* (user stories, plans, roadmap)
 
 **Safe to update:**
-- .claude/settings.json (merge: keep custom settings, update scaffoldVersion)
-- .claude/commands/*.md
-- .claude/skills/*/SKILL.md
-- .claude/skills/*/references/*.md
+
+- .claude/settings.json (merge: keep custom hooks, update scaffoldVersion + add new workflow hooks)
+- .claude/commands/\*.md (old commands like discovery.md, plan-and-validate.md, etc. will be removed; replaced by implement.md + review.md)
+- .claude/skills/\*/SKILL.md
+- .claude/skills/_/references/_.md
+- .claude/project/workflow-state.sh (new in v2.0.0 — add if missing)
+
+### Step 5b: v2.0.0 Migration (if upgrading from v1.x)
+
+If the project's current version is 1.x.x:
+
+1. **Delete old commands:** Remove `discovery.md`, `plan-and-validate.md`, `start-implementation.md`, `review-implementation.md`, `next.md` from `.claude/commands/`
+2. **Add new files:** Copy `workflow-state.sh` to `.claude/project/` and make it executable
+3. **Add .gitignore entry:** Append `.claude/project/.workflow-state.json` to `.gitignore`
+4. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference old commands (/discovery, /plan-and-validate, etc.). Consider updating the Feature Development Workflow section to reference /implement and /review only."
+
+### Step 5c: v2.1.0 Migration (if upgrading from v2.0.x)
+
+If the project's current version is 2.0.x:
+
+1. **Update workflow-state.sh:** Replace with new version that adds review cycle states (`under_review`, `changes_requested`, `review_passed`), backward transition support, `set-findings`, `get-findings`, `review-cycle` commands, and `reviewCycle`/`reviewFindings` in state JSON
+2. **Update settings.json hooks:** Add commit gate (blocks `git commit` unless `review_passed`), add `under_review` warning to source edit hook, add fix tracking during `changes_requested`, gate completion to only advance from `review_passed`
+3. **Update review.md:** Replace with sub-agent review (4 parallel tracks: backend, frontend, tests, security) with automated fix loop
+4. **Update implement.md:** Phase 3 changes from "Validate" to "Review Cycle" with mandatory test categories and `/review` integration
+5. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference the old Phase 3 (Validate). Consider updating to document the review cycle: Phase 3 now uses sub-agent review with automated fix loops, and commits are BLOCKED by hooks until review passes."
 
 ### Step 6: Perform Update
 
@@ -80,6 +107,7 @@ For each file being updated:
 ### Step 7: Update Version Tracking
 
 Update `.claude/settings.json`:
+
 - Set `scaffoldVersion` to latest
 - Set `scaffoldDate` to today
 
@@ -94,13 +122,13 @@ Update `.claude/settings.json`:
 ### Files Updated
 
 - [x] .claude/settings.json
-- [x] .claude/commands/*.md
+- [x] .claude/commands/\*.md
 - [x] ... (list updated files)
 
 ### Files Preserved
 
 - [x] CLAUDE.md
-- [x] .claude/project/*
+- [x] .claude/project/\*
 
 ### What's New
 

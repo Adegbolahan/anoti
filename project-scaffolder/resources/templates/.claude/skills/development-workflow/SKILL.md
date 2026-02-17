@@ -2,26 +2,29 @@
 name: Development Workflow
 description: |
   Use this skill when the user asks to implement/build/create a feature, or asks about development process, git workflow, or planning. Triggers on: "implement feature", "build feature", "add feature", "create feature", "how do I implement", "git workflow", "branching strategy", "commit conventions".
-version: 1.0.0
+version: 2.1.0
 ---
 
 # Development Workflow
 
 ## Feature Implementation Flow (REQUIRED)
 
-**When user requests a feature, ALWAYS follow this flow:**
+**When user requests a feature, ALWAYS follow this 5-phase flow (see `/implement`):**
 
 ```
-1. Story    → Create user story in .claude/project/features/
-2. Plan     → Create plan in .claude/project/plans/
-3. Approve  → Get user approval before coding
-4. Build    → Implement following the plan
-5. Complete → Update tracking files, commit
+Phase 0: Discovery   → Research codebase, ask ALL questions, create story spec (MANDATORY GATE)
+Phase 1: Plan        → File inventory, integration contracts, risks → save plan → approval → context handoff (MANDATORY)
+Phase 2: Implement   → Build in dependency order, tests alongside code
+Phase 3: Review      → Sub-agent review → auto-fix → re-review loop (COMMIT BLOCKED until passed)
+Phase 4: Commit      → Update tracking, conventional commit, report
 ```
 
-**If no story exists:** Create one first, update high-level-user-stories.md
-**If no plan exists:** Create one, validate, get approval
-**Never start coding without approved plan**
+**Mandatory gates:**
+
+- **No Phase 1 without a written story file** in `.claude/project/features/`. Resolve all questions first, then create the spec.
+- **No Phase 2 without plan approval AND context handoff** — summarize ACs, integration points, risks, and file order before writing code.
+- **No Phase 4 (commit) without review passing** — `/review` launches 4 parallel sub-agents, auto-fixes blockers, and re-reviews in a loop until clean. Hooks BLOCK `git commit` until `review_passed`.
+- **Never start coding without approved plan**
 
 ### File Naming Conventions
 
@@ -64,29 +67,29 @@ When creating a new user story:
 
 ## Workflow Commands
 
-| Command                  | Phase         |
-| ------------------------ | ------------- |
-| `/implement`             | Full workflow |
-| `/discovery`             | Requirements  |
-| `/plan-and-validate`     | Planning      |
-| `/start-implementation`  | Building      |
-| `/review-implementation` | Code review   |
-| `/next`                  | Continue      |
+| Command      | Purpose                                                                          |
+| ------------ | -------------------------------------------------------------------------------- |
+| `/implement` | Full feature workflow: discovery → plan → implement → review cycle → commit      |
+| `/review`    | 4-track sub-agent review with automated fix loop until all blockers are resolved |
+
+Phase tracking is automated via hooks (see `.claude/settings.json`). Commits are BLOCKED until review passes.
 
 ---
 
-## Quick Process (10 Steps)
+## Quick Process Checklist
 
-1. **Standards** - Read skills for domain patterns
-2. **Requirements** - Write user story with acceptance criteria
-3. **Discovery** - Explore codebase, find patterns
-4. **Plan** - Create validated implementation plan
-5. **Design** - Component hierarchy, data models
-6. **Database** - Migrations, API endpoints
-7. **Build** - Implement following patterns
-8. **States** - Handle loading/error/empty/success
-9. **Test** - Write tests, verify edge cases
-10. **Commit** - Follow git conventions
+For every feature, these must happen in order:
+
+1. **Read skills** - Load domain patterns for the feature area
+2. **Research** - Explore codebase, find existing patterns, check integration points
+3. **Ask questions** - Resolve ALL ambiguities before writing the story
+4. **Write story** - Create feature spec with ACs in `.claude/project/features/` (GATE)
+5. **Plan** - File inventory, integration contracts, risks → save to `.claude/project/plans/`
+6. **Get approval** - Present plan, wait for user approval (GATE)
+7. **Context handoff** - Summarize ACs, integration points, file order before coding (GATE)
+8. **Build** - Implement in dependency order, tests alongside code
+9. **Review** - `/review` launches sub-agents, auto-fixes, re-reviews until clean (COMMIT GATE)
+10. **Commit** - Conventional commit, update tracking files (only after review_passed)
 
 ---
 

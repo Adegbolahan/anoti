@@ -1,4 +1,4 @@
-{
+ {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "getting-started-claude",
   "version": "1.0.0",

@@ -14,6 +14,7 @@ Add Claude Code documentation, workflow commands, skills, and project tracking t
 Ask the user where to create the project:
 
 **Use AskUserQuestion:**
+
 ```
 Where would you like to create the project?
 
@@ -29,15 +30,18 @@ Derive project name from the folder name (convert to Title Case for display).
 ### Step 2: Validate Target
 
 **Check if target is the plugin directory:**
+
 - If target path contains/equals ${CLAUDE_PLUGIN_ROOT}, STOP with error
 
 **Check if target exists:**
+
 - If directory doesn't exist → Create it, proceed to Step 3
 - If directory exists with Claude Code files → Proceed to Step 2b
 
 ### Step 2b: Handle Existing Directory
 
 **Scan for existing Claude Code files:**
+
 - CLAUDE.md
 - .claude/settings.json
 - .claude/commands/
@@ -45,6 +49,7 @@ Derive project name from the folder name (convert to Title Case for display).
 - .claude/project/
 
 **Use AskUserQuestion:**
+
 ```
 Found existing Claude Code files in this directory.
 
@@ -74,9 +79,9 @@ Copy from `${CLAUDE_PLUGIN_ROOT}/resources/templates/`:
 | ---------------------- | ---------------------- | ---------------------- |
 | CLAUDE.md              | CLAUDE.md              | Yes                    |
 | .claude/settings.json  | .claude/settings.json  | Yes                    |
-| .claude/commands/*.md  | .claude/commands/*.md  | Yes                    |
-| .claude/skills/*       | .claude/skills/*       | Yes                    |
-| .claude/project/*      | .claude/project/*      | Yes                    |
+| .claude/commands/\*.md | .claude/commands/\*.md | Yes                    |
+| .claude/skills/\*      | .claude/skills/\*      | Yes                    |
+| .claude/project/\*     | .claude/project/\*     | Yes                    |
 
 ### Step 5: Replace Placeholders
 
@@ -87,6 +92,13 @@ In all copied files:
 - `[PROJECT_NAME_KEBAB]` → kebab-case name
 - `[SCAFFOLD_DATE]` → today's date (YYYY-MM-DD)
 - `[DATE]` → today's date (YYYY-MM-DD)
+
+### Step 5b: Post-Copy Setup
+
+After copying templates:
+
+1. **Make workflow-state.sh executable:** `chmod +x .claude/project/workflow-state.sh`
+2. **Add to .gitignore:** Append `.claude/project/.workflow-state.json` to the project's `.gitignore` (create if needed)
 
 ### Step 6: Report Results
 
@@ -100,9 +112,9 @@ In all copied files:
 
 - [x] CLAUDE.md
 - [x] .claude/settings.json
-- [x] .claude/commands/ (6 workflow commands)
+- [x] .claude/commands/ (2 workflow commands: implement, review)
 - [x] .claude/skills/ (3 skills)
-- [x] .claude/project/ (tracking files)
+- [x] .claude/project/ (tracking files + workflow-state.sh)
 
 ### Next Steps
 

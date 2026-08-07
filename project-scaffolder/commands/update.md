@@ -72,31 +72,40 @@ Options:
 3. Cancel
 ```
 
-**4b. Back up, then remove.**
+**4b. Run the migration.** It is a script, not steps for you to carry out by
+hand — it deletes from the user's repository, and that belongs in tested code:
 
 ```bash
-mkdir -p .claude/.backup-pre-v3
-for p in .claude/commands .claude/skills .claude/project/hooks .claude/project/workflow-state.sh; do
-  [ -e "$p" ] && mv "$p" .claude/.backup-pre-v3/ 2>/dev/null
-done
+bash ${CLAUDE_PLUGIN_ROOT}/bin/migrate-pre-v3.sh --dry-run   # show what would move
+bash ${CLAUDE_PLUGIN_ROOT}/bin/migrate-pre-v3.sh             # do it
 ```
 
-Print exactly what moved. Never remove anything silently.
+Show the user the `--dry-run` output first, then run it for real once they
+confirm. The script:
 
-**4c. Install the shim.** Copy `resources/templates/.claude/project/workflow-state.sh`,
-replace `[PLUGIN_ROOT]` with `${CLAUDE_PLUGIN_ROOT}`, `chmod +x`, then verify:
+- refuses to run outside a scaffolded project, or where `.claude/settings.json`
+  is missing
+- **moves** rather than deletes, into `.claude/.backup-pre-v3/`
+- never touches `CLAUDE.md`, `features/`, `plans/`, `roadmap.md` or
+  `high-level-user-stories.md`
+- installs the shim and **proves it reaches the plugin** before reporting success
+- strips the `hooks` block from `settings.json` (a copy left there would shadow
+  the plugin's hooks)
+- writes the restart marker
+- is safe to run twice
 
-```bash
-.claude/project/workflow-state.sh --help >/dev/null && echo "state machine OK"
-```
+Relay its manifest to the user verbatim. Do not paraphrase what moved.
 
-**4d. Strip hooks from settings.json.** Hooks now come from the plugin. Keep
-`permissions` and anything the user added; remove the `hooks` block; update
-`scaffoldVersion` and `scaffoldDate`.
+If it exits nonzero, **stop**. Report the error as-is. The user's files are in
+`.claude/.backup-pre-v3/` and nothing was deleted.
 
-If the project had **custom** hooks of its own, do not drop them. Show them to
-the user and ask whether to keep them in `settings.json` — plugin hooks and user
-hooks merge, so both will run.
+**4c. Custom hooks.** The script removes the whole `hooks` block. If the project
+had hooks of its own beyond the scaffolded set, they were in that block — read
+`.claude/.backup-pre-v3/` and the git diff, show the user what was theirs, and
+offer to put it back. Plugin hooks and user hooks merge, so both will run.
+
+**4d. Update the version.** Set `scaffoldVersion` to the plugin's version and
+`scaffoldDate` to today.
 
 **4e. Extend `.gitignore`:**
 
@@ -128,20 +137,18 @@ the old arrangement:
 > - Stuck? `.claude/project/workflow-state.sh why-blocked`, or arm a recorded
 >   one-shot bypass with `workflow-state.sh override "<reason>"`.
 
-### Step 5: Restart marker
+### Step 5: Restart
 
-Hook configuration is read at session start, so the new hooks are **not active in
-the current session**:
+The migration script already wrote `.claude/project/.upgrade-pending`. Your job
+is to make sure the user actually sees this:
 
-```bash
-date -u +%Y-%m-%dT%H:%M:%SZ > .claude/project/.upgrade-pending
-```
+> **Restart Claude Code now.** Hook configuration is read at session start, so
+> until you restart, this session is still running the old hooks. On the next
+> start you will see "Workflow hooks upgraded and now active" — that message is
+> itself one of the new hooks, so seeing it is the proof.
 
-Print loudly:
-
-> **Restart Claude Code now.** Until you do, this session is running the old hook
-> configuration. `SessionStart` clears this marker and confirms the new hooks are
-> live.
+Do not bury this in a summary. An upgrade the user believes took effect but
+which has not is worse than one they know is pending.
 
 ### Step 6: Report
 

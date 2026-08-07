@@ -49,6 +49,14 @@ projects entirely.
 
 ### Changed
 
+- **The pre-v3 migration is a tested script, not prose.** It deletes files from
+  a user's repository, and a destructive operation described in markdown for a
+  model to carry out is precisely the failure mode this plugin exists to
+  prevent. `bin/migrate-pre-v3.sh` refuses to run outside a scaffolded project,
+  supports `--dry-run`, moves rather than deletes, never touches `CLAUDE.md` or
+  anything under `features/`, `plans/`, `roadmap.md` or
+  `high-level-user-stories.md`, proves the installed shim actually reaches the
+  plugin before reporting success, and is safe to run twice. 13 tests.
 - `/update` collapsed its per-version migration chain into one pre-v3 migration.
   It backs up `.claude/commands/`, `.claude/skills/`, `.claude/project/hooks/`
   and the old `workflow-state.sh` to `.claude/.backup-pre-v3/`, prints exactly

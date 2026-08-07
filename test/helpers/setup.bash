@@ -50,8 +50,12 @@ JQ_REAL="$(command -v jq)"
 _install_plugin() {
   PLUGIN_DIR="${BATS_TEST_TMPDIR:-$(mktemp -d)}/plugin"
   mkdir -p "$PLUGIN_DIR"
-  cp -R "$PLUGIN_SRC/hooks" "$PLUGIN_DIR/hooks"
-  cp -R "$PLUGIN_SRC/bin"   "$PLUGIN_DIR/bin"
+  cp -R "$PLUGIN_SRC/hooks"     "$PLUGIN_DIR/hooks"
+  cp -R "$PLUGIN_SRC/bin"       "$PLUGIN_DIR/bin"
+  # resources/ carries the shim template that migrate-pre-v3.sh installs.
+  # Omitting it made the migration write an EMPTY shim that still passed its
+  # own verification, because `bash empty-file` exits 0.
+  cp -R "$PLUGIN_SRC/resources" "$PLUGIN_DIR/resources"
   chmod +x "$PLUGIN_DIR"/hooks/*.sh "$PLUGIN_DIR"/bin/*.sh
 }
 

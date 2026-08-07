@@ -205,16 +205,80 @@ Deterministic command hooks everywhere a gate is involved, against the documente
 default which recommends prompt hooks. Determinism is the product. Prompt hooks
 appear exactly once, in skillify, where the question is a genuine judgment call.
 
+## Phase B Engineering Review (2026-08-07)
+
+Ran after Phase A shipped (commit b89565c, 72/72 green). Target: the remaining
+v3.0.0 scope, centred on who owns the reviewer. 5 decisions, all resolved.
+
+### The finding that reframes the product
+
+**The gate does not constrain the entity it exists to constrain.** Demonstrated
+on a real scaffold:
+
+```
+phase: implementation_in_progress
+  git commit                                → exit 2   BLOCKED
+  workflow-state.sh advance under_review    → allowed
+  workflow-state.sh advance review_passed   → allowed
+  git commit                                → exit 0   ALLOWED
+```
+
+`pre-bash.sh` gates `git commit` but not the transition that opens the gate, so
+the agent under gate can unblock itself in two commands. It is written to the
+audit log, but identically to a legitimate review pass, so the log cannot tell
+a real review from the magic words.
+
+The asymmetry: `override` is a recorded, deliberate, one-shot bypass. This is an
+unlimited one sitting next to it, indistinguishable in the log.
+
+There is no cryptographic answer. An agent with bash in the same filesystem can
+forge anything checkable. The real choice is whether faking it stays trivial and
+invisible, or becomes explicit and visible in the diff.
+
+### The gate was already pluggable
+
+`pre-bash.sh` reads a phase and nothing else. It cannot distinguish four
+sub-agents from `/plan-eng-review` from a human. Pluggability was never a thing
+to build; `/review` is simply what currently sets the phase. The open question
+was only whether the plugin ships a default reviewer and writes the contract
+down.
+
+**[Layer 1]** This is GitHub branch protection with required status checks, and
+the `pre-commit` framework: own the contract, ship a reference implementation,
+let the ecosystem supply the rest.
+
+### Decisions
+
+| # | Finding | Confidence | Decision |
+|---|---------|-----------|----------|
+| 1 | `/review` dispatches 4 agent types the plugin does not ship, duplicating a deeper suite already in use | — | Ship the contract plus **one** dependency-free reference reviewer. Drop the 4 agents. |
+| 2 | The gated agent opens its own gate in two commands | 10/10 | Require `--evidence` on `advance review_passed`, record path + hash, **and state plainly in the docs that this is a guardrail against drift, not an adversarial control**. |
+| 3 | The commit regex is byte-identical in `pre-bash.sh:63` and `post-bash.sh:13` | 10/10 | Move `is_commit()` into `_common.sh`. Decision 7A accepted a known false positive, so this regex will be tuned. |
+| 4 | The evidence check needs a newest-source-edit time that does not exist | 9/10 | `post-edit.sh` stamps `lastSourceEdit` into state, under the existing lock. |
+| 5 | Skillify puts an LLM call on `Stop`, where the typecheck already runs | 8/10 | Fire only on the transition to `complete`, short timeout, approve on any failure. |
+
+### Under-delivered from the prior review
+
+Decision 3 of the Phase A review was "extend the CI job into a **tagged-release**
+job." Only the version-consistency check was built. v2.2.0 has no tag to pin or
+roll back to. Tracked as B8.
+
+### Phase B shrank
+
+Four items (override, phase bar, `schemaVersion`, transition log) landed in
+Phase A. What remains: relocation, the `/update` migration, the reviewer
+decision, skillify, the evidence requirement, and the release tag.
+
 ## GSTACK REVIEW REPORT
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
 | CEO Review | `/plan-ceo-review` | Scope & strategy | 1 | CLEAR | 16 proposals, 16 accepted, 0 deferred |
-| Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | — |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | CLEAR | 14 issues, 0 critical gaps |
+| Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | skipped, codex_reviews disabled |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 2 | CLEAR | Phase A: 14 issues · Phase B: 5 issues, 1 P0, 0 critical gaps |
 | Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | not applicable, no UI scope |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
-**VERDICT:** CEO + ENG CLEARED — ready to implement. Start with Phase A, harness first.
+**VERDICT:** CEO + ENG CLEARED — Phase A shipped, Phase B ready to implement. Start with B1 and B2: the gate's central claim is currently false, and the fix ships with its test or not at all.
 
 NO UNRESOLVED DECISIONS

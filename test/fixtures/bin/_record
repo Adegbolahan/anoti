@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Shared body for every PATH stub. Records the invocation and exits with a
+# scripted code, so tests can assert on what a hook TRIED to run without any
+# network access or real toolchain.
+#
+# Behaviour is controlled by env vars set in the test:
+#   STUB_LOG        -- file to append invocations to (set by stub_path)
+#   STUB_FAIL_<NAME> -- if set, that stub exits with the given code
+#
+# Example: STUB_FAIL_TSC=1 makes `tsc` behave like a typecheck failure.
+
+name="$(basename "$0")"
+printf '%s %s\n' "$name" "$*" >> "${STUB_LOG:-/dev/null}"
+
+upper="$(printf '%s' "$name" | tr '[:lower:]-' '[:upper:]_')"
+fail_var="STUB_FAIL_${upper}"
+code="${!fail_var:-0}"
+exit "$code"

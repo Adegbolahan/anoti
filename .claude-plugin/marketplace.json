@@ -1,4 +1,4 @@
- {
+{
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "getting-started-claude",
   "version": "1.0.0",
@@ -10,8 +10,8 @@
   "plugins": [
     {
       "name": "project-scaffolder",
-      "description": "Scaffold projects with CLAUDE.md documentation, workflow commands, skills, hooks, and project tracking. Includes /scaffold and /scaffold-minimal commands.",
-      "version": "1.0.0",
+      "description": "Scaffold projects with CLAUDE.md documentation, a 5-phase workflow, a commit gate enforced by hooks, skills, and project tracking. Provides /new and /update.",
+      "version": "2.2.0",
       "author": {
         "name": "Getting Started with Claude"
       },

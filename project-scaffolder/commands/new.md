@@ -68,7 +68,10 @@ Options:
 └── .claude/
     ├── commands/
     ├── skills/{development-workflow,project-standards,exploration-helpers}/
-    └── project/{features,plans}/
+    └── project/
+        ├── features/
+        ├── plans/
+        └── hooks/        # one script per hook event
 ```
 
 ### Step 4: Copy Templates
@@ -97,8 +100,30 @@ In all copied files:
 
 After copying templates:
 
-1. **Make workflow-state.sh executable:** `chmod +x .claude/project/workflow-state.sh`
-2. **Add to .gitignore:** Append `.claude/project/.workflow-state.json` to the project's `.gitignore` (create if needed)
+1. **Make the state machine and hooks executable:**
+
+   ```bash
+   chmod +x .claude/project/workflow-state.sh
+   chmod +x .claude/project/hooks/*.sh
+   ```
+
+   The hook scripts are invoked as `bash <script>` so the exec bit is not
+   strictly required, but leaving them non-executable makes them awkward to run
+   by hand while debugging.
+
+2. **Add the runtime state files to .gitignore** (create the file if needed).
+   These are per-developer working state, never shared:
+
+   ```
+   .claude/project/.workflow-state.json
+   .claude/project/.workflow-log.jsonl
+   .claude/project/.turn-touched
+   .claude/project/.workflow-state.lock/
+   ```
+
+   `.workflow-state.json` is the phase machine, `.workflow-log.jsonl` is the
+   append-only transition audit trail, `.turn-touched` is per-turn scratch for
+   the Stop hook, and `.workflow-state.lock/` is the write lock directory.
 
 ### Step 6: Report Results
 
@@ -111,10 +136,10 @@ After copying templates:
 ### Files Created
 
 - [x] CLAUDE.md
-- [x] .claude/settings.json
+- [x] .claude/settings.json (registers 7 hooks, one per event)
 - [x] .claude/commands/ (2 workflow commands: implement, review)
 - [x] .claude/skills/ (3 skills)
-- [x] .claude/project/ (tracking files + workflow-state.sh)
+- [x] .claude/project/ (tracking files, workflow-state.sh, hooks/)
 
 ### Next Steps
 

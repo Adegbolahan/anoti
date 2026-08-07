@@ -5,7 +5,129 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-01-22
+## [2.2.0] - 2026-08-07
+
+The commit gate did not work. This release makes it work, and adds the test
+suite that proves it.
+
+### Fixed
+
+- **The commit gate never fired.** Nothing advanced the phase to
+  `implementation_in_progress`, so after plan approval it sat at
+  `plan_approved`, the gate's `case` fell through, and `git commit` succeeded
+  unreviewed. A source edit after approval now advances the phase.
+- **The gate was anchored to `^git commit`** while every safety blocker beside
+  it was unanchored, so `cd frontend && git commit` walked straight past it.
+  Now unanchored, matching the blockers.
+- **Missing or broken `jq` silently disabled the gate.** `workflow-state.sh`
+  exited nonzero, callers swallowed it with `|| echo none`, and the commit was
+  allowed. The gate now fails closed on any state it cannot confirm: missing
+  jq, corrupt state, unreadable state, or an unrecognised phase. Each blocks
+  with an explanation and a recovery command.
+- **`review_passed` was a permanent pardon.** Post-pass edits could not be
+  re-reviewed. `review_passed -> under_review` is now an allowed edge.
+- **`advance` silently no-opped** on an illegal transition and exited 0. It now
+  exits nonzero with a message.
+- **The source-edit gate only matched `*/src/*`**, so it never fired on a
+  Next.js `app/`, a Go `cmd/`, or a root-level Python package.
+- **The secrets blocker missed** `.envrc`, extensionless keys (`id_rsa`),
+  `terraform.tfvars`, java keystores, and the package-manager rc files that
+  hold auth tokens.
+- **`npx prettier` ran on every edit** with stderr discarded, which in a
+  project without prettier meant a silent network fetch per edit. The formatter
+  is now detected once and skipped when absent.
+- **`npx tsc --noEmit` ran on every `.ts` edit** under a 30s timeout that real
+  projects blow past. Typechecking moved to the `Stop` hook, runs only when a
+  TS file was touched that turn, and uses `--incremental`.
+- **The review auto-fix loop was unbounded.** It now caps at 3 cycles and
+  reports what is not converging instead of spinning.
+- Removed an invalid `Bash(.claude/project/**)` permission entry. Bash
+  permissions are command prefixes, not path globs.
+- Concurrent state writes could silently drop a transition. Writes are now
+  serialised with a portable `mkdir` lock and a stale-lock timeout.
+
+### Added
+
+- **Test suite** (`test/`) built on bats-core. 26 tests covering the gate,
+  including regression tests for each defect above and a bystander test
+  asserting the gate stays out of repositories that were never scaffolded.
+- **CI** (`.github/workflows/ci.yml`): hook tests, shellcheck, hook-schema
+  validation, and a version-consistency gate across `plugin.json`,
+  `marketplace.json`, the settings template, and this file.
+- `workflow-state.sh override <reason>` — a one-shot, recorded commit bypass.
+  Previously the only way past a stuck gate was deleting the state file.
+- `workflow-state.sh why-blocked` — names the blockers holding the gate closed.
+- A phase bar in `next-action`, so you can see where you are without asking.
+- `.workflow-log.jsonl` — an append-only audit trail of transitions, gate
+  decisions, and overrides.
+- `schemaVersion` in the state file, with forward migration and a refusal to
+  touch a file written by a newer version.
+
+### Changed
+
+- **Hook bodies moved out of `settings.json` into scripts** under
+  `.claude/project/hooks/`, one per event. `settings.json` now holds one-line
+  invocations. `PreToolUse` went from 4 hook groups to 2 and `PostToolUse` from
+  3 to 2 — those groups ran in parallel, could not see each other, and raced on
+  the state file.
+- Every hook opens with a scope guard that exits silently when the project is
+  not scaffolded, before any gating logic runs.
+- `get-field` replaced with named accessors (`get-phase`, `get-story`,
+  `get-findings-count`, `get-review-cycle`). The old form interpolated its
+  argument straight into a jq program.
+- Added `snapshot`, which returns every gate-relevant field in one jq call.
+  The gate runs on every Bash tool call; three accessor round-trips was roughly
+  six process spawns each time.
+- `set-findings` validates its input and holds the phase at `under_review` on
+  failure, rather than silently storing nothing and reporting zero blockers.
+
+### Removed
+
+- `.githooks/pre-push` — used an interactive `read -p` that hangs any non-TTY
+  push (CI, an IDE push button, an agent). Replaced by the CI version job.
+- `scripts/bump-version.sh` — wrote 2 of the 4 places a version lives, which is
+  how `marketplace.json` got stranded two releases behind.
+- `template-customizer` agent — 171 lines of hardcoded React/Python/Go/Rust/Node
+  conventions that a current model already knows. Ask Claude directly instead:
+  "help me customize these templates for [your stack]".
+
+### Migration
+
+Run `/update`. Existing projects gain `.claude/project/hooks/` and a rewritten
+`settings.json`. Add these to `.gitignore`:
+
+```
+.claude/project/.workflow-state.json
+.claude/project/.workflow-log.jsonl
+.claude/project/.turn-touched
+.claude/project/.workflow-state.lock/
+```
+
+---
+
+## [2.1.0] - 2026-02-17
+
+Shipped in `plugin.json` but never documented here. Reconstructed from the
+migration notes in `/update`.
+
+### Added
+
+- Review cycle states: `under_review`, `changes_requested`, `review_passed`.
+- Backward transition support for the review cycle, plus `set-findings`,
+  `get-findings`, and `review-cycle` commands.
+- `reviewCycle` and `reviewFindings` in the state file.
+- A commit gate in `settings.json` intended to block `git commit` unless the
+  phase was `review_passed`. **It did not work** — see 2.2.0.
+
+### Changed
+
+- `/review` became a 4-track sub-agent review (backend, frontend, tests,
+  security) with an automated fix loop.
+- `/implement` Phase 3 changed from "Validate" to "Review Cycle".
+
+---
+
+## [2.0.0] - 2026-02-17
 
 ### Breaking Changes
 
@@ -64,13 +186,15 @@ If you previously used `scaffold-project.py`:
 The scaffolded output structure has changed significantly. New projects now receive:
 
 - `.claude/commands/` - Workflow commands
-- `.claude/hooks/` - Workflow enforcement
+- Workflow enforcement hooks, defined inline in `.claude/settings.json`
+  (this entry originally claimed a `.claude/hooks/` directory, which 2.0.0
+  never created; hook scripts arrived in 2.2.0 under `.claude/project/hooks/`)
 - `.claude/skills/` - Interactive documentation
 - `.claude/project/` - Feature and plan tracking
 
 ---
 
-## [1.0.0] - 2026-01-22
+## [1.0.0] - 2025-11-04
 
 ### Added
 

@@ -76,6 +76,7 @@ Options:
 - .claude/skills/\*/SKILL.md
 - .claude/skills/_/references/_.md
 - .claude/project/workflow-state.sh (new in v2.0.0 — add if missing)
+- .claude/project/hooks/\*.sh (new in v2.2.0 — add if missing)
 
 ### Step 5b: v2.0.0 Migration (if upgrading from v1.x)
 
@@ -95,6 +96,54 @@ If the project's current version is 2.0.x:
 3. **Update review.md:** Replace with sub-agent review (4 parallel tracks: backend, frontend, tests, security) with automated fix loop
 4. **Update implement.md:** Phase 3 changes from "Validate" to "Review Cycle" with mandatory test categories and `/review` integration
 5. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference the old Phase 3 (Validate). Consider updating to document the review cycle: Phase 3 now uses sub-agent review with automated fix loops, and commits are BLOCKED by hooks until review passes."
+
+### Step 5d: v2.2.0 Migration (if upgrading from 2.0.x or 2.1.x)
+
+The commit gate did not work before 2.2.0. This migration is what makes it work,
+so do not skip it.
+
+1. **Add the hook scripts:** copy `.claude/project/hooks/` from the templates and
+   `chmod +x .claude/project/hooks/*.sh`.
+
+2. **Replace `settings.json` wholesale.** Hook bodies moved out of JSON and into
+   those scripts. The old file had 4 `PreToolUse` groups and 3 `PostToolUse`
+   groups; hooks in the same event run in parallel and race on the state file.
+   The new file registers exactly one hook per event.
+
+   If the project added custom hooks of its own, carry them over by hand and
+   tell the user which ones you moved. Do not silently drop them.
+
+3. **Replace `workflow-state.sh`.** New in this version: named accessors
+   (`get-phase`, `get-story`, `get-findings-count`, `get-review-cycle`) replacing
+   the generic `get-field`, a `snapshot` command, a `mkdir` write lock,
+   `schemaVersion` with forward migration, `override`, and `why-blocked`.
+
+4. **Fix callers of the removed `get-field`.** It is gone. Search the project for
+   it and rewrite: `get-field activeStory` becomes `get-story`, `get-field phase`
+   becomes `get-phase`. `/review` and `/implement` are updated by this migration,
+   but a customized copy may have its own callers.
+
+5. **Extend `.gitignore`:**
+
+   ```
+   .claude/project/.workflow-log.jsonl
+   .claude/project/.turn-touched
+   .claude/project/.workflow-state.lock/
+   ```
+
+   (`.workflow-state.json` should already be there from v2.0.0.)
+
+6. **Warn the user that behaviour changes:**
+
+   > "The commit gate now actually blocks. Before 2.2.0 it never fired, because
+   > nothing advanced the phase to `implementation_in_progress`. It also blocks
+   > on states it cannot evaluate — missing `jq`, a corrupt state file, an
+   > unrecognised phase. If you get stuck, run
+   > `.claude/project/workflow-state.sh why-blocked`, or arm a recorded one-shot
+   > bypass with `workflow-state.sh override "<reason>"`."
+
+7. **Tell them to restart Claude Code.** Hook configuration is read at session
+   start, so the new hooks do not take effect in the current session.
 
 ### Step 6: Perform Update
 

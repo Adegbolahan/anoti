@@ -1,12 +1,11 @@
 {
-  "scaffoldVersion": "2.1.0",
+  "scaffoldVersion": "2.2.0",
   "scaffoldDate": "[SCAFFOLD_DATE]",
   "permissions": {
     "allow": [
       "Read(.claude/project/**)",
       "Edit(.claude/project/**)",
-      "Write(.claude/project/**)",
-      "Bash(.claude/project/**)"
+      "Write(.claude/project/**)"
     ]
   },
   "hooks": {
@@ -15,13 +14,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "branch=$(git branch --show-current 2>/dev/null); changes=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' '); echo \"Branch: $branch | $changes uncommitted files\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": ".claude/project/workflow-state.sh next-action 2>/dev/null || true",
-            "timeout": 5
+            "command": "bash .claude/project/hooks/session-start.sh",
+            "timeout": 10
           }
         ]
       }
@@ -31,12 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '(.prompt // .user_prompt // \"\")' | { p=$(cat); echo \"$p\" | grep -qiE '(implement|build|add|create).{0,30}(feature|endpoint|module|page|component|story)|implement[[:space:]]+US-' && echo 'Use /implement for the full feature workflow, or /review before committing.'; true; }",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "jq -r '(.prompt // .user_prompt // \"\")' | { p=$(cat); phase=$(.claude/project/workflow-state.sh get-field phase 2>/dev/null || echo none); if [ \"$phase\" = \"plan_created\" ] && echo \"$p\" | grep -qiE '(approve[d]?|lgtm|looks good|go ahead|proceed|ship it|^(y|yes|yep|yeah)$|yes.*(plan|proceed|implement))'; then .claude/project/workflow-state.sh advance plan_approved 2>/dev/null; .claude/project/workflow-state.sh next-action 2>/dev/null; fi; true; }",
+            "command": "bash .claude/project/hooks/user-prompt.sh",
             "timeout": 5
           }
         ]
@@ -48,17 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | { cmd=$(cat); if echo \"$cmd\" | grep -qE 'git push .*(-f|--force)'; then echo 'BLOCKED: git push --force is forbidden. Use regular git push.'; exit 2; fi; if echo \"$cmd\" | grep -qE 'git reset --hard'; then echo 'BLOCKED: git reset --hard is forbidden. Use git stash or backup branch.'; exit 2; fi; if echo \"$cmd\" | grep -qE 'git (checkout|restore) (-- )?\\.'; then echo 'BLOCKED: Discarding all changes is forbidden. Be selective.'; exit 2; fi; if echo \"$cmd\" | grep -qE 'git clean .*-f'; then echo 'BLOCKED: git clean -f is forbidden. Use git stash.'; exit 2; fi; if echo \"$cmd\" | grep -qE 'git branch -D'; then echo 'BLOCKED: git branch -D is forbidden. Use -d for safe delete.'; exit 2; fi; if echo \"$cmd\" | grep -qE '\\-\\-no-verify'; then echo 'BLOCKED: --no-verify is forbidden. Fix failing hooks instead of bypassing.'; exit 2; fi; }",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.command' | { cmd=$(cat); if echo \"$cmd\" | grep -qE '^git commit'; then story=$(.claude/project/workflow-state.sh get-field activeStory 2>/dev/null || echo none); if [ \"$story\" != \"none\" ] && [ \"$story\" != \"null\" ]; then phase=$(.claude/project/workflow-state.sh get-field phase 2>/dev/null || echo none); case \"$phase\" in implementation_in_progress) echo 'COMMIT GATE: Run /review before committing. Review has not been run yet.'; exit 2;; under_review) echo 'COMMIT GATE: Review is in progress. Wait for review to complete.'; exit 2;; changes_requested) findings=$(.claude/project/workflow-state.sh get-field 'reviewFindings | length' 2>/dev/null || echo 0); echo \"COMMIT GATE: Review found $findings blocker(s). Fix all issues and run /review again.\"; exit 2;; esac; fi; fi; true; }",
+            "command": "bash .claude/project/hooks/pre-bash.sh",
             "timeout": 5
           }
         ]
@@ -68,17 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read f; case \"$f\" in *.env.example|*.env.sample|*.env.template) ;; *.env|*.env.*|*credentials.json|*.pem|*.key|*.p12|*.pfx) echo 'BLOCKED: Cannot edit secrets/credentials file directly. Ask the user for explicit confirmation.'; exit 2 ;; esac; }",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read f; case \"$f\" in */src/*) phase=$(.claude/project/workflow-state.sh get-field phase 2>/dev/null || echo none); story=$(.claude/project/workflow-state.sh get-field activeStory 2>/dev/null || echo none); if [ \"$story\" != \"none\" ] && [ \"$story\" != \"null\" ]; then case \"$phase\" in discovery_started|discovery_complete|plan_created) echo \"WORKFLOW GATE: Editing source for $story but plan not yet approved (phase: $phase). Get plan approval first.\";; under_review) echo \"WORKFLOW GATE: Review is in progress for $story. Wait for review to complete before editing source files.\";; esac; fi;; esac; true; }",
+            "command": "bash .claude/project/hooks/pre-edit.sh",
             "timeout": 5
           }
         ]
@@ -90,23 +59,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read f; case \"$f\" in *.js|*.ts|*.jsx|*.tsx|*.json|*.css|*.html|*.md) npx prettier --write \"$f\" 2>/dev/null ;; *.py) black \"$f\" 2>/dev/null ;; *.rs) rustfmt \"$f\" 2>/dev/null ;; esac; }",
+            "command": "bash .claude/project/hooks/post-edit.sh",
             "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read f; case \"$f\" in *.ts|*.tsx) dir=\"$f\"; while [ \"$dir\" != \"/\" ] && [ \"$dir\" != \".\" ]; do dir=$(dirname \"$dir\"); if [ -f \"$dir/tsconfig.json\" ]; then cd \"$dir\" && npx tsc --noEmit --pretty 2>&1 | head -20; break; fi; done ;; esac; }",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read f; WF=.claude/project/workflow-state.sh; case \"$f\" in */.claude/project/features/us-*) story=$(echo \"$f\" | grep -oE '[Uu][Ss]-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'); current=$($WF get-field activeStory 2>/dev/null || echo none); if [ \"$current\" = \"none\" ] || [ \"$current\" = \"null\" ]; then title=$(basename \"$f\" .md | sed 's/^us-[0-9]*-//;s/-/ /g'); $WF start \"$story\" \"$title\" 2>/dev/null; fi; $WF advance discovery_complete 2>/dev/null;; */.claude/project/plans/us-*) current_phase=$($WF get-field phase 2>/dev/null || echo none); if [ \"$current_phase\" = \"none\" ] || [ \"$current_phase\" = \"discovery_started\" ]; then echo 'WORKFLOW GATE: Writing plan but no feature spec exists yet. Create the story file in .claude/project/features/ first (Phase 0e of /implement).'; fi; $WF advance discovery_complete 2>/dev/null; $WF advance plan_created 2>/dev/null;; esac; true; }",
-            "timeout": 5
           }
         ]
       },
@@ -115,7 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | { cmd=$(cat); if echo \"$cmd\" | grep -qE '^git commit'; then story=$(.claude/project/workflow-state.sh get-field activeStory 2>/dev/null || echo none); if [ \"$story\" != \"none\" ] && [ \"$story\" != \"null\" ]; then phase=$(.claude/project/workflow-state.sh get-field phase 2>/dev/null || echo none); if [ \"$phase\" = \"review_passed\" ]; then .claude/project/workflow-state.sh advance complete 2>/dev/null; echo \"WORKFLOW: $story committed and complete! Run .claude/project/workflow-state.sh clear when ready for next story.\"; fi; fi; fi; true; }",
+            "command": "bash .claude/project/hooks/post-bash.sh",
             "timeout": 5
           }
         ]
@@ -126,13 +80,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || echo 'UNCOMMITTED CHANGES: Before committing, run your verification checklist (tests, lint, type checking).'",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": ".claude/project/workflow-state.sh next-action 2>/dev/null || true",
-            "timeout": 5
+            "command": "bash .claude/project/hooks/stop.sh",
+            "timeout": 60
           }
         ]
       }

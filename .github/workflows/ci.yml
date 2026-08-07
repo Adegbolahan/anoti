@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # The gate suite. This is the job that makes the plugin's central claim
+  # checkable: that the commit gate actually blocks.
+  hooks:
+    name: Hook tests (bats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats and jq
+        run: sudo apt-get update && sudo apt-get install -y bats jq
+      - name: Run hook suite
+        run: bats --recursive --print-output-on-failure test/
+
+  lint:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint shell scripts
+        shell: bash
+        run: |
+          # Every tracked shell script, plus the bats helpers and the hook
+          # scripts. -x follows `source-path=SCRIPTDIR` into _common.sh.
+          mapfile -t files < <(git ls-files '*.sh' '*.bash' 'test/fixtures/bin/_record')
+          if [ ${#files[@]} -eq 0 ]; then echo "no shell scripts found"; exit 0; fi
+          printf 'linting %d file(s)\n' "${#files[@]}"
+          shellcheck -x "${files[@]}"
+
+  hook-schema:
+    name: Hook schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: settings.json is valid JSON
+        run: jq empty project-scaffolder/resources/templates/.claude/settings.json
+      - name: Hook commands are single-line
+        run: |
+          # test/helpers/setup.bash reads one command per line. If a hook body
+          # ever gains a newline, the harness would silently mis-parse it.
+          bad=$(jq -r '.hooks[][]?.hooks[]?.command | select(test("\n"))' \
+                  project-scaffolder/resources/templates/.claude/settings.json)
+          if [ -n "$bad" ]; then
+            echo "Multi-line hook command found. The bats harness parses one per line."
+            echo "$bad"
+            exit 1
+          fi
+      - name: Every hook declares a timeout
+        run: |
+          missing=$(jq -r '.hooks[][]?.hooks[]? | select(has("timeout") | not) | .command' \
+                      project-scaffolder/resources/templates/.claude/settings.json)
+          if [ -n "$missing" ]; then
+            echo "Hook without an explicit timeout:"; echo "$missing"; exit 1
+          fi
+
+  versions:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: All version locations agree
+        run: |
+          plugin=$(jq -r '.version' project-scaffolder/.claude-plugin/plugin.json)
+          market=$(jq -r '.plugins[] | select(.name=="project-scaffolder") | .version' \
+                     .claude-plugin/marketplace.json)
+          scaffold=$(jq -r '.scaffoldVersion' \
+                     project-scaffolder/resources/templates/.claude/settings.json)
+          echo "plugin.json      : $plugin"
+          echo "marketplace.json : $market"
+          echo "settings.json    : $scaffold"
+          fail=0
+          [ "$plugin" = "$market" ]   || { echo "FAIL: marketplace.json disagrees with plugin.json"; fail=1; }
+          [ "$plugin" = "$scaffold" ] || { echo "FAIL: settings.json scaffoldVersion disagrees"; fail=1; }
+          grep -q "^## \[$plugin\]" CHANGELOG.md || { echo "FAIL: CHANGELOG.md has no [$plugin] entry"; fail=1; }
+          exit $fail
+      - name: Advertised commands exist
+        run: |
+          # marketplace.json description is the storefront copy. If it names a
+          # command, that command must ship.
+          desc=$(jq -r '.plugins[] | select(.name=="project-scaffolder") | .description' \
+                   .claude-plugin/marketplace.json)
+          fail=0
+          for c in $(printf '%s' "$desc" | grep -oE '/[a-z-]+' | sort -u); do
+            name="${c#/}"
+            if [ ! -f "project-scaffolder/commands/${name}.md" ]; then
+              echo "FAIL: marketplace.json advertises $c but commands/${name}.md does not exist"
+              fail=1
+            fi
+          done
+          exit $fail

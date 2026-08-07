@@ -26,6 +26,7 @@ project/
     └── project/
         ├── features/
         ├── plans/
+        ├── hooks/               # One script per hook event
         ├── workflow-state.sh    # Phase state machine
         ├── high-level-user-stories.md
         └── roadmap.md
@@ -63,13 +64,37 @@ Claude will:
 
 ## Hooks
 
-Scaffolded projects include a full hook suite:
+Scaffolded projects get one hook script per event, under `.claude/project/hooks/`.
+`settings.json` holds one-line invocations.
 
-- **Safety guardrails** - Blocks force-push, --no-verify, git reset --hard, env file edits
-- **Workflow phase tracking** - Auto-advances through discovery → plan → approval → implementation → complete
-- **Auto-formatting** - Prettier/Black/Rustfmt after edits
-- **Type checking** - Runs tsc after TypeScript file edits
-- **Workflow gates** - Warns when editing source code before plan is approved
+| Event                     | Does                                                               |
+| ------------------------- | ------------------------------------------------------------------ |
+| SessionStart              | Branch, change count, current phase and next step                  |
+| UserPromptSubmit          | Suggests `/implement`; detects plan approval                       |
+| PreToolUse (Bash)         | Safety blockers, then the commit gate                              |
+| PreToolUse (Edit\|Write)  | Secrets blocker, then the workflow gate                            |
+| PostToolUse (Edit\|Write) | Formats if configured, records touched types, advances the phase   |
+| PostToolUse (Bash)        | A commit from `review_passed` completes the story                  |
+| Stop                      | Typecheck (only if TS was touched), uncommitted warning, next step |
+
+Every script runs in the same order, and the order matters:
+
+```
+1. global safety blockers   force-push, --no-verify, reset --hard, clean -f,
+                            branch -D, checkout ., secrets files
+                            (these fire in EVERY repo, deliberately)
+2. scope guard              no .claude/project/ ? exit 0, silently
+3. fail closed              inside a scaffolded project, anything the hook
+                            cannot positively confirm BLOCKS and explains why
+```
+
+Reversing 2 and 3 would make "this repo was never scaffolded" an unconfirmable
+state, and the gate would block commits in every unrelated repository on your
+machine.
+
+**Formatting** only runs when the project actually configures a formatter, so a
+project without prettier never triggers an `npx` fetch. **Typechecking** happens
+at `Stop`, only when a TypeScript file was touched that turn, and incrementally.
 
 ## Skills
 

@@ -2,7 +2,7 @@
 name: Scaffolding Guidance
 description: |
   Use this skill when the user asks about project scaffolding, CLAUDE.md templates, project tracking, or how to use the project-scaffolder plugin. Triggers on: "How do I scaffold a project?", "What templates are available?", "CLAUDE.md best practices", "project tracking", "user story management".
-version: 2.1.0
+version: 2.2.0
 ---
 
 # Project Scaffolding Guidance
@@ -11,23 +11,14 @@ version: 2.1.0
 
 ### `/new`
 
-Scaffold a new project with Claude Code documentation, workflow commands, skills, and project tracking.
-
-```
-/new
-```
-
-Prompts for target directory and project name. Creates full project structure.
+Scaffold a new project with Claude Code documentation, workflow commands, skills,
+hooks, and project tracking. Prompts for the target directory.
 
 ### `/update`
 
-Update Claude Code files in an existing scaffolded project to the latest version.
-
-```
-/update
-```
-
-Detects current version, shows what's changed, lets you choose what to update. Preserves CLAUDE.md and project tracking files.
+Update an existing scaffolded project to the latest template version. Detects the
+current version, shows what changed, and preserves `CLAUDE.md` and everything under
+`.claude/project/` that you authored.
 
 ## What Gets Created
 
@@ -35,115 +26,155 @@ Detects current version, shows what's changed, lets you choose what to update. P
 project/
 ├── CLAUDE.md                    # Project hub
 └── .claude/
-    ├── settings.json            # Hooks for formatting, safety, workflow, commit gate
-    ├── commands/                # 2 workflow commands
+    ├── settings.json            # Registers 7 hooks, one per event
+    ├── commands/
     │   ├── implement.md         # Full 5-phase feature workflow
-    │   └── review.md            # Sub-agent review with auto-fix loop
-    ├── skills/                  # 3 interactive skills
+    │   └── review.md            # Sub-agent review with a capped fix loop
+    ├── skills/
     │   ├── development-workflow/
     │   ├── project-standards/
     │   └── exploration-helpers/
-    └── project/                 # Project tracking
+    └── project/
         ├── features/            # User story specs
         ├── plans/               # Implementation plans
-        ├── workflow-state.sh    # Phase state machine (with review cycle)
+        ├── hooks/               # One script per hook event
+        ├── workflow-state.sh    # Phase state machine
         ├── high-level-user-stories.md
         └── roadmap.md
 ```
 
+Runtime files created as you work, all gitignored: `.workflow-state.json` (phase
+machine), `.workflow-log.jsonl` (audit trail), `.turn-touched` (per-turn scratch),
+`.workflow-state.lock/` (write lock).
+
 ## Feature Workflow (Enforced by Hooks)
 
-When you ask to build a feature, the hooks enforce a 5-phase workflow:
-
 ```
-Phase 0: Discovery   → Research, ask questions, create story spec (MANDATORY GATE)
-Phase 1: Plan        → File inventory, contracts, risks → save plan → approval → context handoff (MANDATORY)
+Phase 0: Discovery   → Research, ask questions, write the story spec (MANDATORY GATE)
+Phase 1: Plan        → File inventory, contracts, risks → approval → context handoff
 Phase 2: Implement   → Build in dependency order, tests alongside code
-Phase 3: Review      → Sub-agent review → auto-fix → re-review loop (COMMIT BLOCKED until passed)
+Phase 3: Review      → Sub-agent review → auto-fix → re-review (COMMIT BLOCKED)
 Phase 4: Commit      → Update tracking, conventional commit, report
 ```
 
-**Mandatory gates:**
-
-- No Phase 1 without a written story file
-- No Phase 2 without plan approval AND a context handoff summary
-- No Phase 4 (commit) without review passing — hooks BLOCK `git commit` until `review_passed`
-
-### Workflow Phase Tracking
-
-Phase progression is automated via hooks and tracked by `workflow-state.sh`:
+### Phase tracking
 
 ```
-none → discovery_started → discovery_complete → plan_created → plan_approved → implementation_in_progress → under_review ↔ changes_requested → review_passed → complete
+none → discovery_started → discovery_complete → plan_created → plan_approved
+     → implementation_in_progress → under_review ⇄ changes_requested
+     → review_passed → complete
 ```
 
-Hooks auto-advance phases based on file operations (story written, plan written, code edited, committed). The review cycle (`under_review ↔ changes_requested`) is the only allowed backward transition.
+Two backward edges are allowed: `changes_requested → under_review` (re-review after
+fixes) and `review_passed → under_review` (re-review after a post-pass edit).
+Everything else is forward-only, and an illegal transition exits nonzero rather than
+silently doing nothing.
 
-### Review Cycle
+Hooks advance the phase from observable events: a story file written, a plan file
+written, an approval in chat, a source file edited after approval, a commit landing.
 
-The `/review` command:
+## The Commit Gate
 
-1. Sets state to `under_review`
-2. Launches 4 parallel sub-agent review tracks (backend, frontend, tests, security)
-3. If blockers found → sets `changes_requested`, stores findings, auto-fixes, re-runs review
-4. If clean → sets `review_passed`, unblocks commit
+`git commit` is allowed only when the phase is `review_passed` or `complete`.
+**Every other outcome blocks**, including states the gate cannot evaluate:
 
-Commits are BLOCKED by hooks during `implementation_in_progress`, `under_review`, and `changes_requested`.
+| Situation                        | Result                             |
+| -------------------------------- | ---------------------------------- |
+| `review_passed` / `complete`     | allowed                            |
+| no active story                  | allowed (nothing is being tracked) |
+| any other phase                  | blocked, with the phase named      |
+| `jq` missing or broken           | blocked, with install instructions |
+| state file corrupt or unreadable | blocked, with a recovery command   |
+| unrecognised phase string        | blocked                            |
+
+The match is unanchored, so `cd frontend && git commit` is caught. The known cost:
+the literal text inside an `echo` also matches.
+
+**Stuck?** `.claude/project/workflow-state.sh why-blocked` names the blockers.
+If you genuinely need to commit anyway:
+
+```bash
+.claude/project/workflow-state.sh override "reason this is justified"
+```
+
+That arms a one-shot bypass and records who, when, and why in the audit log.
+
+## Review Cycle
+
+`/review` sets the phase to `under_review`, launches parallel sub-agent review
+tracks, and compiles the findings. Blockers move the phase to `changes_requested`,
+get stored, and are fixed automatically before re-review. A clean pass sets
+`review_passed` and unblocks the commit.
+
+**The loop caps at 3 cycles.** A blocker that survives three fix attempts almost
+always needs a design decision, so the loop stops and reports instead of spinning.
+The commit stays blocked, which is the correct outcome.
+
+## Hook Suite
+
+One script per event, under `.claude/project/hooks/`:
+
+| Event                     | Script             | Does                                                               |
+| ------------------------- | ------------------ | ------------------------------------------------------------------ |
+| SessionStart              | `session-start.sh` | Branch and change count, current phase and next step               |
+| UserPromptSubmit          | `user-prompt.sh`   | Suggests `/implement`; detects plan approval                       |
+| PreToolUse (Bash)         | `pre-bash.sh`      | Safety blockers, then the commit gate                              |
+| PreToolUse (Edit\|Write)  | `pre-edit.sh`      | Secrets blocker, then the workflow gate                            |
+| PostToolUse (Edit\|Write) | `post-edit.sh`     | Formats if configured, records touched types, advances phase       |
+| PostToolUse (Bash)        | `post-bash.sh`     | A commit from `review_passed` completes the story                  |
+| Stop                      | `stop.sh`          | Typecheck (only if TS was touched), uncommitted warning, next step |
+
+Every script runs the safety blockers first, then a scope guard that exits silently
+when the directory is not a scaffolded project, and only then the fail-closed
+workflow logic. That order matters: reversed, the gate would block commits in
+unrelated repositories.
+
+The safety blockers (force-push, `reset --hard`, `clean -f`, `branch -D`,
+`--no-verify`, `checkout .`) and the secrets blocker run **everywhere**, on purpose.
+The workflow gate is scoped to scaffolded projects only.
 
 ## Project Tracking
 
 | File                         | Purpose                       |
 | ---------------------------- | ----------------------------- |
-| `high-level-user-stories.md` | Progress tracker - START HERE |
+| `high-level-user-stories.md` | Progress tracker — START HERE |
 | `roadmap.md`                 | Phased implementation plan    |
 | `features/us-XXX-name.md`    | User story specifications     |
 | `plans/us-XXX-plan.md`       | Implementation plans          |
 | `workflow-state.sh`          | Phase state machine           |
 
-### File Naming
+**File naming:** lowercase in paths (`us-001-feature-name.md`), uppercase in display
+text (`US-001`).
 
-- **Filenames:** lowercase (`us-001-feature-name.md`)
-- **Display:** UPPERCASE (`US-001`)
+## workflow-state.sh
 
-## Workflow Commands
+```
+snapshot            phase, story, findings, cycle, override in one TSV line
+get-phase           current phase
+get-story           active story ID
+get-findings-count  number of stored blockers
+get-review-cycle    review cycle counter
 
-| Command      | Purpose                                                                          |
-| ------------ | -------------------------------------------------------------------------------- |
-| `/implement` | Full feature workflow: discovery → plan → implement → review cycle → commit      |
-| `/review`    | 4-track sub-agent review with automated fix loop until all blockers are resolved |
+start <ID> [title]  begin tracking a story
+advance <phase>     move forward (nonzero exit on an illegal transition)
+clear               reset for the next story
 
-## Hook Suite
-
-The scaffolded `settings.json` includes:
-
-| Hook Event               | Purpose                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------- |
-| SessionStart             | Shows branch info and current workflow phase                                        |
-| UserPromptSubmit         | Suggests /implement for feature requests; detects plan approval                     |
-| PreToolUse (Bash)        | Blocks force-push, --no-verify, git reset --hard; **commit gate** enforces review   |
-| PreToolUse (Edit/Write)  | Blocks editing secrets; warns on source edits before plan approval or during review |
-| PostToolUse (Edit/Write) | Auto-formats code; runs tsc on TS files; advances workflow phases; tracks fixes     |
-| PostToolUse (Bash)       | Detects git commit → marks story complete (only from `review_passed`)               |
-| Stop                     | Warns about uncommitted changes; shows next workflow action                         |
-
-## Skills
-
-| Skill                  | Location          | Triggers                       |
-| ---------------------- | ----------------- | ------------------------------ |
-| `development-workflow` | `.claude/skills/` | Feature process, git, planning |
-| `project-standards`    | `.claude/skills/` | User stories, documentation    |
-| `exploration-helpers`  | `.claude/skills/` | Database, codebase, types      |
+why-blocked         why a commit is being blocked right now
+next-action         phase bar plus the next step
+override <reason>   arm a one-shot, recorded commit bypass
+```
 
 ## Existing Directories
 
-When scaffolding into an existing directory:
-
-- **Merge** - Skip existing files, add only missing
-- **Overwrite** - Replace all Claude Code files
-- **Abort** - Cancel scaffolding
+Scaffolding into a populated directory offers **merge** (add only what is missing),
+**overwrite** (replace all Claude Code files), or **abort**.
 
 ## Customization
 
-After scaffolding, ask the `template-customizer` agent:
+After scaffolding, just ask:
 
-> "Help me customize these templates for [your-tech-stack]"
+> "Help me customize these templates for [your tech stack]"
+
+Claude will adapt `CLAUDE.md`, the skills, and the test categories in
+`implement.md` to your framework's conventions. Keep the workflow structure and the
+hook suite intact — the gate depends on both.

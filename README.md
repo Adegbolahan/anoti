@@ -51,22 +51,45 @@ No arguments needed - Claude asks what it needs.
 your-project/
 ├── CLAUDE.md                    # Project hub
 └── .claude/
-    ├── settings.json            # Hooks + version tracking
-    ├── commands/                # 6 workflow commands
+    ├── settings.json            # Registers 7 hooks + version tracking
+    ├── commands/                # implement, review
     ├── skills/                  # 3 interactive skills
     └── project/                 # Feature tracking
         ├── features/
         ├── plans/
+        ├── hooks/               # One script per hook event
+        ├── workflow-state.sh    # Phase state machine
         ├── high-level-user-stories.md
         └── roadmap.md
 ```
 
 ### Features
 
-- **No arguments** - Claude asks what it needs
-- **Smart updates** - Preserves your customizations
-- **Version tracking** - Knows when updates available
-- **Non-blocking hooks** - Only trigger on project files
+- **No arguments** — Claude asks what it needs
+- **A commit gate that actually blocks** — `git commit` is refused until the work
+  has been reviewed, including when the gate cannot evaluate its own state
+- **Scoped to your project** — hooks stand down silently in any repository that
+  was not scaffolded
+- **Smart updates** — preserves your customizations
+- **Version tracking** — knows when an update is available
+
+### The commit gate
+
+`git commit` is allowed only once `/review` has passed. It also blocks on states
+it cannot confirm — missing `jq`, a corrupt state file, an unrecognised phase —
+because a gate that fails open is not a gate.
+
+Blocked and need to know why:
+
+```bash
+.claude/project/workflow-state.sh why-blocked
+```
+
+Blocked and need to commit anyway (recorded in the audit log):
+
+```bash
+.claude/project/workflow-state.sh override "reason this is justified"
+```
 
 ### Customization
 
@@ -92,6 +115,18 @@ After creating a project:
 ```bash
 claude --plugin-dir /path/to/project-scaffolder
 ```
+
+### Tests
+
+The hook suite is the contract. Run it before and after any change to the hooks
+or the state machine.
+
+```bash
+./test/run.sh
+```
+
+Requires `bats` and `jq` (`brew install bats-core jq`). CI runs the same suite
+plus shellcheck, hook-schema validation, and a version-consistency check.
 
 ---
 

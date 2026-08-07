@@ -16,7 +16,7 @@ This signals to hooks that review is active. Source file edits are warned agains
 
 **Launch ALL 4 review tracks in parallel using the Task tool.** Each agent starts fresh, re-reads the spec and code independently, free from implementation bias.
 
-Read the active story ID from `.claude/project/workflow-state.sh get-field activeStory` first, then pass it to each agent.
+Read the active story ID from `.claude/project/workflow-state.sh get-story` first, then pass it to each agent.
 
 ### Track 1: Backend API Review (backend-api-engineer agent)
 
@@ -97,6 +97,27 @@ Then output the report and **immediately start fixing blockers**:
 1. Fix each blocker in priority order
 2. After ALL blockers are fixed, re-run this review (`/review`) — this creates the continuous loop
 3. Do NOT ask the user whether to fix — just fix and re-review
+
+### Cycle cap (MANDATORY — the loop must be able to stop)
+
+Before re-running, read the cycle counter:
+
+```bash
+.claude/project/workflow-state.sh get-review-cycle
+```
+
+**If it is 3 or higher, STOP the loop.** Do not re-run `/review` again. Report to the user:
+
+- which blockers survived every cycle
+- what you tried on each attempt
+- your assessment of why it is not converging
+
+Then wait for direction. A blocker that survives three fix attempts almost always
+needs a design decision, not a fourth attempt — and an uncapped loop spawns four
+sub-agents per cycle with nothing bounding the spend.
+
+The commit stays blocked. That is the correct outcome: unresolved blockers should
+hold the gate closed, not spin forever behind it.
 
 ### If no blockers (READY):
 

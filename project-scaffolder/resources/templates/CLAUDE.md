@@ -178,20 +178,46 @@ Phase progression is automated via hooks in `.claude/settings.json` and tracked 
 none → discovery_started → discovery_complete → plan_created → plan_approved → implementation_in_progress → under_review ↔ changes_requested → review_passed → complete
 ```
 
-- **Story file written** → auto-advances to `discovery_complete`
-- **Plan file written** → auto-advances to `plan_created` (warns if no story file exists)
-- **User says "approved"** → auto-advances to `plan_approved`
-- **Source code edited before approval** → warning displayed
-- **`/review` run** → advances to `under_review`, launches 4 parallel sub-agent reviews
-- **Review finds blockers** → advances to `changes_requested`, stores findings, auto-fixes
-- **Source code edited during `changes_requested`** → shows fix reminder (does NOT reset to `implementation_in_progress`)
+- **Story file written** → advances to `discovery_complete`
+- **Plan file written** → advances to `plan_created` (warns if no story file exists)
+- **User says "approved"** → advances to `plan_approved`
+- **Source file edited after approval** → advances to `implementation_in_progress`
+- **Source file edited before approval** → warning displayed
+- **`/review` run** → advances to `under_review`, launches the sub-agent review tracks
+- **Review finds blockers** → advances to `changes_requested`, stores them, auto-fixes
 - **Review passes** → advances to `review_passed`, clears findings
-- **Git commit** → auto-advances to `complete` (only from `review_passed`)
-- **Commit blocked** → hooks BLOCK `git commit` during `implementation_in_progress`, `under_review`, or `changes_requested`
+- **Git commit** → advances to `complete` (only from `review_passed`)
+
+Two backward edges are allowed: `changes_requested → under_review` and
+`review_passed → under_review`, both for re-review. Everything else is
+forward-only, and an illegal transition exits nonzero instead of silently
+doing nothing.
+
+### The commit gate
+
+`git commit` is allowed **only** at `review_passed` or `complete`, or when no
+story is being tracked. Every other outcome blocks — including states the gate
+cannot evaluate:
+
+| Situation                        | Result                             |
+| -------------------------------- | ---------------------------------- |
+| `review_passed` / `complete`     | allowed                            |
+| no active story                  | allowed                            |
+| any other phase                  | blocked, with the phase named      |
+| `jq` missing or broken           | blocked, with install instructions |
+| state file corrupt or unreadable | blocked, with a recovery command   |
+| unrecognised phase string        | blocked                            |
+
+The match is unanchored, so `cd frontend && git commit` is caught too.
+
+Stuck? `.claude/project/workflow-state.sh why-blocked` names the blockers. If
+you genuinely need to commit anyway, arm a recorded one-shot bypass:
+
+```bash
+.claude/project/workflow-state.sh override "reason this is justified"
+```
 
 Run `.claude/project/workflow-state.sh clear` between stories to reset.
-
-Phase tracking is automated via hooks (see `.claude/settings.json`). Commits are BLOCKED until review passes.
 
 ---
 
@@ -278,6 +304,7 @@ git commit -m "feat: add [feature name]
 │   └── project/                 # Project tracking
 │       ├── features/            # User story specs (us-XXX-name.md)
 │       ├── plans/               # Implementation plans (us-XXX-plan.md)
+│       ├── hooks/               # One script per hook event
 │       ├── workflow-state.sh    # Phase state machine
 │       ├── high-level-user-stories.md  # Progress tracker
 │       └── roadmap.md           # Project roadmap

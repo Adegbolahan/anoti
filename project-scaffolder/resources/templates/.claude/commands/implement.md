@@ -135,7 +135,7 @@ Run the `/review` command. This:
 After the review cycle completes, confirm the state:
 
 ```bash
-.claude/project/workflow-state.sh get-field phase  # Should be: review_passed
+.claude/project/workflow-state.sh get-phase  # Should be: review_passed
 ```
 
 ## Phase 4: Commit & Update

@@ -135,7 +135,20 @@ is_known_phase() { [ "$(phase_rank "$1")" -ge 0 ]; }
 
 # Portable file helpers. BSD stat and GNU stat disagree on flags, and macOS
 # ships shasum while most Linux images ship sha256sum.
-mtime_of() { stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0; }
+#
+# mtime_of validates that the OUTPUT is a number rather than trusting the exit
+# code, because the exit code lies here. On Linux, `stat -f` is --file-system:
+# it SUCCEEDS and prints a multi-line filesystem report, so an
+# `stat -f || stat -c` chain never reaches the GNU form and hands the caller
+# text like `  File: "/path"`. Arithmetic on that then died with
+# "File: unbound variable" under set -u, breaking both the stale-lock reaper and
+# the evidence freshness check.
+mtime_of() {
+  local m
+  m=$(stat -c %Y "$1" 2>/dev/null); case "$m" in ''|*[!0-9]*) ;; *) printf '%s' "$m"; return 0 ;; esac
+  m=$(stat -f %m "$1" 2>/dev/null); case "$m" in ''|*[!0-9]*) ;; *) printf '%s' "$m"; return 0 ;; esac
+  printf '0'
+}
 hash_of() {
   if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1
   elif command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" 2>/dev/null | cut -d' ' -f1

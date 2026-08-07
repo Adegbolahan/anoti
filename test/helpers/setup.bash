@@ -204,6 +204,20 @@ run_hook() {
 # Assertions that say what actually went wrong
 # ---------------------------------------------------------------------------
 
+# A shell-level error means the script broke, whatever the exit status says.
+# "unbound variable" is how garbage reaching arithmetic surfaces under set -u,
+# which is exactly what a stat portability bug looks like.
+#
+# shellcheck disable=SC2154
+# $output is assigned by bats' `run`, not here.
+assert_no_shell_error() {
+  if printf '%s' "$output" | grep -qE 'unbound variable|syntax error|command not found|integer expression expected'; then
+    echo "shell error in output:"
+    echo "$output"
+    return 1
+  fi
+}
+
 assert_blocked() {
   if [ "$hook_status" -ne 2 ]; then
     echo "EXPECTED BLOCK (exit 2), GOT ALLOW (exit $hook_status)"

@@ -44,7 +44,12 @@ printf '%s\n' "$STORY" >> "$MARKER" 2>/dev/null || true
 # GUARD 2: what already exists, so the model can rule out duplicates rather
 # than proposing a skill that overlaps one of these.
 PROJECT_ROOT="$(cd "$SKILLIFY_STATE_DIR/../.." && pwd)"
-PLUGIN_SKILLS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../skills" 2>/dev/null && pwd || true)"
+# Not `cd ... && pwd || true`: A && B || C is not if-then-else, and C runs when
+# B fails too (SC2015).
+PLUGIN_SKILLS=""
+if _skills_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/../skills" 2>/dev/null && pwd); then
+  PLUGIN_SKILLS="$_skills_dir"
+fi
 existing=""
 for d in "$PROJECT_ROOT/.claude/skills"/*/ "$PLUGIN_SKILLS"/*/; do
   [ -d "$d" ] || continue

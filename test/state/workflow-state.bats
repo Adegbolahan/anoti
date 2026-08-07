@@ -147,6 +147,7 @@ phase_now() { "$JQ_REAL" -r '.phase' "$PROJECT_DIR/.claude/project/.workflow-sta
   run wf advance review_passed --evidence "$ev"
   [ "$status" -ne 0 ]
   printf '%s' "$output" | grep -qi 'predates'
+  assert_no_shell_error
   [ "$(phase_now)" = "implementation_in_progress" ]
 }
 
@@ -293,6 +294,26 @@ phase_now() { "$JQ_REAL" -r '.phase' "$PROJECT_DIR/.claude/project/.workflow-sta
   WORKFLOW_LOCK_TIMEOUT=1 run bash -c "cd '$PROJECT_DIR' && bash '$WF' advance plan_approved"
   [ "$status" -eq 0 ]
   [ "$(phase_now)" = "plan_approved" ]
+  assert_no_shell_error
+}
+
+@test "file timestamps are read as numbers on this platform" {
+  # BSD and GNU stat disagree, and the disagreement is not a clean failure:
+  # on Linux `stat -f` means --file-system, so it SUCCEEDS and prints a
+  # multi-line report. An exit-code-based fallback chain therefore never
+  # reaches the GNU form and feeds text into arithmetic.
+  #
+  # Exercised through the two code paths that consume a timestamp, so this
+  # fails on whichever platform is wrong rather than only on Linux.
+  seed_state implementation_in_progress
+  mkdir -p "$PROJECT_DIR/.claude/project/.workflow-state.lock"
+  touch -t 200001010000 "$PROJECT_DIR/.claude/project/.workflow-state.lock"
+  WORKFLOW_LOCK_TIMEOUT=1 run bash -c "cd '$PROJECT_DIR' && bash '$WF' advance under_review"
+  assert_no_shell_error
+
+  ev="$(write_evidence ts)"
+  run wf advance review_passed --evidence "$ev"
+  assert_no_shell_error
 }
 
 # --------------------------------------------------------------------------

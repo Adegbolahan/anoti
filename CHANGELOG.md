@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-08-07
+
+First CI run on a real Linux runner, and it found what a Mac never could.
+
+### Fixed
+
+- **`stat` portability broke the stale-lock reaper and the evidence freshness
+  check.** `mtime_of` was `stat -f %m || stat -c %Y`, assuming the BSD form
+  fails on Linux. It does not: there `-f` means `--file-system`, so it
+  *succeeds* and prints a multi-line filesystem report. The GNU fallback was
+  never reached, and arithmetic got fed `  File: "/path"`, dying with
+  `File: unbound variable` under `set -u`.
+
+  It now validates that the output is a number rather than trusting the exit
+  code — the same mistake as the shim verification that passed on an empty
+  file, made twice.
+
+  The evidence freshness check is the security-relevant half: on Linux it could
+  not compare a review report's age against the last source edit at all.
+
+- `A && B || C` in `skillify-check.sh` is not if-then-else (SC2015).
+
+### Added
+
+- `assert_no_shell_error`, applied to the timestamp paths. The existing tests
+  caught this on Linux only; this catches it on whichever platform is wrong.
+
+---
+
 ## [3.1.0] - 2026-08-07
 
 ### Added

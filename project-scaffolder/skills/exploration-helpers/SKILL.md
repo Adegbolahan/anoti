@@ -1,8 +1,9 @@
 ---
-name: Exploration Helpers
+name: exploration-helpers
 description: |
   Use this skill when the user needs to explore the codebase, understand database schema, navigate API endpoints, or validate TypeScript types. Triggers on: "Explore the database", "Understand codebase structure", "Validate TypeScript types", "Find API endpoints", "Database schema", "How is the code organized?", "What tables exist?".
-version: 1.0.0
+metadata:
+  version: "1.0.0"
 ---
 
 # Exploration Helpers

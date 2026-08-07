@@ -1,6 +1,6 @@
 {
   "name": "project-scaffolder",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "An enforced 5-phase development workflow with a commit gate that blocks until review passes. Commands, skills and hooks ship with the plugin; only CLAUDE.md and project tracking are scaffolded.",
   "author": {
     "name": "Getting Started with Claude",

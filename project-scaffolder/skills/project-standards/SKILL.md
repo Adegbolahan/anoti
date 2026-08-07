@@ -1,8 +1,9 @@
 ---
-name: Project Standards
+name: project-standards
 description: |
   Use this skill when the user asks about user story format, documentation standards, acceptance criteria, or code review practices. Triggers on: "User story format?", "How to write documentation?", "Acceptance criteria?", "Documentation standards", "Code review checklist", "How to write user stories".
-version: 1.0.0
+metadata:
+  version: "1.0.0"
 ---
 
 # Project Standards

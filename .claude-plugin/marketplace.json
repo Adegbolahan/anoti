@@ -11,7 +11,7 @@
     {
       "name": "project-scaffolder",
       "description": "An enforced 5-phase workflow with a commit gate that blocks git commit until review passes. Workflow components ship with the plugin, so upgrading the plugin upgrades every project. Provides /new and /update.",
-      "version": "3.0.0",
+      "version": "3.1.0",
       "author": {
         "name": "Getting Started with Claude"
       },

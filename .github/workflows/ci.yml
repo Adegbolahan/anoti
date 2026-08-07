@@ -77,6 +77,30 @@ jobs:
           if [ -n "$missing" ]; then
             echo "Hook without an explicit timeout:"; echo "$missing"; exit 1
           fi
+      - name: Skill frontmatter is valid
+        run: |
+          # The loader requires `name` to be lowercase-hyphen AND to match the
+          # folder. `version` is not a supported attribute; it belongs under
+          # `metadata`. All five skills violated both before v3.0.1.
+          fail=0
+          for f in project-scaffolder/skills/*/SKILL.md; do
+            folder=$(basename "$(dirname "$f")")
+            name=$(awk -F': *' '/^name:/ {print $2; exit}' "$f")
+            if [ "$name" != "$folder" ]; then
+              echo "FAIL: $f declares name '$name' but lives in '$folder'"; fail=1
+            fi
+            if ! printf '%s' "$name" | grep -qE '^[a-z0-9-]+$'; then
+              echo "FAIL: $f name '$name' is not lowercase-hyphen"; fail=1
+            fi
+            # Frontmatter only. A skill that DOCUMENTS frontmatter has
+            # examples in its body, and those are not violations.
+            fm=$(awk 'NR==1 && /^---$/ {inside=1; next} inside && /^---$/ {exit} inside' "$f")
+            if printf '%s' "$fm" | grep -qE '^version:'; then
+              echo "FAIL: $f has a top-level 'version:' — put it under 'metadata:'"; fail=1
+            fi
+            printf '%s' "$fm" | grep -qE '^description:' || { echo "FAIL: $f has no description"; fail=1; }
+          done
+          exit $fail
       - name: Every registered hook script exists
         run: |
           fail=0

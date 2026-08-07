@@ -33,4 +33,13 @@ if ! ( git -C "$PROJECT_ROOT" diff --quiet 2>/dev/null && \
 fi
 
 WF next-action 2>/dev/null || true
+
+# Skill capture, only when a story just completed. One hook per event, so this
+# is a call rather than a second Stop registration -- hooks in the same event
+# run in parallel and cannot see each other.
+#
+# Never allowed to fail the turn: a capture suggestion is a nice-to-have and
+# must not be able to wedge the session.
+bash "$HOOKS_DIR/skillify-check.sh" "$PROJECT_ROOT/.claude/project" 2>/dev/null || true
+
 exit 0

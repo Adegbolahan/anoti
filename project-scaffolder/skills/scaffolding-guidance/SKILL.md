@@ -1,8 +1,9 @@
 ---
-name: Scaffolding Guidance
+name: scaffolding-guidance
 description: |
   Use this skill when the user asks about project scaffolding, CLAUDE.md templates, project tracking, or how to use the project-scaffolder plugin. Triggers on: "How do I scaffold a project?", "What templates are available?", "CLAUDE.md best practices", "project tracking", "user story management".
-version: 3.0.0
+metadata:
+  version: "3.1.0"
 ---
 
 # Project Scaffolding Guidance
@@ -134,6 +135,21 @@ point `--evidence` at that report.
 **The loop caps at 3 cycles.** A blocker that survives three fix attempts almost
 always needs a design decision, so the loop stops and reports instead of spinning.
 The commit stays blocked, which is the correct outcome.
+
+## Skill Capture
+
+When a story reaches `complete`, the Stop hook considers whether the work is
+worth keeping as a project skill and offers `/skillify` if so.
+
+It is deliberately quiet. A suggestion fires at most once per story, never when
+an existing skill already covers the ground, and only when the work clears a
+written bar: the pattern recurred across two or more stories, OR it encodes a
+project convention discovered while building, OR the sequence is non-obvious
+enough that redoing it would cost real time.
+
+Declining is the normal outcome. A project with thirty thin skills is worse than
+one with three good ones — nobody reads thirty, and every loaded skill costs
+context.
 
 ## Hook Suite
 

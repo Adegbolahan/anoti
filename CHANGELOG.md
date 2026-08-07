@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-08-07
+
+### Added
+
+- **Skill capture at story completion.** When a story reaches `complete`, the
+  Stop hook considers whether the work is worth keeping as a project skill, and
+  offers `/skillify` if so.
+
+  The deterministic part is bash — did a story just complete, has this one
+  already been offered, what skills already exist. Only the judgment goes to the
+  model. A prompt-type hook would evaluate on every Stop, including the
+  thousands nowhere near a completed story.
+
+  Three guards, because the failure mode is volume rather than absence:
+  a written worth-it bar (recurred across two stories, OR encodes a convention
+  discovered while building, OR is non-obvious enough that redoing it costs real
+  time); a duplicate scan across both the project's skills and the plugin's; and
+  a per-story marker so a suggestion never fires twice. It never blocks, and
+  exits 0 on every failure path — a nice-to-have must not be able to wedge a
+  session.
+
+- `skillify` skill, which leads with when NOT to capture something.
+
+### Fixed
+
+- **Every skill in this plugin had invalid frontmatter.** `name` was Title Case
+  where the loader requires lowercase-hyphen matching the folder name, and
+  `version` is not a supported top-level attribute. All five are corrected and
+  `version` moved under `metadata`.
+
+  The `skillify` skill was itself teaching the wrong format in its template
+  example, which is how the CI check found it.
+
+- CI now validates skill frontmatter: name matches folder, name is
+  lowercase-hyphen, no top-level `version`, description present. Scoped to the
+  frontmatter block, since a skill that documents frontmatter has examples in
+  its body.
+
+---
+
 ## [3.0.0] - 2026-08-07
 
 ### Breaking Changes

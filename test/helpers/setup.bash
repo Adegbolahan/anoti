@@ -50,12 +50,13 @@ JQ_REAL="$(command -v jq)"
 _install_plugin() {
   PLUGIN_DIR="${BATS_TEST_TMPDIR:-$(mktemp -d)}/plugin"
   mkdir -p "$PLUGIN_DIR"
-  cp -R "$PLUGIN_SRC/hooks"     "$PLUGIN_DIR/hooks"
-  cp -R "$PLUGIN_SRC/bin"       "$PLUGIN_DIR/bin"
-  # resources/ carries the shim template that migrate-pre-v3.sh installs.
-  # Omitting it made the migration write an EMPTY shim that still passed its
-  # own verification, because `bash empty-file` exits 0.
-  cp -R "$PLUGIN_SRC/resources" "$PLUGIN_DIR/resources"
+  # Copy the WHOLE plugin, not a subset. Twice now a fixture that mirrored only
+  # part of it has hidden a real bug: omitting resources/ made the migration
+  # write an empty shim that passed its own verification, and omitting skills/
+  # made the duplicate scan find nothing to warn about.
+  for d in hooks bin skills commands resources; do
+    [ -d "$PLUGIN_SRC/$d" ] && cp -R "$PLUGIN_SRC/$d" "$PLUGIN_DIR/$d"
+  done
   chmod +x "$PLUGIN_DIR"/hooks/*.sh "$PLUGIN_DIR"/bin/*.sh
 }
 

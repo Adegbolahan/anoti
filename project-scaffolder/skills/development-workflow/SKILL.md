@@ -1,8 +1,9 @@
 ---
-name: Development Workflow
+name: development-workflow
 description: |
   Use this skill when the user asks to implement/build/create a feature, or asks about development process, git workflow, or planning. Triggers on: "implement feature", "build feature", "add feature", "create feature", "how do I implement", "git workflow", "branching strategy", "commit conventions".
-version: 2.2.0
+metadata:
+  version: "2.2.0"
 ---
 
 # Development Workflow

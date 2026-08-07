@@ -94,9 +94,28 @@ seed_state() {
   local phase="$1" story="${2:-US-001}" findings="${3:-[]}"
   "$JQ_REAL" -n \
     --arg p "$phase" --arg s "$story" --argjson f "$findings" \
-    '{schemaVersion:1, activeStory:$s, phase:$p, storyTitle:"Test Story",
-      reviewCycle:0, reviewFindings:$f, override:null, timestamps:{}}' \
+    '{schemaVersion:2, activeStory:$s, phase:$p, storyTitle:"Test Story",
+      reviewCycle:0, reviewFindings:$f, override:null,
+      lastSourceEditEpoch:0, reviewEvidence:null, timestamps:{}}' \
     > "$PROJECT_DIR/.claude/project/.workflow-state.json"
+}
+
+# The schema version the script under test considers current. Read it from the
+# source rather than hardcoding, so a bump does not silently break tests that
+# only care that migration happened.
+current_schema_version() {
+  grep -oE '^SCHEMA_VERSION=[0-9]+' \
+    "$TEMPLATES_DIR/.claude/project/workflow-state.sh" | cut -d= -f2
+}
+
+# Write a review report and echo its path. Evidence must be newer than the last
+# source edit; a freshly written file satisfies that.
+write_evidence() {
+  local dir="$PROJECT_DIR/.claude/project/reviews"
+  mkdir -p "$dir"
+  local f="$dir/${1:-report}.md"
+  printf 'REVIEW: US-001 — clean\nACs: 3/3 met\nBlockers: none\n' > "$f"
+  printf '%s' "$f"
 }
 
 # ---------------------------------------------------------------------------

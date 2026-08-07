@@ -93,9 +93,9 @@ If the project's current version is 2.0.x:
 
 1. **Update workflow-state.sh:** Replace with new version that adds review cycle states (`under_review`, `changes_requested`, `review_passed`), backward transition support, `set-findings`, `get-findings`, `review-cycle` commands, and `reviewCycle`/`reviewFindings` in state JSON
 2. **Update settings.json hooks:** Add commit gate (blocks `git commit` unless `review_passed`), add `under_review` warning to source edit hook, add fix tracking during `changes_requested`, gate completion to only advance from `review_passed`
-3. **Update review.md:** Replace with sub-agent review (4 parallel tracks: backend, frontend, tests, security) with automated fix loop
+3. **Update review.md:** Replace with the review cycle and automated fix loop
 4. **Update implement.md:** Phase 3 changes from "Validate" to "Review Cycle" with mandatory test categories and `/review` integration
-5. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference the old Phase 3 (Validate). Consider updating to document the review cycle: Phase 3 now uses sub-agent review with automated fix loops, and commits are BLOCKED by hooks until review passes."
+5. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference the old Phase 3 (Validate). Consider updating to document the review cycle: Phase 3 now runs a review with an automated fix loop, and commits are BLOCKED by hooks until review passes."
 
 ### Step 5d: v2.2.0 Migration (if upgrading from 2.0.x or 2.1.x)
 

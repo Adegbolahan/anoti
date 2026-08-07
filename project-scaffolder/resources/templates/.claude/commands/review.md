@@ -1,150 +1,168 @@
 ---
-description: Review implementation before commit
+description: Review the implementation before commit, and satisfy the commit gate
 ---
 
-You are an autonomous code review agent. Review the current implementation thoroughly. Never rubber-stamp.
+You are reviewing the current implementation before it can be committed. Never
+rubber-stamp.
 
-## Step 0: Set Workflow State
+## The contract
+
+The commit gate does not care who reviews. It cares about one thing:
+
+> the phase is `review_passed`, set with `--evidence` pointing at a review report
+> that exists and is newer than the last source edit.
+
+That is the whole interface. **Any** process can satisfy it: this command, a
+deeper review tool you already run, a human reading the diff. The gate records
+the evidence path and a content hash so a pass is traceable to what produced it.
+
+**If you have a stronger reviewer available, use it instead of this file.** Run
+it, have it write a report, and point `--evidence` at that report. This command
+is the reference implementation, not the only one — it exists so the gate is
+satisfiable on a machine with nothing else installed.
+
+**On the limits.** Anything that can write a file can satisfy this check,
+including you. It is a guardrail against drift and accident, not an adversarial
+control. Fabricating a report to get past the gate is an integrity failure, not
+a clever workaround. If you cannot honestly pass the review, say so and stop.
+
+---
+
+## Step 0: Enter review
 
 ```bash
 .claude/project/workflow-state.sh advance under_review
 ```
 
-This signals to hooks that review is active. Source file edits are warned against during review.
+Source edits are warned against while this is set.
 
-## Step 1: Fresh-Context Review via Sub-Agents (MANDATORY)
+## Step 1: Scope the review
 
-**Launch ALL 4 review tracks in parallel using the Task tool.** Each agent starts fresh, re-reads the spec and code independently, free from implementation bias.
-
-Read the active story ID from `.claude/project/workflow-state.sh get-story` first, then pass it to each agent.
-
-### Track 1: Backend API Review (backend-api-engineer agent)
-
-Prompt the agent to:
-
-- Read the feature spec from `.claude/project/features/us-XXX-*.md` and plan from `.claude/project/plans/us-XXX-plan.md`
-- Read every changed backend file (routes, services, schemas, types)
-- Map each acceptance criterion to specific `file:line` — flag any AC not met as a BLOCKER
-- Verify error handling, input validation, audit logging on all mutations
-- Check for logic bugs: pagination with filters, state transitions, side effects of operations
-- Verify edge cases from the plan are handled
-
-### Track 2: Frontend Review (frontend-spa-engineer agent)
-
-Prompt the agent to:
-
-- Read the feature spec and plan
-- Read every changed frontend file (components, hooks, API client, types)
-- Verify UI acceptance criteria: filters, badges, buttons, dialogs, toasts
-- Check accessibility: aria attributes, keyboard navigation, screen reader support
-- Check for confirmation dialogs on destructive actions (especially bulk)
-
-### Track 3: Test Coverage (qa-automation-engineer agent)
-
-Prompt the agent to:
-
-- Read test files for the feature
-- Check coverage against these mandatory categories:
-  - **Authorization**: Unauthorized access is rejected (MANDATORY)
-  - **Input validation**: Invalid inputs return proper errors (MANDATORY)
-  - **State transitions**: After action X, verify downstream state Y (MANDATORY)
-  - **Error handling**: Expected failure modes return correct responses (MANDATORY)
-  - **Edge cases**: Empty inputs, boundary values, concurrent access (if applicable)
-- Flag any mandatory category with zero assertions as a BLOCKER
-- Also check any project-specific test categories defined in CLAUDE.md or testing skills
-
-### Track 4: Security Review (security-privacy-engineer agent)
-
-Prompt the agent to:
-
-- Read all new routes, services, and processors
-- Verify authorization checks on all protected routes
-- Verify no sensitive data exposed in error messages or logs
-- Check input validation and sanitization on all endpoints
-- Verify no hardcoded secrets, API keys, or credentials
-- Check for common vulnerabilities (injection, XSS, CSRF where applicable)
-
-## Step 2: Compile Results
-
-After all 4 tracks complete:
-
-1. Merge findings from all tracks into a single prioritized list
-2. De-duplicate overlapping findings
-3. Classify each as BLOCKER or WARNING
-
-## Step 3: Build Gate
-
-Run in order — these must pass regardless of review findings:
-
-1. Type checking (zero errors)
-2. Linting (zero warnings)
-3. Tests (all pass)
-
-Add any build failures to the blockers list.
-
-## Step 4: Set Workflow State Based on Results
-
-### If blockers exist (NOT READY):
+Read the active story and what changed:
 
 ```bash
-# Store findings for the fix loop
-.claude/project/workflow-state.sh set-findings '["Blocker 1 description", "Blocker 2 description"]'
+STORY=$(.claude/project/workflow-state.sh get-story)
+CYCLE=$(.claude/project/workflow-state.sh get-review-cycle)
+git diff --stat
+```
+
+Read the feature spec at `.claude/project/features/us-*.md` and the plan at
+`.claude/project/plans/us-*-plan.md`. **Re-read them properly.** The most common
+review failure is reviewing what you remember building rather than what was
+asked for.
+
+Decide which dimensions below actually apply to this diff. A CLI tool has no
+frontend; a docs change has no security surface. Reviewing a dimension that does
+not apply produces noise, and noise trains people to skip reviews.
+
+## Step 2: Review
+
+For every dimension that applies, map each finding to a specific `file:line`.
+A finding without a location is not a finding.
+
+**Acceptance criteria.** Map every AC in the spec to the code that implements
+it. Any AC you cannot point at is a BLOCKER.
+
+**Correctness.** Trace the shadow paths, not just the happy one: nil input,
+empty input, upstream failure. Check state transitions leave the entity in the
+state you expect, not a stale one.
+
+**Error handling.** Every failure mode either retries, degrades with a message
+the user can act on, or re-raises with added context. Catch-alls that swallow
+and continue are a defect. Ask what the user actually sees.
+
+**Tests.** Check these categories, and treat any applicable one with zero
+assertions as a BLOCKER:
+
+- authorization: unauthorized access is rejected
+- input validation: malformed input returns a proper error
+- state transitions: after action X, the entity is in state Y
+- error handling: expected failures return the right status and message
+- edge cases: empty, boundary, concurrent
+
+**Security**, where the diff touches a trust boundary: authorization on every
+protected path, no secrets in code or logs or error messages, input validated
+and sanitized, no injection vector introduced.
+
+**Frontend**, where the diff touches UI: loading, empty, error and success
+states all exist; destructive actions confirm; keyboard and screen-reader
+access work.
+
+## Step 3: Build gate
+
+These must pass regardless of what the review found:
+
+1. Type checking — zero errors
+2. Lint — zero warnings
+3. Tests — all pass
+
+Add any failure to the blocker list.
+
+## Step 4: Record the outcome
+
+### If blockers exist
+
+```bash
+.claude/project/workflow-state.sh set-findings '["blocker one","blocker two"]'
 .claude/project/workflow-state.sh advance changes_requested
 ```
 
-Then output the report and **immediately start fixing blockers**:
+Then fix every blocker in priority order and run `/review` again. Do not ask
+whether to fix — fix, then re-review.
 
-1. Fix each blocker in priority order
-2. After ALL blockers are fixed, re-run this review (`/review`) — this creates the continuous loop
-3. Do NOT ask the user whether to fix — just fix and re-review
-
-### Cycle cap (MANDATORY — the loop must be able to stop)
-
-Before re-running, read the cycle counter:
+**Cycle cap (MANDATORY).** Before re-running:
 
 ```bash
 .claude/project/workflow-state.sh get-review-cycle
 ```
 
-**If it is 3 or higher, STOP the loop.** Do not re-run `/review` again. Report to the user:
+**If it is 3 or higher, STOP.** Do not re-review. Report which blockers survived
+every cycle, what you tried each time, and why you think it is not converging.
+Then wait for direction. A blocker that survives three attempts needs a design
+decision, not a fourth attempt. The commit stays blocked, which is correct.
 
-- which blockers survived every cycle
-- what you tried on each attempt
-- your assessment of why it is not converging
+### If there are no blockers
 
-Then wait for direction. A blocker that survives three fix attempts almost always
-needs a design decision, not a fourth attempt — and an uncapped loop spawns four
-sub-agents per cycle with nothing bounding the spend.
+Write the report to disk first — the gate requires it as evidence.
 
-The commit stays blocked. That is the correct outcome: unresolved blockers should
-hold the gate closed, not spin forever behind it.
+```bash
+mkdir -p .claude/project/reviews
+REPORT=".claude/project/reviews/$(echo "$STORY" | tr '[:upper:]' '[:lower:]')-cycle-${CYCLE}.md"
+```
 
-### If no blockers (READY):
+Write the full report (format below) to `$REPORT`, then:
 
 ```bash
 .claude/project/workflow-state.sh set-findings '[]'
-.claude/project/workflow-state.sh advance review_passed
+.claude/project/workflow-state.sh advance review_passed --evidence "$REPORT"
 ```
 
-## Output
+If that command fails, do not work around it. All three failures are real:
 
-Report results in this format:
+- `requires --evidence` — you did not write a report. Write it.
+- `evidence file not found` — the path is wrong.
+- `evidence predates the last source edit` — source changed after the review
+  ran, so the report describes code that no longer exists. Re-review.
+
+## Report format
+
+Write this to `$REPORT`, and print it:
 
 ```
 REVIEW: US-XXX — [Story Title] (cycle N)
 
-ACs:         X/Y met (0 deferred)
-Integration: Pass/FAIL — [details if fail]
-Security:    Pass/FAIL — [details if fail]
-Quality:     Pass/FAIL — [details if fail]
-Tests:       Pass/FAIL — [mandatory categories: N/5 covered]
-Build:       Pass/FAIL — [test count]
+Dimensions reviewed: [list the ones that applied, and why the others did not]
 
-Blockers: [numbered list or "none"]
-Warnings: [numbered list or "none"]
+ACs:        X/Y met
+Correctness: Pass/FAIL — [details]
+Errors:     Pass/FAIL — [details]
+Tests:      Pass/FAIL — [categories covered: N/5]
+Security:   Pass/FAIL/NA — [details]
+Frontend:   Pass/FAIL/NA — [details]
+Build:      Pass/FAIL — [type, lint, test counts]
+
+Blockers: [numbered, each with file:line, or "none"]
+Warnings: [numbered, or "none"]
 
 Status: READY / NOT READY (cycle N)
 ```
-
-If NOT READY: fix all blockers, then re-run `/review`. Repeat until READY.
-If READY: proceed to commit.

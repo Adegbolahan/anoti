@@ -160,7 +160,7 @@ Phase 4: Commit      → Update tracking, conventional commit, report
 
 - **No Phase 1 without a written story file** in `.claude/project/features/`. Resolve all questions first, then create the spec.
 - **No Phase 2 without plan approval AND context handoff** — summarize ACs, integration points, risks, and file order before writing code.
-- **No Phase 4 (commit) without review passing** — `/review` launches 4 parallel sub-agents, auto-fixes blockers, and re-reviews in a loop until clean. Hooks BLOCK `git commit` until `review_passed`.
+- **No Phase 4 (commit) without review passing** — `/review` reviews the diff, auto-fixes blockers, and re-reviews until clean (capped at 3 cycles). Hooks BLOCK `git commit` until `review_passed`, which requires evidence.
 - **Never start coding without approved plan**
 
 ### Commands
@@ -168,7 +168,7 @@ Phase 4: Commit      → Update tracking, conventional commit, report
 | Command      | Purpose                                                                          |
 | ------------ | -------------------------------------------------------------------------------- |
 | `/implement` | Full feature workflow: discovery → plan → implement → review cycle → commit      |
-| `/review`    | 4-track sub-agent review with automated fix loop until all blockers are resolved |
+| `/review`    | Review the diff, auto-fix blockers, re-review until clean (3-cycle cap)          |
 
 ### Workflow Phase Tracking
 
@@ -183,7 +183,7 @@ none → discovery_started → discovery_complete → plan_created → plan_appr
 - **User says "approved"** → advances to `plan_approved`
 - **Source file edited after approval** → advances to `implementation_in_progress`
 - **Source file edited before approval** → warning displayed
-- **`/review` run** → advances to `under_review`, launches the sub-agent review tracks
+- **`/review` run** → advances to `under_review`, reviews the applicable dimensions
 - **Review finds blockers** → advances to `changes_requested`, stores them, auto-fixes
 - **Review passes** → advances to `review_passed`, clears findings
 - **Git commit** → advances to `complete` (only from `review_passed`)
@@ -209,6 +209,14 @@ cannot evaluate:
 | unrecognised phase string        | blocked                            |
 
 The match is unanchored, so `cd frontend && git commit` is caught too.
+
+Passing review requires **evidence**: `advance review_passed --evidence <path>`,
+where the report exists and is newer than the last source edit. Path and hash go
+into the audit log.
+
+This is a guardrail against drift and accident, not an adversarial control.
+Anything that can write a file can satisfy it. It makes skipping review an
+explicit act that leaves an artifact in the diff, rather than a silent shortcut.
 
 Stuck? `.claude/project/workflow-state.sh why-blocked` names the blockers. If
 you genuinely need to commit anyway, arm a recorded one-shot bypass:

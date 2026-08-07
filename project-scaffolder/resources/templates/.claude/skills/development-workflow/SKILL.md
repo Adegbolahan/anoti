@@ -23,7 +23,7 @@ Phase 4: Commit      → Update tracking, conventional commit, report
 
 - **No Phase 1 without a written story file** in `.claude/project/features/`. Resolve all questions first, then create the spec.
 - **No Phase 2 without plan approval AND context handoff** — summarize ACs, integration points, risks, and file order before writing code.
-- **No Phase 4 (commit) without review passing** — `/review` launches 4 parallel sub-agents, auto-fixes blockers, and re-reviews in a loop until clean. Hooks BLOCK `git commit` until `review_passed`.
+- **No Phase 4 (commit) without review passing** — `/review` reviews the diff, auto-fixes blockers, and re-reviews until clean (capped at 3 cycles). Hooks BLOCK `git commit` until `review_passed`, which requires evidence.
 - **Never start coding without approved plan**
 
 ### File Naming Conventions
@@ -70,7 +70,7 @@ When creating a new user story:
 | Command      | Purpose                                                                          |
 | ------------ | -------------------------------------------------------------------------------- |
 | `/implement` | Full feature workflow: discovery → plan → implement → review cycle → commit      |
-| `/review`    | 4-track sub-agent review with automated fix loop until all blockers are resolved |
+| `/review`    | Review the diff, auto-fix blockers, re-review until clean (3-cycle cap)          |
 
 Phase tracking is automated via hooks (see `.claude/settings.json`). Commits are BLOCKED until review passes.
 
@@ -88,7 +88,7 @@ For every feature, these must happen in order:
 6. **Get approval** - Present plan, wait for user approval (GATE)
 7. **Context handoff** - Summarize ACs, integration points, file order before coding (GATE)
 8. **Build** - Implement in dependency order, tests alongside code
-9. **Review** - `/review` launches sub-agents, auto-fixes, re-reviews until clean (COMMIT GATE)
+9. **Review** - `/review` reviews, auto-fixes, re-reviews until clean; passing needs evidence (COMMIT GATE)
 10. **Commit** - Conventional commit, update tracking files (only after review_passed)
 
 ---

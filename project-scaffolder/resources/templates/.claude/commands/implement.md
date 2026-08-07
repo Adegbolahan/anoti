@@ -123,7 +123,7 @@ Before running the review, verify tests cover ALL applicable categories. If any 
 Run the `/review` command. This:
 
 1. Sets workflow state to `under_review`
-2. Launches 4 parallel sub-agent review tracks (backend, frontend, tests, security)
+2. Reviews the dimensions that apply to this diff (ACs, correctness, errors, tests, and security or frontend where relevant)
 3. Compiles findings into a single report
 4. If NOT READY → sets `changes_requested`, stores blockers, **automatically fixes all blockers**, then re-runs `/review`
 5. If READY → sets `review_passed`, unblocks commit

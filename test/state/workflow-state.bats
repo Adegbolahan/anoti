@@ -107,8 +107,91 @@ phase_now() { "$JQ_REAL" -r '.phase' "$PROJECT_DIR/.claude/project/.workflow-sta
 
 @test "passing review clears stored findings" {
   seed_state changes_requested US-001 '["a","b"]'
-  wf advance review_passed
+  wf advance review_passed --evidence "$(write_evidence)"
   [ "$(wf get-findings-count)" = "0" ]
+}
+
+# --------------------------------------------------------------------------
+# Evidence gate (B1) -- the fix for the two-command self-authorization bypass.
+#
+# pre-bash.sh blocks `git commit` but not the command that OPENS the gate, so
+# a bare `advance review_passed` let the gated agent unblock itself, and the
+# audit log recorded it identically to a real review pass.
+#
+# This does not make forgery impossible -- anything that can write a file can
+# satisfy it. It makes forgery explicit and visible in the diff.
+# --------------------------------------------------------------------------
+
+@test "B1: a bare advance review_passed is REFUSED" {
+  seed_state implementation_in_progress
+  run wf advance review_passed
+  [ "$status" -ne 0 ]
+  printf '%s' "$output" | grep -q 'requires --evidence'
+  [ "$(phase_now)" = "implementation_in_progress" ]
+}
+
+@test "B1: evidence pointing at a file that does not exist is refused" {
+  seed_state implementation_in_progress
+  run wf advance review_passed --evidence "$PROJECT_DIR/nope/missing.md"
+  [ "$status" -ne 0 ]
+  printf '%s' "$output" | grep -qi 'not found'
+  [ "$(phase_now)" = "implementation_in_progress" ]
+}
+
+@test "B1: evidence older than the last source edit is refused" {
+  seed_state implementation_in_progress
+  ev="$(write_evidence stale)"
+  touch -t 200001010000 "$ev"
+  # Source was touched just now, well after that report was written.
+  wf mark-source-edit
+  run wf advance review_passed --evidence "$ev"
+  [ "$status" -ne 0 ]
+  printf '%s' "$output" | grep -qi 'predates'
+  [ "$(phase_now)" = "implementation_in_progress" ]
+}
+
+@test "B1: fresh evidence passes and is recorded with a hash" {
+  seed_state implementation_in_progress
+  wf mark-source-edit
+  ev="$(write_evidence fresh)"
+  wf advance review_passed --evidence "$ev"
+  [ "$(phase_now)" = "review_passed" ]
+  hash="$("$JQ_REAL" -r '.reviewEvidence.hash' "$PROJECT_DIR/.claude/project/.workflow-state.json")"
+  [ -n "$hash" ] && [ "$hash" != "null" ]
+  grep -q 'evidence:' "$PROJECT_DIR/.claude/project/.workflow-log.jsonl"
+}
+
+@test "B1: the full self-authorization bypass no longer works end to end" {
+  # This is the exact sequence that used to open the gate in two commands.
+  cd "$PROJECT_DIR"
+  seed_state implementation_in_progress
+  wf mark-source-edit
+
+  run wf advance under_review
+  [ "$status" -eq 0 ]           # legitimate: starting a review needs no evidence
+
+  run wf advance review_passed  # the bypass
+  [ "$status" -ne 0 ]
+
+  run_hook PreToolUse Bash "$(payload_bash 'git commit -m "sneaking through"')"
+  assert_blocked
+}
+
+@test "B1: why-blocked names an unattested pass" {
+  # Reachable only by hand-editing state, but if it happens it must be visible.
+  seed_state review_passed
+  run wf why-blocked
+  printf '%s' "$output" | grep -qi 'evidence: NONE'
+}
+
+@test "B1: post-edit.sh stamps lastSourceEdit so stale reviews are caught" {
+  seed_state plan_approved
+  mkdir -p "$PROJECT_DIR/src"
+  before="$("$JQ_REAL" -r '.lastSourceEditEpoch' "$PROJECT_DIR/.claude/project/.workflow-state.json")"
+  echo "const x = 1" > "$PROJECT_DIR/src/app.ts"
+  run_hook PostToolUse "Edit|Write" "$(payload_edit "$PROJECT_DIR/src/app.ts")"
+  after="$("$JQ_REAL" -r '.lastSourceEditEpoch' "$PROJECT_DIR/.claude/project/.workflow-state.json")"
+  [ "$after" -gt "$before" ] || { echo "lastSourceEditEpoch: $before -> $after"; return 1; }
 }
 
 # --------------------------------------------------------------------------
@@ -174,8 +257,13 @@ phase_now() { "$JQ_REAL" -r '.phase' "$PROJECT_DIR/.claude/project/.workflow-sta
   "$JQ_REAL" -n '{activeStory:"US-001", phase:"plan_created", storyTitle:"old"}' \
     > "$PROJECT_DIR/.claude/project/.workflow-state.json"
   wf advance plan_approved
-  v="$("$JQ_REAL" -r '.schemaVersion' "$PROJECT_DIR/.claude/project/.workflow-state.json")"
-  [ "$v" = "1" ]
+  s="$PROJECT_DIR/.claude/project/.workflow-state.json"
+  # Read the expected version from the script rather than hardcoding it, so a
+  # schema bump does not break a test that only cares that migration ran.
+  [ "$("$JQ_REAL" -r '.schemaVersion' "$s")" = "$(current_schema_version)" ]
+  # v2 fields get defaults rather than staying absent.
+  [ "$("$JQ_REAL" -r '.lastSourceEditEpoch' "$s")" = "0" ]
+  [ "$("$JQ_REAL" -r '.reviewEvidence' "$s")" = "null" ]
   [ "$(phase_now)" = "plan_approved" ]
 }
 

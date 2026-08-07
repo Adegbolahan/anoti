@@ -2,7 +2,7 @@
 name: Scaffolding Guidance
 description: |
   Use this skill when the user asks about project scaffolding, CLAUDE.md templates, project tracking, or how to use the project-scaffolder plugin. Triggers on: "How do I scaffold a project?", "What templates are available?", "CLAUDE.md best practices", "project tracking", "user story management".
-version: 2.2.0
+version: 2.3.0
 ---
 
 # Project Scaffolding Guidance
@@ -29,7 +29,7 @@ project/
     ├── settings.json            # Registers 7 hooks, one per event
     ├── commands/
     │   ├── implement.md         # Full 5-phase feature workflow
-    │   └── review.md            # Sub-agent review with a capped fix loop
+    │   └── review.md            # Review cycle with a capped fix loop
     ├── skills/
     │   ├── development-workflow/
     │   ├── project-standards/
@@ -53,7 +53,7 @@ machine), `.workflow-log.jsonl` (audit trail), `.turn-touched` (per-turn scratch
 Phase 0: Discovery   → Research, ask questions, write the story spec (MANDATORY GATE)
 Phase 1: Plan        → File inventory, contracts, risks → approval → context handoff
 Phase 2: Implement   → Build in dependency order, tests alongside code
-Phase 3: Review      → Sub-agent review → auto-fix → re-review (COMMIT BLOCKED)
+Phase 3: Review      → Review → auto-fix → re-review (COMMIT BLOCKED)
 Phase 4: Commit      → Update tracking, conventional commit, report
 ```
 
@@ -90,6 +90,19 @@ written, an approval in chat, a source file edited after approval, a commit land
 The match is unanchored, so `cd frontend && git commit` is caught. The known cost:
 the literal text inside an `echo` also matches.
 
+### Passing review requires evidence
+
+`advance review_passed` requires `--evidence <path>` naming a review report that
+exists and is newer than the last source edit. Path and content hash go into the
+audit log.
+
+**Be straight with users about what this is.** It is a guardrail against drift
+and accident, not an adversarial control. Anything that can write a file can
+satisfy it, including the agent doing the work. What it buys is that skipping
+review stops being a silent two-command shortcut and becomes an explicit act
+that leaves a forged artifact in the diff. For a control an agent genuinely
+cannot reach, use branch protection on the remote.
+
 **Stuck?** `.claude/project/workflow-state.sh why-blocked` names the blockers.
 If you genuinely need to commit anyway:
 
@@ -101,10 +114,22 @@ That arms a one-shot bypass and records who, when, and why in the audit log.
 
 ## Review Cycle
 
-`/review` sets the phase to `under_review`, launches parallel sub-agent review
-tracks, and compiles the findings. Blockers move the phase to `changes_requested`,
+`/review` sets the phase to `under_review`, reviews the dimensions that apply to
+the diff, and compiles the findings. Blockers move the phase to `changes_requested`,
 get stored, and are fixed automatically before re-review. A clean pass sets
 `review_passed` and unblocks the commit.
+
+### The review contract
+
+The gate does not care who reviews. It checks one thing: the phase is
+`review_passed`, set with `--evidence` pointing at a report that exists and is
+newer than the last source edit.
+
+That means **any** process can satisfy it — `/review`, a deeper review tool the
+team already runs, or a human reading the diff. The bundled `/review` is a
+reference implementation that works with no external dependencies, not the only
+option. If a stronger reviewer is available, run it, have it write a report, and
+point `--evidence` at that report.
 
 **The loop caps at 3 cycles.** A blocker that survives three fix attempts almost
 always needs a design decision, so the loop stops and reports instead of spinning.

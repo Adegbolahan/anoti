@@ -68,6 +68,11 @@ Usage: workflow-state.sh <command>
   start <ID> [title]    begin tracking a story
   advance <phase>       move forward (nonzero exit on an illegal transition)
                         `advance complete` ends the story
+  advance review_passed --evidence <path>
+                        passing review REQUIRES a review report that exists and
+                        is newer than the last source edit. Path and a content
+                        hash go into the audit log.
+  mark-source-edit      stamp "source was touched now" (called by post-edit.sh)
   clear                 reset for the next story
 
   set-findings <json>   store review blockers (validated JSON array)
@@ -96,7 +101,7 @@ fi
 STATE_DIR="$PROJECT_ROOT/.claude/project"
 STATE_FILE="$STATE_DIR/.workflow-state.json"
 LOCK_DIR="$STATE_DIR/.workflow-state.lock"
-SCHEMA_VERSION=1
+SCHEMA_VERSION=2
 
 # --------------------------------------------------------------------------
 # Phases
@@ -128,6 +133,15 @@ is_known_phase() { [ "$(phase_rank "$1")" -ge 0 ]; }
 # read-modify-write, so without this two hooks can silently drop a transition.
 # --------------------------------------------------------------------------
 
+# Portable file helpers. BSD stat and GNU stat disagree on flags, and macOS
+# ships shasum while most Linux images ship sha256sum.
+mtime_of() { stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0; }
+hash_of() {
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1
+  elif command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" 2>/dev/null | cut -d' ' -f1
+  else echo "unhashed"; fi
+}
+
 LOCK_TIMEOUT="${WORKFLOW_LOCK_TIMEOUT:-5}"
 
 acquire_lock() {
@@ -136,7 +150,7 @@ acquire_lock() {
     # Reap a lock left behind by a killed hook.
     if [ -d "$LOCK_DIR" ]; then
       local age
-      age=$(( $(date +%s) - $(stat -f %m "$LOCK_DIR" 2>/dev/null || stat -c %Y "$LOCK_DIR" 2>/dev/null || echo 0) ))
+      age=$(( $(date +%s) - $(mtime_of "$LOCK_DIR") ))
       if [ "$age" -gt "$LOCK_TIMEOUT" ]; then
         rmdir "$LOCK_DIR" 2>/dev/null || true
         continue
@@ -174,7 +188,8 @@ ensure_state() {
   if [ ! -f "$STATE_FILE" ]; then
     jq -n --argjson v "$SCHEMA_VERSION" \
       '{schemaVersion:$v, activeStory:null, phase:"none", storyTitle:null,
-        reviewCycle:0, reviewFindings:[], override:null, timestamps:{}}' \
+        reviewCycle:0, reviewFindings:[], override:null,
+        lastSourceEditEpoch:0, reviewEvidence:null, timestamps:{}}' \
       > "$STATE_FILE"
     return 0
   fi
@@ -194,7 +209,9 @@ ensure_state() {
     write_state '.schemaVersion = '"$SCHEMA_VERSION"'
                  | .reviewCycle = (.reviewCycle // 0)
                  | .reviewFindings = (.reviewFindings // [])
-                 | .override = (.override // null)'
+                 | .override = (.override // null)
+                 | .lastSourceEditEpoch = (.lastSourceEditEpoch // 0)
+                 | .reviewEvidence = (.reviewEvidence // null)'
   fi
 }
 
@@ -262,6 +279,15 @@ case "${1:-help}" in
   get-review-cycle)   state_readable || exit $?; jq -r '.reviewCycle // 0' "$STATE_FILE" ;;
   get-findings-count) state_readable || exit $?; jq -r '(.reviewFindings // []) | length' "$STATE_FILE" ;;
 
+  # Stamp the moment source was last touched. Called by post-edit.sh, which is
+  # the one place that already knows what counts as source (the D8-widened
+  # detection covering app/, cmd/ and root packages). The evidence check below
+  # measures review reports against this.
+  mark-source-edit)
+    ensure_state
+    write_state '.lastSourceEditEpoch = $e' --argjson e "$(date +%s)" || exit 1
+    ;;
+
   advance)
     ensure_state
     target="${2:?phase required}"
@@ -269,6 +295,17 @@ case "${1:-help}" in
       echo "workflow-state: unknown phase '$target'" >&2
       exit 1
     fi
+
+    # --evidence <path>, required when passing review.
+    evidence=""
+    shift 2 2>/dev/null || shift $#
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --evidence) evidence="${2:-}"; shift 2 || true ;;
+        *)          shift ;;
+      esac
+    done
+
     current=$(jq -r '.phase // "none"' "$STATE_FILE")
     tr_rank=$(phase_rank "$target"); cur_rank=$(phase_rank "$current")
 
@@ -286,14 +323,57 @@ case "${1:-help}" in
       exit 1
     fi
 
+    # ----------------------------------------------------------------------
+    # Evidence gate on review_passed.
+    #
+    # WHY THIS EXISTS. pre-bash.sh blocks `git commit` but does not block the
+    # command that opens the gate, so the agent being gated could unblock
+    # itself with a bare `advance review_passed` -- and the audit log recorded
+    # it identically to a real review pass.
+    #
+    # WHAT THIS IS NOT. An agent with shell access in this filesystem can write
+    # a file and pass the check. This does not stop that and cannot. What it
+    # does is turn a silent two-command bypass into an explicit act that leaves
+    # a forged artifact in the diff, where a human reviewing the PR can see it.
+    # A guardrail against drift and accident, not an adversarial control.
+    # ----------------------------------------------------------------------
+    evidence_hash=""
+    if [ "$target" = "review_passed" ]; then
+      if [ -z "$evidence" ]; then
+        echo "workflow-state: advance review_passed requires --evidence <path>" >&2
+        echo "  Point it at the review report. The gate records the path and a" >&2
+        echo "  content hash so a pass can be traced back to what produced it." >&2
+        exit 1
+      fi
+      if [ ! -f "$evidence" ]; then
+        echo "workflow-state: evidence file not found: $evidence" >&2
+        exit 1
+      fi
+      last_edit=$(jq -r '.lastSourceEditEpoch // 0' "$STATE_FILE")
+      ev_mtime=$(mtime_of "$evidence")
+      if [ "$ev_mtime" -lt "$last_edit" ] 2>/dev/null; then
+        echo "workflow-state: evidence predates the last source edit." >&2
+        echo "  $evidence is older than the code it claims to review." >&2
+        echo "  Re-run the review, then pass the fresh report." >&2
+        exit 1
+      fi
+      evidence_hash="$(hash_of "$evidence")"
+    fi
+
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     prog='.phase = $p | .timestamps[$p] = $ts'
     case "$target" in
       under_review)  prog="$prog"' | .reviewCycle = ((.reviewCycle // 0) + 1)' ;;
-      review_passed) prog="$prog"' | .reviewFindings = []' ;;
+      review_passed) prog="$prog"' | .reviewFindings = []
+                                   | .reviewEvidence = {path:$ev, hash:$evh, at:$ts}' ;;
     esac
-    write_state "$prog" --arg p "$target" --arg ts "$ts" || exit 1
-    log_event transition "$current -> $target"
+    write_state "$prog" --arg p "$target" --arg ts "$ts" \
+      --arg ev "$evidence" --arg evh "$evidence_hash" || exit 1
+    if [ -n "$evidence" ]; then
+      log_event transition "$current -> $target (evidence: $evidence sha256:${evidence_hash:0:12})"
+    else
+      log_event transition "$current -> $target"
+    fi
     ;;
 
   start)
@@ -304,6 +384,7 @@ case "${1:-help}" in
     jq -n --arg s "$story" --arg t "${3:-}" --arg ts "$ts" --argjson v "$SCHEMA_VERSION" \
       '{schemaVersion:$v, activeStory:$s, storyTitle:$t, phase:"discovery_started",
         reviewCycle:0, reviewFindings:[], override:null,
+        lastSourceEditEpoch:0, reviewEvidence:null,
         timestamps:{discovery_started:$ts}}' > "$STATE_FILE"
     release_lock
     log_event start "$story"
@@ -318,7 +399,8 @@ case "${1:-help}" in
     acquire_lock || exit 1
     jq -n --argjson v "$SCHEMA_VERSION" \
       '{schemaVersion:$v, activeStory:null, phase:"none", storyTitle:null,
-        reviewCycle:0, reviewFindings:[], override:null, timestamps:{}}' > "$STATE_FILE"
+        reviewCycle:0, reviewFindings:[], override:null,
+        lastSourceEditEpoch:0, reviewEvidence:null, timestamps:{}}' > "$STATE_FILE"
     release_lock
     log_event clear ""
     ;;
@@ -406,6 +488,19 @@ case "${1:-help}" in
       jq -r '(.reviewFindings // [])[] | "  - " + .' "$STATE_FILE"
     else
       echo "No stored blockers. Run /review to evaluate."
+    fi
+
+    # Show what a pass was based on, so an unattested one is visible rather
+    # than implicit.
+    ev_path=$(jq -r '.reviewEvidence.path // ""' "$STATE_FILE")
+    if [ "$phase" = "review_passed" ]; then
+      if [ -n "$ev_path" ]; then
+        echo "Review evidence: $ev_path (sha256:$(jq -r '.reviewEvidence.hash // "" | .[0:12]' "$STATE_FILE"))"
+        [ -f "$PROJECT_ROOT/$ev_path" ] || [ -f "$ev_path" ] || \
+          echo "  WARNING: the evidence file no longer exists."
+      else
+        echo "Review evidence: NONE. This pass was not attested to any report."
+      fi
     fi
     ;;
 

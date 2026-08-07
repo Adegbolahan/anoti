@@ -56,13 +56,9 @@ require_scaffolded
 # 3. Commit gate
 # --------------------------------------------------------------------------
 
-# Unanchored, matching the safety blockers above (eng review decision 7A).
-# The old '^git commit' meant `cd frontend && git commit` walked straight past.
-# Accepted cost: the literal text inside an echo also matches. The trailing
-# [[:space:]] before `commit` keeps `git log --grep=commit` from tripping it.
-is_commit() { printf '%s' "$HAY" | grep -qE '\bgit\b[[:space:]]([^;&|]*[[:space:]])?commit\b'; }
-
-is_commit || exit 0
+# is_commit() lives in _common.sh so the gate and the completion tracker cannot
+# drift apart on what counts as a commit.
+is_commit "$HAY" || exit 0
 
 SNAP="$(WF snapshot 2>/dev/null)"; RC=$?
 

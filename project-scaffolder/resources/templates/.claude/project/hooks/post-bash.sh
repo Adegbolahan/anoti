@@ -10,7 +10,7 @@ require_scaffolded
 CMD="$(payload_field '.tool_input.command' || true)"
 HAY="$(haystack "$CMD")"
 
-printf '%s' "$HAY" | grep -qE '\bgit\b[[:space:]]([^;&|]*[[:space:]])?commit\b' || exit 0
+is_commit "$HAY" || exit 0
 
 STORY="$(WF get-story 2>/dev/null || true)"
 [ -z "$STORY" ] && exit 0

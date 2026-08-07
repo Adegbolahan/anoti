@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-08-07
+
+2.2.0 made the gate block. It did not make the gate bind the agent it gates.
+
+### Fixed
+
+- **The gated agent could open its own gate in two commands.** `pre-bash.sh`
+  blocks `git commit` but did not block the command that unblocks it, so:
+
+  ```
+  phase: implementation_in_progress
+    git commit                                -> exit 2   BLOCKED
+    workflow-state.sh advance under_review    -> allowed
+    workflow-state.sh advance review_passed   -> allowed
+    git commit                                -> exit 0   ALLOWED
+  ```
+
+  It was written to the audit log, but identically to a legitimate review pass,
+  so the log could not tell a real review from the magic words. `override` was a
+  recorded, deliberate, one-shot bypass; this was an unlimited one beside it.
+
+### Added
+
+- `advance review_passed` now **requires `--evidence <path>`**. The report must
+  exist and be newer than the last source edit. Its path and a sha256 hash are
+  recorded in state and in the audit log, so a pass is traceable to what
+  produced it.
+- `mark-source-edit`, called by `post-edit.sh` on every source edit, giving the
+  evidence check a freshness baseline. Phase timestamps could not provide one:
+  you can edit for an hour without re-entering a phase.
+- `why-blocked` reports the evidence backing a pass, and says plainly when a
+  pass has none.
+- `schemaVersion` 2, with forward migration for `lastSourceEditEpoch` and
+  `reviewEvidence`.
+- 7 tests covering the evidence gate, including one that replays the original
+  two-command bypass end to end and asserts the commit still blocks.
+
+### Changed
+
+- `is_commit()` moved into `_common.sh`. It was byte-identical in `pre-bash.sh`
+  and `post-bash.sh`, and 2.2.0 knowingly accepted a false positive in that
+  pattern — so it is a regex that will be tuned, and tuning one copy would have
+  left the gate and the completion tracker disagreeing about what a commit is.
+- **`/review` no longer dispatches four sub-agents.** It dispatched
+  `backend-api-engineer`, `frontend-spa-engineer`, `qa-automation-engineer` and
+  `security-privacy-engineer` — agent types the plugin never shipped — so it
+  failed on every machine that did not happen to have them installed.
+
+  Replaced with a documented **contract** plus one dependency-free reference
+  reviewer. The gate checks that the phase is `review_passed` with valid
+  evidence; it does not care what produced it. Any reviewer can satisfy it —
+  the bundled one, a deeper tool the team already runs, or a human reading the
+  diff. The bundled reviewer now also picks the dimensions that apply to the
+  diff instead of reviewing frontend concerns on a CLI tool.
+
+- `/review` writes its report to `.claude/project/reviews/` and passes it as
+  evidence.
+- README, scaffolding-guidance and the scaffolded CLAUDE.md now state the
+  ceiling plainly: this is a guardrail against drift and accident, not an
+  adversarial control. Anything that can write a file can satisfy the check.
+  What it buys is that skipping review becomes an explicit act leaving a forged
+  artifact in the diff, instead of a silent shortcut.
+
+### Migration
+
+`advance review_passed` without `--evidence` now exits 1. Any script or command
+calling it bare must be updated. `/review` and `/implement` are updated here.
+
+---
+
 ## [2.2.0] - 2026-08-07
 
 The commit gate did not work. This release makes it work, and adds the test

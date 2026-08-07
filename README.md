@@ -79,6 +79,20 @@ your-project/
 it cannot confirm — missing `jq`, a corrupt state file, an unrecognised phase —
 because a gate that fails open is not a gate.
 
+Passing review requires **evidence**: a review report that exists on disk and is
+newer than the last source edit. Its path and a content hash go into the audit
+log, so a pass can be traced back to whatever produced it.
+
+**What this is and is not.** This is a guardrail against drift and accident, not
+an adversarial control, and it does not pretend otherwise. Anything that can
+write a file can satisfy the evidence check — including the agent doing the
+work. What the check buys you is that skipping review stops being a silent
+two-command shortcut and becomes an explicit act that leaves a forged artifact
+in the diff, where a human reviewing the PR can see it.
+
+If you want a control an agent genuinely cannot reach, use branch protection on
+the remote. This gate lives in your working copy and is bounded by that.
+
 Blocked and need to know why:
 
 ```bash

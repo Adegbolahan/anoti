@@ -77,6 +77,25 @@ haystack() {
 }
 
 # --------------------------------------------------------------------------
+# Command classification
+# --------------------------------------------------------------------------
+
+# Does this command invoke `git commit`?
+#
+# ONE definition, used by both the gate (pre-bash) and the completion tracker
+# (post-bash). It was duplicated byte-for-byte in both, which matters here
+# because decision 7A knowingly accepted a false positive in this pattern --
+# so it is a regex that WILL get tuned, and tuning one copy would leave the two
+# hooks disagreeing about what a commit is, silently.
+#
+# Unanchored, matching the safety blockers, so `cd frontend && git commit` is
+# caught. The required whitespace before `commit` keeps `git log --grep=commit`
+# from tripping it. Accepted cost: the literal text inside an echo matches too.
+is_commit() {
+  printf '%s' "$1" | grep -qE '\bgit\b[[:space:]]([^;&|]*[[:space:]])?commit\b'
+}
+
+# --------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------
 

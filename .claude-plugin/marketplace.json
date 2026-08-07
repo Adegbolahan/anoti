@@ -11,7 +11,7 @@
     {
       "name": "project-scaffolder",
       "description": "Scaffold projects with CLAUDE.md documentation, a 5-phase workflow, a commit gate enforced by hooks, skills, and project tracking. Provides /new and /update.",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "author": {
         "name": "Getting Started with Claude"
       },

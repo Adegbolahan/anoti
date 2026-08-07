@@ -108,6 +108,13 @@ case "$REL" in
     # D8 FIX: the old gate matched only */src/*, so it never fired on a
     # Next.js app/, a Go cmd/, or a root-level Python package. Anything in the
     # project that is not .claude/, .git/, or markdown counts as source.
+    # Stamp the edit time regardless of phase. The evidence check on
+    # `advance review_passed` measures review reports against this, so it has
+    # to be recorded whenever source changes -- including edits made while
+    # fixing review blockers, which is exactly when a stale report would
+    # otherwise sail through.
+    WF mark-source-edit >/dev/null 2>&1 || true
+
     PHASE="$(WF get-phase 2>/dev/null || echo none)"
     if [ "$PHASE" = "plan_approved" ]; then
       WF advance implementation_in_progress >/dev/null 2>&1 || true

@@ -10,8 +10,8 @@
   "plugins": [
     {
       "name": "project-scaffolder",
-      "description": "Scaffold projects with CLAUDE.md documentation, a 5-phase workflow, a commit gate enforced by hooks, skills, and project tracking. Provides /new and /update.",
-      "version": "2.3.0",
+      "description": "An enforced 5-phase workflow with a commit gate that blocks git commit until review passes. Workflow components ship with the plugin, so upgrading the plugin upgrades every project. Provides /new and /update.",
+      "version": "3.0.0",
       "author": {
         "name": "Getting Started with Claude"
       },

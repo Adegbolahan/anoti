@@ -31,6 +31,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Where the workflow lives
+
+The 5-phase workflow, its commands (`/implement`, `/review`), the skills and the
+enforcement hooks all ship with the **project-scaffolder plugin**. They are not
+copied into this repo, so updating the plugin updates them here with no
+migration.
+
+This repo holds only what is genuinely yours: this file, and everything under
+`.claude/project/`.
+
 ## ⚠️ CRITICAL: Read Skills BEFORE Coding
 
 **BEFORE implementing ANY feature, Claude will automatically activate relevant skills based on context.**
@@ -39,19 +49,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Skills are interactive documentation that Claude activates on-demand:
 
-1. **`.claude/skills/development-workflow/`** ⭐ CORE
+1. **`development-workflow`** ⭐ CORE (provided by the plugin)
    - Feature development process (5-phase workflow with mandatory gates)
    - Git workflow and conventions
    - Implementation planning templates
    - **Triggers:** "How do I implement features?", "Git workflow?", "Create implementation plan"
 
-2. **`.claude/skills/project-standards/`**
+2. **`project-standards`** (provided by the plugin)
    - User story format and acceptance criteria
    - Documentation conventions
    - Code review standards
    - **Triggers:** "User story format?", "Documentation standards?", "Acceptance criteria?"
 
-3. **`.claude/skills/exploration-helpers/`**
+3. **`exploration-helpers`** (provided by the plugin)
    - Database exploration patterns
    - Codebase navigation guidance
    - Type validation approaches
@@ -100,9 +110,8 @@ Should I update the skill to reflect this?"
 | File/Directory          | Purpose                                     |
 | ----------------------- | ------------------------------------------- |
 | `CLAUDE.md`             | This file - project hub and quick reference |
-| `.claude/settings.json` | Hooks for formatting, safety, and workflow  |
-| `.claude/commands/`     | Workflow commands for feature development   |
-| `.claude/skills/`       | Interactive skills for guidance             |
+| `.claude/settings.json` | Version tracking and permissions            |
+| `.claude/project/`      | Project tracking (features, plans, roadmap) |
 | `.claude/project/`      | Project tracking (features, plans, roadmap) |
 
 ### Project Tracking
@@ -115,7 +124,7 @@ All project management files are in `.claude/project/`:
 | `roadmap.md`                 | Phased implementation plan                                |
 | `features/`                  | User story specifications (`us-XXX-name.md`)              |
 | `plans/`                     | Implementation plans (`us-XXX-plan.md`)                   |
-| `workflow-state.sh`          | Workflow phase state machine (used by hooks)              |
+| `workflow-state.sh`          | Shim to the plugin's state machine                        |
 
 ### Tech Stack
 
@@ -172,7 +181,7 @@ Phase 4: Commit      → Update tracking, conventional commit, report
 
 ### Workflow Phase Tracking
 
-Phase progression is automated via hooks in `.claude/settings.json` and tracked by `.claude/project/workflow-state.sh`:
+Phase progression is automated by hooks that ship with the project-scaffolder plugin, and tracked in `.claude/project/.workflow-state.json`:
 
 ```
 none → discovery_started → discovery_complete → plan_created → plan_approved → implementation_in_progress → under_review ↔ changes_requested → review_passed → complete
@@ -301,19 +310,12 @@ git commit -m "feat: add [feature name]
 [PROJECT_NAME]/
 ├── CLAUDE.md                    # This file
 ├── .claude/
-│   ├── settings.json            # Hooks for formatting, safety, workflow
-│   ├── commands/                # Workflow commands
-│   │   ├── implement.md         # Full 5-phase feature workflow
-│   │   └── review.md            # Sub-agent review with auto-fix loop
-│   ├── skills/                  # Interactive skills
-│   │   ├── development-workflow/
-│   │   ├── project-standards/
-│   │   └── exploration-helpers/
+│   ├── settings.json            # Version tracking and permissions
 │   └── project/                 # Project tracking
 │       ├── features/            # User story specs (us-XXX-name.md)
 │       ├── plans/               # Implementation plans (us-XXX-plan.md)
-│       ├── hooks/               # One script per hook event
-│       ├── workflow-state.sh    # Phase state machine
+│       ├── reviews/             # Review reports (evidence for each pass)
+│       ├── workflow-state.sh    # Shim to the plugin's state machine
 │       ├── high-level-user-stories.md  # Progress tracker
 │       └── roadmap.md           # Project roadmap
 └── [your source code...]

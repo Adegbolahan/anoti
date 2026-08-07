@@ -2,7 +2,7 @@
 name: Scaffolding Guidance
 description: |
   Use this skill when the user asks about project scaffolding, CLAUDE.md templates, project tracking, or how to use the project-scaffolder plugin. Triggers on: "How do I scaffold a project?", "What templates are available?", "CLAUDE.md best practices", "project tracking", "user story management".
-version: 2.3.0
+version: 3.0.0
 ---
 
 # Project Scaffolding Guidance
@@ -26,21 +26,21 @@ current version, shows what changed, and preserves `CLAUDE.md` and everything un
 project/
 ├── CLAUDE.md                    # Project hub
 └── .claude/
-    ├── settings.json            # Registers 7 hooks, one per event
-    ├── commands/
-    │   ├── implement.md         # Full 5-phase feature workflow
-    │   └── review.md            # Review cycle with a capped fix loop
-    ├── skills/
-    │   ├── development-workflow/
-    │   ├── project-standards/
-    │   └── exploration-helpers/
+    ├── settings.json            # Version tracking, no hooks
     └── project/
         ├── features/            # User story specs
         ├── plans/               # Implementation plans
-        ├── hooks/               # One script per hook event
-        ├── workflow-state.sh    # Phase state machine
+        ├── reviews/             # Review reports (evidence for each pass)
+        ├── workflow-state.sh    # Shim to the plugin's state machine
         ├── high-level-user-stories.md
         └── roadmap.md
+```
+
+Six files. `/implement`, `/review`, the three workflow skills, the hook suite and
+the state machine all ship with the plugin — nothing is copied, so nothing drifts
+and there is no per-version migration to write.
+
+```text
 ```
 
 Runtime files created as you work, all gitignored: `.workflow-state.json` (phase
@@ -137,7 +137,8 @@ The commit stays blocked, which is the correct outcome.
 
 ## Hook Suite
 
-One script per event, under `.claude/project/hooks/`:
+One script per event, shipped in the plugin's `hooks/` and registered by
+`hooks/hooks.json`:
 
 | Event                     | Script             | Does                                                               |
 | ------------------------- | ------------------ | ------------------------------------------------------------------ |

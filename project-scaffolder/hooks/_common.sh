@@ -47,7 +47,14 @@ require_scaffolded() {
   [ -d "$PROJECT_ROOT/.claude/project" ] || exit 0
 }
 
-WF() { "$PROJECT_ROOT/.claude/project/workflow-state.sh" "$@"; }
+# The state machine ships beside these hooks, inside the plugin. Resolve it
+# relative to this file rather than through $CLAUDE_PLUGIN_ROOT, so the hooks
+# also work when run directly from a checkout (which is how the test harness
+# and `bash hooks/pre-bash.sh` invoke them).
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WF_BIN="$HOOKS_DIR/../bin/workflow-state.sh"
+
+WF() { bash "$WF_BIN" "$@"; }
 
 # --------------------------------------------------------------------------
 # Payload

@@ -15,19 +15,12 @@ Claude Code plugin that scaffolds projects with documentation, skills, commands,
 project/
 ├── CLAUDE.md                    # Project hub
 └── .claude/
-    ├── settings.json            # Hooks for formatting, safety, workflow
-    ├── commands/                # 2 workflow commands
-    │   ├── implement.md         # Full 5-phase feature workflow
-    │   └── review.md            # Pre-commit review
-    ├── skills/
-    │   ├── development-workflow/
-    │   ├── project-standards/
-    │   └── exploration-helpers/
+    ├── settings.json            # Version tracking, no hooks
     └── project/
-        ├── features/
-        ├── plans/
-        ├── hooks/               # One script per hook event
-        ├── workflow-state.sh    # Phase state machine
+        ├── features/            # User story specs
+        ├── plans/               # Implementation plans
+        ├── reviews/             # Review reports (evidence for each pass)
+        ├── workflow-state.sh    # Shim to the plugin's state machine
         ├── high-level-user-stories.md
         └── roadmap.md
 ```
@@ -64,8 +57,9 @@ Claude will:
 
 ## Hooks
 
-Scaffolded projects get one hook script per event, under `.claude/project/hooks/`.
-`settings.json` holds one-line invocations.
+The hooks ship with the plugin in `hooks/`, registered by `hooks/hooks.json`
+using `${CLAUDE_PLUGIN_ROOT}`. Scaffolded projects register no hooks of their
+own, so updating the plugin updates the enforcement everywhere at once.
 
 | Event                     | Does                                                               |
 | ------------------------- | ------------------------------------------------------------------ |

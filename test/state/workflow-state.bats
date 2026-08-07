@@ -4,7 +4,7 @@
 setup() {
   load '../helpers/setup'
   make_project
-  WF="$PROJECT_DIR/.claude/project/workflow-state.sh"
+  WF="$PROJECT_DIR/.claude/project/workflow-state.sh"   # the shim; execs the plugin copy
 }
 
 wf() { ( cd "$PROJECT_DIR" && bash "$WF" "$@" ); }

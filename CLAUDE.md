@@ -26,9 +26,11 @@ getting-started-claude/
 ├── test/                         # bats suite for the hooks  <-- START HERE
 └── project-scaffolder/
     ├── .claude-plugin/plugin.json
-    ├── commands/                 # /new, /update
-    ├── skills/                   # scaffolding-guidance
-    └── resources/templates/      # What gets copied into a project
+    ├── commands/                 # /new, /update, /implement, /review
+    ├── skills/                   # scaffolding-guidance + 3 workflow skills
+    ├── hooks/                    # hooks.json + one script per event
+    ├── bin/workflow-state.sh     # the state machine
+    └── resources/templates/      # the 6 files a project actually gets
 ```
 
 ## Plugin Commands
@@ -45,10 +47,11 @@ No arguments. Claude asks what it needs.
 New projects receive (standalone, no plugin manifest):
 
 - `CLAUDE.md` — project hub
-- `.claude/settings.json` — registers 7 hooks, one per event, plus version tracking
-- `.claude/commands/` — 2 workflow commands (`implement`, `review`)
-- `.claude/skills/` — 3 skills
-- `.claude/project/` — feature tracking, `workflow-state.sh`, and `hooks/`
+- `.claude/settings.json` — version tracking and permissions (no hooks)
+- `.claude/project/` — feature tracking, roadmap, and a shim to the state machine
+
+Six files. Commands, skills, hooks and the state machine ship with the plugin,
+so upgrading the plugin upgrades every project with no migration.
 
 ## Testing
 
@@ -74,8 +77,8 @@ Read `test/README.md` before adding tests. Two things matter:
 
 ## Hook Architecture
 
-Hook bodies live in `resources/templates/.claude/project/hooks/`, one script per
-event. `settings.json` holds one-line invocations.
+Hooks live in `hooks/`, one script per event, registered by `hooks/hooks.json`
+using `${CLAUDE_PLUGIN_ROOT}`. Scaffolded projects register no hooks at all.
 
 Every hook follows the same ordering, and the order is load-bearing:
 

@@ -1,11 +1,16 @@
 ---
-description: Scaffold a new project with CLAUDE.md, workflow commands, skills, and project tracking
+description: Scaffold a new project with CLAUDE.md, project tracking, and the enforced workflow
 allowed-tools: Write, Bash, Read, Glob, AskUserQuestion
 ---
 
 # New Project
 
-Add Claude Code documentation, workflow commands, skills, and project tracking to a project.
+Set up a project to use the enforced development workflow.
+
+**What gets copied is deliberately small.** The workflow commands, skills, hooks
+and state machine ship inside this plugin and are versioned with it. Only the
+genuinely project-specific files land in the repo, so there is almost nothing to
+migrate when the plugin updates.
 
 ## Process
 
@@ -25,28 +30,22 @@ Options:
 
 If user selects "Specify a path", ask for the path.
 
-Derive project name from the folder name (convert to Title Case for display).
+Derive the project name from the folder name (Title Case for display).
 
 ### Step 2: Validate Target
 
-**Check if target is the plugin directory:**
+**Check the target is not this plugin's own directory:**
 
-- If target path contains/equals ${CLAUDE_PLUGIN_ROOT}, STOP with error
+- If the target path contains or equals `${CLAUDE_PLUGIN_ROOT}`, STOP with an error.
 
-**Check if target exists:**
+**Check if the target exists:**
 
-- If directory doesn't exist → Create it, proceed to Step 3
-- If directory exists with Claude Code files → Proceed to Step 2b
+- Directory does not exist → create it, go to Step 3
+- Directory exists with Claude Code files → Step 2b
 
 ### Step 2b: Handle Existing Directory
 
-**Scan for existing Claude Code files:**
-
-- CLAUDE.md
-- .claude/settings.json
-- .claude/commands/
-- .claude/skills/
-- .claude/project/
+Scan for `CLAUDE.md` and `.claude/`.
 
 **Use AskUserQuestion:**
 
@@ -66,25 +65,28 @@ Options:
 ```
 <path>/
 └── .claude/
-    ├── commands/
-    ├── skills/{development-workflow,project-standards,exploration-helpers}/
     └── project/
         ├── features/
-        ├── plans/
-        └── hooks/        # one script per hook event
+        └── plans/
 ```
+
+No `commands/`, `skills/` or `hooks/` directories. Those live in the plugin.
 
 ### Step 4: Copy Templates
 
 Copy from `${CLAUDE_PLUGIN_ROOT}/resources/templates/`:
 
-| Source                 | Destination            | Skip if exists (merge) |
-| ---------------------- | ---------------------- | ---------------------- |
-| CLAUDE.md              | CLAUDE.md              | Yes                    |
-| .claude/settings.json  | .claude/settings.json  | Yes                    |
-| .claude/commands/\*.md | .claude/commands/\*.md | Yes                    |
-| .claude/skills/\*      | .claude/skills/\*      | Yes                    |
-| .claude/project/\*     | .claude/project/\*     | Yes                    |
+| Source                                     | Destination           | Skip if exists (merge) |
+| ------------------------------------------ | --------------------- | ---------------------- |
+| CLAUDE.md                                  | CLAUDE.md             | Yes                    |
+| .claude/settings.json                      | .claude/settings.json | Yes                    |
+| .claude/project/high-level-user-stories.md | same                  | Yes                    |
+| .claude/project/roadmap.md                 | same                  | Yes                    |
+| .claude/project/workflow-state.sh          | same                  | No — always refresh    |
+| .claude/project/{features,plans}/.gitkeep  | same                  | Yes                    |
+
+`workflow-state.sh` is a shim, not the state machine. It is always refreshed
+because it contains the resolved plugin path and no user content.
 
 ### Step 5: Replace Placeholders
 
@@ -95,24 +97,25 @@ In all copied files:
 - `[PROJECT_NAME_KEBAB]` → kebab-case name
 - `[SCAFFOLD_DATE]` → today's date (YYYY-MM-DD)
 - `[DATE]` → today's date (YYYY-MM-DD)
+- `[PLUGIN_ROOT]` → the value of `${CLAUDE_PLUGIN_ROOT}` (shim only)
 
 ### Step 5b: Post-Copy Setup
 
-After copying templates:
-
-1. **Make the state machine and hooks executable:**
+1. **Make the shim executable:**
 
    ```bash
    chmod +x .claude/project/workflow-state.sh
-   chmod +x .claude/project/hooks/*.sh
    ```
 
-   The hook scripts are invoked as `bash <script>` so the exec bit is not
-   strictly required, but leaving them non-executable makes them awkward to run
-   by hand while debugging.
+2. **Verify it resolves.** If this fails, the shim has the wrong plugin path and
+   every workflow command in the docs will fail for the user:
 
-2. **Add the runtime state files to .gitignore** (create the file if needed).
-   These are per-developer working state, never shared:
+   ```bash
+   .claude/project/workflow-state.sh --help >/dev/null && echo "state machine OK"
+   ```
+
+3. **Add the runtime state files to .gitignore** (create it if needed). These are
+   per-developer working state, never shared:
 
    ```
    .claude/project/.workflow-state.json
@@ -121,9 +124,8 @@ After copying templates:
    .claude/project/.workflow-state.lock/
    ```
 
-   `.workflow-state.json` is the phase machine, `.workflow-log.jsonl` is the
-   append-only transition audit trail, `.turn-touched` is per-turn scratch for
-   the Stop hook, and `.workflow-state.lock/` is the write lock directory.
+   `.claude/project/reviews/` holds review reports. Leave those **tracked** —
+   they are the evidence behind each passed review and belong in history.
 
 ### Step 6: Report Results
 
@@ -136,21 +138,28 @@ After copying templates:
 ### Files Created
 
 - [x] CLAUDE.md
-- [x] .claude/settings.json (registers 7 hooks, one per event)
-- [x] .claude/commands/ (2 workflow commands: implement, review)
-- [x] .claude/skills/ (3 skills)
-- [x] .claude/project/ (tracking files, workflow-state.sh, hooks/)
+- [x] .claude/settings.json (version tracking)
+- [x] .claude/project/ (tracking files + workflow-state shim)
+
+Workflow commands, skills and hooks come from the plugin — nothing to maintain
+in this repo.
+
+### Important
+
+**Restart Claude Code** before starting work. Hook configuration is read at
+session start, so the workflow gates are not active in this session.
 
 ### Next Steps
 
 1. Review and customize CLAUDE.md
-2. Start building with `/implement`
+2. Restart Claude Code
+3. Start building with `/implement`
 
-**Tip:** Ask "Help me customize for [your-tech-stack]"
+**Tip:** ask "help me customize this for [your tech stack]"
 ```
 
 ## Safety Checks
 
-1. **Never scaffold into plugin directory**
-2. **Preserve existing source code** - Only touch `.claude/`
+1. **Never scaffold into the plugin directory**
+2. **Preserve existing source code** — only touch `CLAUDE.md` and `.claude/`
 3. **Confirm before overwrite**

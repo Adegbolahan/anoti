@@ -1,191 +1,173 @@
 ---
-description: Update Claude Code files in an existing scaffolded project to the latest version
+description: Update an existing scaffolded project to the latest plugin version
 allowed-tools: Write, Bash, Read, Glob, AskUserQuestion, Edit
 ---
 
 # Update Project
 
-Update Claude Code files in an existing project to the latest template version.
+Bring an existing project up to date with this plugin.
+
+**Since v3.0.0 there is almost nothing to update.** Workflow commands, skills,
+hooks and the state machine live in the plugin and move with it. A project holds
+only `CLAUDE.md`, its tracking files, and a shim. Upgrading the plugin upgrades
+the workflow.
+
+The one real migration is getting a pre-v3 project out of the old arrangement,
+where those components were copied into the repo and drifted.
 
 ## Process
 
 ### Step 1: Determine Target
 
-Check if current directory has `.claude/settings.json`:
+Check if the current directory has `.claude/settings.json`:
 
-- If yes → Use current directory
-- If no → Ask user for project path
+- Yes → use the current directory
+- No → ask the user for the project path
 
-### Step 2: Validate Project
+### Step 2: Read the current version
 
-**Check project has been scaffolded:**
+Read `.claude/settings.json` and extract `scaffoldVersion` and `scaffoldDate`.
 
-Read `.claude/settings.json` and extract:
+If `scaffoldVersion` is missing, this project predates version tracking. Treat it
+as pre-v3 and run the migration below.
 
-- `scaffoldVersion` (e.g., "1.0.0")
-- `scaffoldDate` (e.g., "2024-01-15")
+Read this plugin's version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
 
-If missing: "This project wasn't scaffolded or uses an older version without tracking."
+### Step 3: Compare
 
-Read template's `.claude/settings.json` from `${CLAUDE_PLUGIN_ROOT}/resources/templates/` and get current `scaffoldVersion`.
+**Same version:** "Project is up to date (version X.Y.Z)." Stop.
 
-### Step 3: Compare Versions
+**Project is NEWER than the plugin:** stop and say so. Do not downgrade:
 
-**If versions match:**
+> "This project was scaffolded by version X.Y.Z, which is newer than the
+> installed plugin (A.B.C). Update the plugin first: `/plugin update`."
 
-```
-Project is up to date (version X.X.X)
-No updates needed.
-```
+**Project is older:** report the gap and continue.
 
-**If project is older:**
+### Step 4: Pre-v3 migration (if scaffoldVersion is below 3.0.0)
 
-```
-Update available!
+This is the one that matters. Before v3, the workflow commands, skills, hooks and
+state machine were **copied into the project**. The plugin now provides them, and
+a copy left in place **shadows the plugin's version** — so the project would keep
+running old, broken code while appearing to have upgraded.
 
-Current: X.X.X (scaffolded YYYY-MM-DD)
-Latest:  Y.Y.Y
-```
-
-### Step 4: Show Update Options
+**4a. Confirm first.** This deletes files from their repo:
 
 **Use AskUserQuestion:**
 
 ```
-What would you like to update?
+This project has workflow files copied into it from an older version. The plugin
+now provides these, and the copies would shadow it — you would keep running the
+old versions.
+
+I will move them to .claude/.backup-pre-v3/ and then remove them:
+  .claude/commands/          (implement.md, review.md)
+  .claude/skills/            (development-workflow, project-standards, exploration-helpers)
+  .claude/project/hooks/     (if present)
+  .claude/project/workflow-state.sh  (replaced by a shim)
 
 Options:
-1. All Claude Code files (recommended)
-2. Settings only (.claude/settings.json)
-3. Commands only (.claude/commands/*.md)
-4. Skills only (.claude/skills/*)
-5. Cancel
+1. Back up and migrate (recommended)
+2. Show me the file list first
+3. Cancel
 ```
 
-### Step 5: Identify Files to Update
+**4b. Back up, then remove.**
 
-**Always preserve (never overwrite):**
+```bash
+mkdir -p .claude/.backup-pre-v3
+for p in .claude/commands .claude/skills .claude/project/hooks .claude/project/workflow-state.sh; do
+  [ -e "$p" ] && mv "$p" .claude/.backup-pre-v3/ 2>/dev/null
+done
+```
 
-- CLAUDE.md (user customizations)
-- .claude/project/\* (user stories, plans, roadmap)
+Print exactly what moved. Never remove anything silently.
 
-**Safe to update:**
+**4c. Install the shim.** Copy `resources/templates/.claude/project/workflow-state.sh`,
+replace `[PLUGIN_ROOT]` with `${CLAUDE_PLUGIN_ROOT}`, `chmod +x`, then verify:
 
-- .claude/settings.json (merge: keep custom hooks, update scaffoldVersion + add new workflow hooks)
-- .claude/commands/\*.md (old commands like discovery.md, plan-and-validate.md, etc. will be removed; replaced by implement.md + review.md)
-- .claude/skills/\*/SKILL.md
-- .claude/skills/_/references/_.md
-- .claude/project/workflow-state.sh (new in v2.0.0 — add if missing)
-- .claude/project/hooks/\*.sh (new in v2.2.0 — add if missing)
+```bash
+.claude/project/workflow-state.sh --help >/dev/null && echo "state machine OK"
+```
 
-### Step 5b: v2.0.0 Migration (if upgrading from v1.x)
+**4d. Strip hooks from settings.json.** Hooks now come from the plugin. Keep
+`permissions` and anything the user added; remove the `hooks` block; update
+`scaffoldVersion` and `scaffoldDate`.
 
-If the project's current version is 1.x.x:
+If the project had **custom** hooks of its own, do not drop them. Show them to
+the user and ask whether to keep them in `settings.json` — plugin hooks and user
+hooks merge, so both will run.
 
-1. **Delete old commands:** Remove `discovery.md`, `plan-and-validate.md`, `start-implementation.md`, `review-implementation.md`, `next.md` from `.claude/commands/`
-2. **Add new files:** Copy `workflow-state.sh` to `.claude/project/` and make it executable
-3. **Add .gitignore entry:** Append `.claude/project/.workflow-state.json` to `.gitignore`
-4. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference old commands (/discovery, /plan-and-validate, etc.). Consider updating the Feature Development Workflow section to reference /implement and /review only."
+**4e. Extend `.gitignore`:**
 
-### Step 5c: v2.1.0 Migration (if upgrading from v2.0.x)
+```
+.claude/project/.workflow-state.json
+.claude/project/.workflow-log.jsonl
+.claude/project/.turn-touched
+.claude/project/.workflow-state.lock/
+```
 
-If the project's current version is 2.0.x:
+Leave `.claude/project/reviews/` tracked — those reports are the evidence behind
+each passed review.
 
-1. **Update workflow-state.sh:** Replace with new version that adds review cycle states (`under_review`, `changes_requested`, `review_passed`), backward transition support, `set-findings`, `get-findings`, `review-cycle` commands, and `reviewCycle`/`reviewFindings` in state JSON
-2. **Update settings.json hooks:** Add commit gate (blocks `git commit` unless `review_passed`), add `under_review` warning to source edit hook, add fix tracking during `changes_requested`, gate completion to only advance from `review_passed`
-3. **Update review.md:** Replace with the review cycle and automated fix loop
-4. **Update implement.md:** Phase 3 changes from "Validate" to "Review Cycle" with mandatory test categories and `/review` integration
-5. **Warn about CLAUDE.md:** "Your CLAUDE.md may reference the old Phase 3 (Validate). Consider updating to document the review cycle: Phase 3 now runs a review with an automated fix loop, and commits are BLOCKED by hooks until review passes."
+**4f. Warn about CLAUDE.md.** It is never overwritten, so it may still describe
+the old arrangement:
 
-### Step 5d: v2.2.0 Migration (if upgrading from 2.0.x or 2.1.x)
+> "Your CLAUDE.md may reference `.claude/commands/` or `.claude/skills/`, which
+> no longer exist in this project — the plugin provides them now. It may also
+> describe a commit gate that never fired: before v2.2.0 it did not, and before
+> v2.3.0 the agent could open it in two commands. Want me to update those
+> sections?"
 
-The commit gate did not work before 2.2.0. This migration is what makes it work,
-so do not skip it.
+**4g. Behaviour changes to state plainly:**
 
-1. **Add the hook scripts:** copy `.claude/project/hooks/` from the templates and
-   `chmod +x .claude/project/hooks/*.sh`.
+> - The commit gate now blocks, including on states it cannot evaluate (missing
+>   `jq`, corrupt state, unrecognised phase).
+> - Passing review requires evidence: `advance review_passed --evidence <path>`.
+> - `/review` no longer dispatches four sub-agents it never shipped.
+> - Stuck? `.claude/project/workflow-state.sh why-blocked`, or arm a recorded
+>   one-shot bypass with `workflow-state.sh override "<reason>"`.
 
-2. **Replace `settings.json` wholesale.** Hook bodies moved out of JSON and into
-   those scripts. The old file had 4 `PreToolUse` groups and 3 `PostToolUse`
-   groups; hooks in the same event run in parallel and race on the state file.
-   The new file registers exactly one hook per event.
+### Step 5: Restart marker
 
-   If the project added custom hooks of its own, carry them over by hand and
-   tell the user which ones you moved. Do not silently drop them.
+Hook configuration is read at session start, so the new hooks are **not active in
+the current session**:
 
-3. **Replace `workflow-state.sh`.** New in this version: named accessors
-   (`get-phase`, `get-story`, `get-findings-count`, `get-review-cycle`) replacing
-   the generic `get-field`, a `snapshot` command, a `mkdir` write lock,
-   `schemaVersion` with forward migration, `override`, and `why-blocked`.
+```bash
+date -u +%Y-%m-%dT%H:%M:%SZ > .claude/project/.upgrade-pending
+```
 
-4. **Fix callers of the removed `get-field`.** It is gone. Search the project for
-   it and rewrite: `get-field activeStory` becomes `get-story`, `get-field phase`
-   becomes `get-phase`. `/review` and `/implement` are updated by this migration,
-   but a customized copy may have its own callers.
+Print loudly:
 
-5. **Extend `.gitignore`:**
+> **Restart Claude Code now.** Until you do, this session is running the old hook
+> configuration. `SessionStart` clears this marker and confirms the new hooks are
+> live.
 
-   ```
-   .claude/project/.workflow-log.jsonl
-   .claude/project/.turn-touched
-   .claude/project/.workflow-state.lock/
-   ```
-
-   (`.workflow-state.json` should already be there from v2.0.0.)
-
-6. **Warn the user that behaviour changes:**
-
-   > "The commit gate now actually blocks. Before 2.2.0 it never fired, because
-   > nothing advanced the phase to `implementation_in_progress`. It also blocks
-   > on states it cannot evaluate — missing `jq`, a corrupt state file, an
-   > unrecognised phase. If you get stuck, run
-   > `.claude/project/workflow-state.sh why-blocked`, or arm a recorded one-shot
-   > bypass with `workflow-state.sh override "<reason>"`."
-
-7. **Tell them to restart Claude Code.** Hook configuration is read at session
-   start, so the new hooks do not take effect in the current session.
-
-### Step 6: Perform Update
-
-For each file being updated:
-
-1. Read template file from `${CLAUDE_PLUGIN_ROOT}/resources/templates/`
-2. Replace placeholders using project's existing values
-3. Write updated file
-
-### Step 7: Update Version Tracking
-
-Update `.claude/settings.json`:
-
-- Set `scaffoldVersion` to latest
-- Set `scaffoldDate` to today
-
-### Step 8: Report Results
+### Step 6: Report
 
 ```markdown
 ## Update Complete
 
 **Project:** <name>
-**Updated from:** X.X.X → Y.Y.Y
+**Updated:** X.Y.Z → A.B.C
 
-### Files Updated
+### Moved to .claude/.backup-pre-v3/
 
-- [x] .claude/settings.json
-- [x] .claude/commands/\*.md
-- [x] ... (list updated files)
+- [list exactly what moved]
 
-### Files Preserved
+### Preserved
 
 - [x] CLAUDE.md
-- [x] .claude/project/\*
+- [x] .claude/project/ (stories, plans, roadmap)
 
-### What's New
+### Action required
 
-- [List changes in this version]
+**Restart Claude Code.** Hooks load at session start.
 ```
 
 ## Safety Checks
 
 1. **Never overwrite CLAUDE.md**
-2. **Never overwrite project tracking files**
-3. **Suggest git commit before updating**
+2. **Never touch `.claude/project/features/`, `plans/`, `roadmap.md` or `high-level-user-stories.md`**
+3. **Never delete without backing up first, and always print what moved**
+4. **Suggest committing before updating**

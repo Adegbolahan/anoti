@@ -51,17 +51,18 @@ No arguments needed - Claude asks what it needs.
 your-project/
 ├── CLAUDE.md                    # Project hub
 └── .claude/
-    ├── settings.json            # Registers 7 hooks + version tracking
-    ├── commands/                # implement, review
-    ├── skills/                  # 3 interactive skills
-    └── project/                 # Feature tracking
-        ├── features/
-        ├── plans/
-        ├── hooks/               # One script per hook event
-        ├── workflow-state.sh    # Phase state machine
+    ├── settings.json            # Version tracking, no hooks
+    └── project/
+        ├── features/            # User story specs
+        ├── plans/               # Implementation plans
+        ├── reviews/             # Review reports (evidence for each pass)
+        ├── workflow-state.sh    # Shim to the plugin's state machine
         ├── high-level-user-stories.md
         └── roadmap.md
 ```
+
+Six files. The workflow commands, skills, hooks and state machine ship with the
+plugin — update the plugin and every project gets it, with no migration.
 
 ### Features
 

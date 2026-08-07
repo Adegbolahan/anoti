@@ -1,90 +1,11 @@
 {
-  "scaffoldVersion": "2.3.0",
+  "scaffoldVersion": "3.0.0",
   "scaffoldDate": "[SCAFFOLD_DATE]",
   "permissions": {
     "allow": [
       "Read(.claude/project/**)",
       "Edit(.claude/project/**)",
       "Write(.claude/project/**)"
-    ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/session-start.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/user-prompt.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/pre-bash.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/pre-edit.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/post-edit.sh",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/post-bash.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/project/hooks/stop.sh",
-            "timeout": 60
-          }
-        ]
-      }
     ]
   }
 }

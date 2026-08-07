@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-08-07
+
+### Breaking Changes
+
+**Workflow components moved out of scaffolded projects and into the plugin.**
+
+Before this release the workflow commands, skills, hooks and state machine were
+copied into every project. Copies drift. That is why `/update` carried a growing
+chain of hand-written migrations, and why `marketplace.json` sat two releases
+behind while a pre-push reminder existed the whole time.
+
+They now ship with the plugin. **Upgrading the plugin upgrades every project.**
+
+What a scaffolded project holds now — 6 files, down from 15:
+
+```
+CLAUDE.md
+.claude/settings.json                  version tracking, no hooks
+.claude/project/high-level-user-stories.md
+.claude/project/roadmap.md
+.claude/project/workflow-state.sh      a shim, not the state machine
+.claude/project/{features,plans}/
+```
+
+`.claude/commands/`, `.claude/skills/` and `.claude/project/hooks/` are gone from
+projects entirely.
+
+### Added
+
+- `hooks/hooks.json` registers all 7 hooks from the plugin using
+  `${CLAUDE_PLUGIN_ROOT}`.
+- `bin/workflow-state.sh` — the state machine, versioned with the plugin.
+- A shim at `.claude/project/workflow-state.sh` so the invocation printed by the
+  commit gate and the docs keeps working. It resolves the plugin via
+  `$CLAUDE_PLUGIN_ROOT`, then a path baked in at scaffold time, then a search of
+  `~/.claude/plugins`. No logic, nothing to drift.
+- `SessionStart` confirms an upgrade took effect and clears the marker `/update`
+  leaves behind. That message firing at all proves the new hooks are loaded,
+  because it is one of them.
+- CI now checks `hooks.json` instead of `settings.json`, asserts settings.json
+  registers **no** hooks, and verifies every registered script actually exists.
+
+### Changed
+
+- `/update` collapsed its per-version migration chain into one pre-v3 migration.
+  It backs up `.claude/commands/`, `.claude/skills/`, `.claude/project/hooks/`
+  and the old `workflow-state.sh` to `.claude/.backup-pre-v3/`, prints exactly
+  what moved, and never deletes silently. A copy left in place would **shadow**
+  the plugin's version, so the project would keep running old code while
+  appearing upgraded.
+- `/new` scaffolds 6 files instead of 15, and verifies the shim resolves before
+  reporting success.
+- The test harness reads `hooks/hooks.json` and expands `${CLAUDE_PLUGIN_ROOT}`,
+  mirroring how Claude Code actually loads them. Fixtures install a plugin at a
+  separate path from the project, so the tests exercise the real arrangement.
+
+### Migration
+
+Run `/update`, then **restart Claude Code** — hook configuration is only read at
+session start, so until you restart the session is still running the old hooks.
+
+---
+
 ## [2.3.0] - 2026-08-07
 
 2.2.0 made the gate block. It did not make the gate bind the agent it gates.

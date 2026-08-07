@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# The release job needs to push a tag.
+permissions:
+  contents: write
+
 jobs:
   # The gate suite. This is the job that makes the plugin's central claim
   # checkable: that the commit gate actually blocks.
@@ -85,6 +89,18 @@ jobs:
           [ "$plugin" = "$scaffold" ] || { echo "FAIL: settings.json scaffoldVersion disagrees"; fail=1; }
           grep -q "^## \[$plugin\]" CHANGELOG.md || { echo "FAIL: CHANGELOG.md has no [$plugin] entry"; fail=1; }
           exit $fail
+      - name: CHANGELOG entry is not empty
+        run: |
+          V=$(jq -r '.version' project-scaffolder/.claude-plugin/plugin.json)
+          # A heading with no body is worse than no heading — it looks like the
+          # release was documented when it was not.
+          body=$(awk -v tag="## [$V]" \
+                   'index($0,tag)==1 {p=1; next} p && /^## \[/ {exit} p {print}' \
+                   CHANGELOG.md | tr -d '[:space:]')
+          if [ -z "$body" ]; then
+            echo "CHANGELOG.md has a [$V] heading but no content under it"
+            exit 1
+          fi
       - name: Advertised commands exist
         run: |
           # marketplace.json description is the storefront copy. If it names a
@@ -100,3 +116,41 @@ jobs:
             fi
           done
           exit $fail
+
+  # Tag a release only when every gate above is green and the version is new.
+  #
+  # Marketplace installs resolve from git, so the tag IS the release: it is the
+  # only thing a user can pin to or roll back to. v2.2.0 and v2.3.0 shipped
+  # without one, which is what this job exists to stop happening again.
+  release:
+    name: Tag release
+    needs: [hooks, lint, hook-schema, versions]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Tag if this version is not yet released
+        run: |
+          V=$(jq -r '.version' project-scaffolder/.claude-plugin/plugin.json)
+          if git rev-parse "v$V" >/dev/null 2>&1; then
+            echo "v$V is already tagged. Bump the version to cut a new release."
+            exit 0
+          fi
+          # The tag message is this version's CHANGELOG section, so `git show
+          # v2.3.0` tells you what shipped without leaving the terminal.
+          awk -v tag="## [$V]" \
+            'index($0,tag)==1 {p=1; next} p && /^## \[/ {exit} p {print}' \
+            CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "No CHANGELOG section found for $V"
+            exit 1
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$V" -F /tmp/release-notes.md
+          git push origin "v$V"
+          echo "Tagged v$V"

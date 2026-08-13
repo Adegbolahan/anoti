@@ -3,6 +3,17 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.5] — 2026-08-13
+
+- Feedback skill: the field-report → human-gated GitHub issue procedure
+  (which produced 0.5.2 and 0.5.4) as a standalone invocable skill —
+  capture at the friction moment, cited field-report format with plugin
+  version and evidence, dedup against existing issues before proposing,
+  the send always human-gated, and a `<state-dir>/feedback/` queue for
+  headless or gh-less sessions (gate deferred, never skipped).
+  policy-retrospect now routes anoti friction through it; SKILL-MAP row
+  added.
+
 ## [0.5.4] — 2026-08-13
 
 - Default-branch edit protection (D020, human directive): the inhibition

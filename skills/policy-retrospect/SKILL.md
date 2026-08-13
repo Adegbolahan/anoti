@@ -33,12 +33,12 @@ each run it.)
 cannot-automate boundaries → LESSONS-LEARNT.md (promotable to `policy`
 records via consolidation + ratification); anything falsifiable →
 candidate claim. **Friction caused by anoti itself** (helper errors,
-hook false positives, unclear skills, guardrail misfires) → propose a
-GitHub issue on the anoti repo — draft the title/body with trail
-citations and ask the human before filing (`gh issue create -R
-Adegbolahan/anoti`): issue creation is outward-facing, so it is
-escalate-gated, never automatic. This is how every governed project
-feeds anoti's own improvement loop.
+hook false positives, unclear skills, guardrail misfires) → route via
+**the feedback skill** (skills/feedback/): cited field report, dedup
+against existing issues, human-gated `gh issue create` — issue creation
+stays outward-facing and escalate-gated; the procedure lives there, in
+one place. This is how every governed project feeds
+anoti's own improvement loop.
 
 **Fast path:** a genuinely trivial session with nothing to report reports
 nothing — the retrospective's silence is itself the fast-path verdict.

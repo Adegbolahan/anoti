@@ -22,3 +22,14 @@ grep -qi "resume the original builder" "$ROOT/skills/deliberate/SKILL.md" 2>/dev
 assert_ok $? "deliberate codifies D011 fix-round continuation"
 grep -qi "retrospect" "$ROOT/skills/consolidate/SKILL.md" 2>/dev/null
 assert_ok $? "consolidate runs the session retrospective"
+for s in spec plan; do
+  f="$ROOT/skills/$s/SKILL.md"
+  [ -s "$f" ]; assert_ok $? "document skill exists: $s"
+  assert_eq "$(sed -n 's/^name: //p' "$f" | head -1)" "$s" "frontmatter name matches: $s"
+done
+grep -q "docs/specs/" "$ROOT/skills/spec/SKILL.md" 2>/dev/null && grep -qi "pre-registered\|pre-registration" "$ROOT/skills/spec/SKILL.md" 2>/dev/null && grep -qi "success criteria" "$ROOT/skills/spec/SKILL.md" 2>/dev/null
+assert_ok $? "spec skill: filing path + experiment pre-registration + success criteria"
+grep -q "docs/plans/" "$ROOT/skills/plan/SKILL.md" 2>/dev/null && grep -qi "no placeholder" "$ROOT/skills/plan/SKILL.md" 2>/dev/null && grep -qi "cascade plan" "$ROOT/skills/plan/SKILL.md" 2>/dev/null
+assert_ok $? "plan skill: filing path + no-placeholders + cascade plan format"
+grep -q "plan skill" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
+assert_ok $? "deliberate references the plan skill"

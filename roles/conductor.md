@@ -32,6 +32,9 @@ produce a **cascade plan**:
 main session is the only dispatcher; the plan is a proposal it ratifies.
 The conductor's product is always a document.
 
+**Format:** cascade plans follow the plan skill's required fields
+(`skills/plan/SKILL.md`).
+
 **Definition of done:** a cascade plan the main session can execute without
 asking a single clarifying question — every factual assertion cited, every
 gate marked, every unknown owned, budget arithmetic shown.

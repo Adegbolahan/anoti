@@ -63,7 +63,8 @@ A plan's lifetime matches its artifacts' lifetime:
 
 - Work producing **durable artifacts** (anything committed to the repo):
   persist the ratified cascade plan to
-  `docs/plans/YYYY-MM-DD-<topic>-cascade.md` before dispatching. The
+  `docs/plans/YYYY-MM-DD-<topic>-cascade.md` before dispatching, in the
+  format the plan skill defines (load `skills/plan/SKILL.md`). The
   session-state copy is the working copy; the file is the record —
   session state is deleted on clean exit, and a ratified plan must not
   evaporate with it.

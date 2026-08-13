@@ -42,8 +42,8 @@ evidence pending}` event.
 
 ## Maintenance map (which document updates on which event)
 
-- Design accepted → `docs/specs/YYYY-MM-DD-<topic>-design.md`
-- Implementation planned → `docs/plans/`
+- Design accepted → `docs/specs/YYYY-MM-DD-<topic>-design.md` (format: the spec skill)
+- Implementation planned → `docs/plans/` (format: the plan skill)
 - Direction changes → ROADMAP.md (draft-for-ratification; human merges)
 - Scope of "good" changes → HIGH-LEVEL-STORIES.md (same gate)
 - Work begun/finished → TODOS.md (checked items are history; never delete)

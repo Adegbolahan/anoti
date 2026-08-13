@@ -34,8 +34,11 @@ Goal: the falsifiable version of anoti's value.
       three arms incl. instructions-only for H2 isolation, planted answer
       key, blinded grader with human spot-audit, decision rules fixed
       before any run)
-- [ ] Run the benchmark; record results as evidence on H1–H3 claims —
-      promoted or demoted, either outcome honored
+- [x] Run the benchmark (sequence 1) ✅ 2026-08-13 — verdicts recorded
+      honestly: H1 against-with-ambiguity (ceiling effect; recall
+      unmeasurable), H2 against-with-ambiguity (arm B degraded), H3
+      untestable; defects found and fixed in 0.3.1 (D014/D015).
+      Sequence 2 pending human decision
 - [ ] Fast-path calibration from .anoti/telemetry.log (classifier
       eagerness vs outcomes)
 - [ ] Q001 format-comprehension experiment rides along

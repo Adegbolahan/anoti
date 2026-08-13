@@ -43,3 +43,18 @@
   (cf730d6). Why: bulk staging assumes a single writer. Apply by: stage
   explicitly by path in multi-session repos; treat the index as shared
   state.
+
+- 2026-08-13 — Benchmark traps must exceed the model's native competence:
+  all three arms caught both traps, so the pilot measured the model, not
+  the methodology. Why: traps were designed for a weaker baseline. Apply
+  by: design traps the unaided model demonstrably fails (longer horizons,
+  more facts, subtler contradictions) before sequence 2.
+- 2026-08-13 — A harness pause that says "go do X elsewhere" without the
+  full procedure inline will be acknowledged, not performed: both
+  interactive points were skipped in both governed arms. Apply by: print
+  the entire response script at the pause and require a typed 'done'
+  (fixed in 66e0a98).
+- 2026-08-13 — Silence is not a bootstrap strategy: retrieve said nothing
+  in storeless projects, so governed sessions never learned anoti existed
+  (arm B's empty shell). Apply by: empty-project git repos now get a
+  one-line skillify offer (fixed in 66e0a98).

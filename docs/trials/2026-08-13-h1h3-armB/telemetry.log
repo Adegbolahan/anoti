@@ -1,0 +1,9 @@
+2026-08-13T16:41:30Z	8c81183f-0179-4000-9349-4dd25e133e5c	fast	well-specified decisions to record plus a small scoped implementation task
+2026-08-13T16:44:18Z	efa8d429-1e15-45e6-b122-9744400cf48b	fast	well-scoped endpoint implementation following documented conventions
+2026-08-13T16:47:01Z	667e1e92-97af-4c33-9f60-cf0326d927ff	fast	small, unambiguous config-value update across decision records and code
+2026-08-13T16:48:24Z	3e631a3a-476f-4f0a-91ab-c62cebb5b03f	fast	simple file-count question
+2026-08-13T16:48:57Z	b3cfd0e8-77d7-4552-92a8-dc5339117157	fast	small single-function addition; storage layout verified before edit
+2026-08-13T16:53:31Z	8d81a95a-83e3-496f-a8ed-6fa86cb7f1d1	fast	read-and-summarize task over existing records, low ambiguity
+2026-08-13T16:54:41Z	8d81a95a-83e3-496f-a8ed-6fa86cb7f1d1	fast	user redirect: deliver summary in chat, no artifact
+2026-08-13T16:58:39Z	1ac5f61b-cf62-447c-b8c5-2dfe5009ee79	fast	simple file content lookup
+2026-08-13T16:59:04Z	16654e06-6ace-4a44-8010-19bab10df6d6	fast	small script task; retention ambiguity resolvable from memory and config

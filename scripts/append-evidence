@@ -1,0 +1,22 @@
+#!/bin/bash
+# append-evidence <store.yaml> <record-id> <type> <note> [<ref>...]
+# Mechanical, quoting-safe evidence attach. Evidence accumulates without
+# ratification (status still moves only in /anoti:review). Refuses unknown
+# ids; never leaves the store invalid.
+set -u
+f="${1:?usage: append-evidence <store> <record-id> <type> <note> [refs...]}"
+rid="${2:?record id required}"
+typ="${3:?evidence type required}"
+note="${4:?note required}"
+shift 4
+SELF="$(cd "$(dirname "$0")" && pwd)"
+RID="$rid" yq -e '.records[] | select(.id == strenv(RID))' "$f" >/dev/null 2>&1 \
+  || { echo "append-evidence: no record '$rid' in $f" >&2; exit 1; }
+refs_json="[]"
+[ "$#" -gt 0 ] && refs_json="$(printf '%s\n' "$@" | jq -R . | jq -s -c .)"
+TS="$(date -u +%Y-%m-%d)" RID="$rid" T="$typ" N="$note" R="$refs_json" \
+  yq '(.records[] | select(.id == strenv(RID)) | .evidence) += [{"date": strenv(TS), "type": strenv(T), "note": strenv(N), "refs": (strenv(R) | fromjson)}]' "$f" > "$f.tmp" \
+  || { rm -f "$f.tmp"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "append-evidence: result failed validation; store untouched" >&2; exit 1; }
+mv "$f.tmp" "$f"
+exit 0

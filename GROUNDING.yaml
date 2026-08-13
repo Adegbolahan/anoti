@@ -79,7 +79,11 @@ records: # generated — do not edit by hand
     epistemic_status: probable
     ratification: approved
     source: {type: conversation}
-    evidence: []
+    evidence:
+      - date: "2026-08-13"
+        type: literature
+        note: 'Canonical cognitive-science literature supports each pipeline stage and both caveats. Citations drawn from model knowledge of the canonical works; verification path before any promotion: fetch and check each source.'
+        refs: ["Sperling (1960), Psychological Monographs — iconic (visual sensory) memory, sub-second persistence", "Darwin, Turvey & Crowder (1972) — echoic memory, a few seconds", "Broadbent (1958), Perception and Communication — filter theory of selective attention (the bottleneck)", "Atkinson & Shiffrin (1968) — multi-store model: sensory, short-term, long-term", "Miller (1956), Psych Review — span of ~7±2 chunks", "Cowan (2001), BBS — working-memory capacity nearer ~4 chunks", "Baddeley & Hitch (1974) — working memory as active manipulation", "McGaugh (2000), Science — memory consolidation", "Clark (2013), BBS — predictive processing: top-down expectation shapes perception (caveat 2)"]
     sequence:
       - Sensory input — stimuli are converted into neural signals by the sense organs.
       - Sensory memory — raw input held very briefly (<1s visual, a few seconds auditory).
@@ -95,6 +99,10 @@ records: # generated — do not edit by hand
       - {date: 2026-08-12, action: created, by: session}
       - {date: 2026-08-13, action: migrated, by: session, note: v2 -> v3}
       - {date: 2026-08-13, action: demoted, by: session, note: grandfathered; established without evidence list; evidence pending}
+      - date: "2026-08-13"
+        action: evidence-appended
+        by: session
+        note: literature backfill per Phase 2 carry-over; method independent of founding conversation
   - id: D002
     date: 2026-08-12
     type: claim
@@ -103,7 +111,11 @@ records: # generated — do not edit by hand
     epistemic_status: probable
     ratification: approved
     source: {type: conversation}
-    evidence: []
+    evidence:
+      - date: "2026-08-13"
+        type: literature
+        note: Transformer-architecture literature supports each stage of the described loop and both caveats. Citations from model knowledge of canonical works; verify sources before any promotion.
+        refs: ["Vaswani et al. (2017), Attention Is All You Need — all-to-all self-attention computed in parallel; stacked layers; softmax distribution over vocabulary", "Radford et al. (2019), GPT-2 — autoregressive next-token generation loop", "Brown et al. (2020), GPT-3 — in-context learning with frozen weights; no updates at inference (caveats 1-2)"]
     sequence:
       - Input — raw data arrives (text, image, audio) as the prompt.
       - Tokenization — input broken into tokens (word pieces, image patches).
@@ -119,6 +131,10 @@ records: # generated — do not edit by hand
       - {date: 2026-08-12, action: created, by: session}
       - {date: 2026-08-13, action: migrated, by: session, note: v2 -> v3}
       - {date: 2026-08-13, action: demoted, by: session, note: grandfathered; established without evidence list; evidence pending}
+      - date: "2026-08-13"
+        action: evidence-appended
+        by: session
+        note: literature backfill per Phase 2 carry-over; method independent of founding conversation
   - id: D003
     date: 2026-08-12
     type: claim
@@ -127,7 +143,11 @@ records: # generated — do not edit by hand
     epistemic_status: probable
     ratification: approved
     source: {type: conversation}
-    evidence: []
+    evidence:
+      - date: "2026-08-13"
+        type: literature
+        note: 'Synthesis claim: its contrasts inherit support from D001/D002 literature (dependence stated — this evidence is NOT independent of those records). Direct support for the learning-from-use contrast: in-context learning leaves weights unchanged while human memory consolidates continuously.'
+        refs: ["Brown et al. (2020) — ICL without weight updates, vs continuous human consolidation (McGaugh 2000)", "Cowan (2001) ~4-chunk span vs fixed context windows — the working-memory contrast"]
     relationships:
       - {type: compares, target: D001}
       - {type: compares, target: D002}
@@ -148,6 +168,10 @@ records: # generated — do not edit by hand
       - {date: 2026-08-12, action: created, by: session}
       - {date: 2026-08-13, action: migrated, by: session, note: v2 -> v3}
       - {date: 2026-08-13, action: demoted, by: session, note: grandfathered; established without evidence list; evidence pending}
+      - date: "2026-08-13"
+        action: evidence-appended
+        by: session
+        note: literature backfill; derives from D001/D002 sources — dependence noted for the promotion rule
   - id: D004
     date: 2026-08-12
     type: claim

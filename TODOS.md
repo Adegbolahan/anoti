@@ -2,9 +2,12 @@
 
 <!-- Shared prospective memory. Checked items are history; do not delete them. -->
 
-- [ ] Backfill evidence for D001–D003: attach real citations (cognitive-science
+- [x] Backfill evidence for D001–D003: attach real citations (cognitive-science
       and transformer-architecture sources) so /anoti:review has grounds to
-      re-promote the grandfathered claims. (raised 2026-08-13)
+      re-promote the grandfathered claims. (raised 2026-08-13; done 2026-08-13
+      — canonical literature attached via new append-evidence helper; D003's
+      derivation from D001/D002 sources noted; source-fetch verification
+      named as the pre-promotion step)
 - [ ] Plan 3: dogfood behavioral tests + H1–H3 comparative benchmark against
       vanilla Claude Code. (raised 2026-08-13)
 - [x] v1.1 role set (13 remaining roles) after core-10 prove out. (raised 2026-08-13;

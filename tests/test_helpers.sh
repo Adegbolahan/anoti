@@ -38,3 +38,15 @@ printf 'not json' | "$ROOT/scripts/append-record" store.yaml 2>/dev/null
 assert_eq "$?" "1" "garbage JSON rejected"
 "$ROOT/scripts/validate-workspace" store.yaml >/dev/null 2>&1; assert_ok $? "store still valid after rejected append"
 ); rm -rf "$tmp"
+
+# --- append-evidence: mechanical evidence attach (gap found during backfill) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+"$ROOT/scripts/append-evidence" s.yaml D001 literature "canonical sources: attention, memory" "Miller (1956)" "Vaswani et al. (2017)"
+assert_ok $? "append-evidence exits 0"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .evidence | length' s.yaml)" "1" "evidence entry appended"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .evidence[0].refs | length' s.yaml)" "2" "refs list carried intact"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1; assert_ok $? "store valid after evidence append"
+"$ROOT/scripts/append-evidence" s.yaml NOPE literature x r 2>/dev/null
+assert_eq "$?" "1" "unknown record id rejected"
+); rm -rf "$tmp"

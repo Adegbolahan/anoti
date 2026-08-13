@@ -11,6 +11,7 @@ shift 2
 reason="${*:?reason required}"
 case "$verdict" in fast|slow) ;; *) echo "append-classification: verdict must be fast|slow" >&2; exit 1 ;; esac
 d="$AD/sessions"; mkdir -p "$d"
+[ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore"
 sf="$d/$sid.yaml"
 if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"

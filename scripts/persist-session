@@ -7,6 +7,7 @@ input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
 [ -n "$sid" ] || exit 0
 d="$AD/sessions"; mkdir -p "$d" 2>/dev/null || exit 0
+[ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore"
 sf="$d/$sid.yaml"
 if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"

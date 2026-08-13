@@ -69,3 +69,10 @@ ANOTI_DIR=".claude/anoti" "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
 out="$(printf '{"session_id":"cfg"}' | ANOTI_DIR=".claude/anoti" "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
 printf '%s' "$out" | grep -q "2 records"; assert_ok $? "retrieve trust check honors ANOTI_DIR"
 ); rm -rf "$tmp"
+
+# state dir is self-ignoring: creators drop .gitignore('*') inside it
+tmp="$(mktemp -d)"; ( cd "$tmp"
+"$ROOT/scripts/append-classification" gi fast "gitignore test"
+[ -f .anoti/.gitignore ] && [ "$(cat .anoti/.gitignore)" = "*" ]
+assert_ok $? "state dir self-ignoring via .anoti/.gitignore"
+); rm -rf "$tmp"

@@ -1,4 +1,4 @@
-POLICIES="epistemic trace-to-frame escalate-destructive parallel-breadth adversarial-handoff test-driven visual-verify reversible-change draft-for-ratification reader-run"
+POLICIES="epistemic trace-to-frame escalate-destructive retrospect parallel-breadth adversarial-handoff test-driven visual-verify reversible-change draft-for-ratification reader-run"
 for p in $POLICIES; do
   f="$ROOT/skills/policy-$p/SKILL.md"
   [ -s "$f" ]; assert_ok $? "policy skill exists: $p"
@@ -11,3 +11,5 @@ grep -qi "ratif" "$ROOT/skills/policy-draft-for-ratification/SKILL.md" 2>/dev/nu
 assert_ok $? "draft-for-ratification covers ratification"
 grep -qi "never edits" "$ROOT/skills/policy-adversarial-handoff/SKILL.md" 2>/dev/null
 assert_ok $? "adversarial-handoff: judge never edits"
+grep -qi "went well" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null && grep -qi "skillif" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null && grep -qi "cannot be automated" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null
+assert_ok $? "retrospect covers went-well/skillify/cannot-be-automated"

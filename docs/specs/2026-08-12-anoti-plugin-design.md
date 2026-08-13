@@ -333,7 +333,11 @@ never invent new machinery.
 Universal (attached to every role): `epistemic` (hypothesis before test;
 claims carry evidence; significant claims to the skeptic before asserting),
 `trace-to-frame` (untraceable work stops and escalates),
-`escalate-destructive` (binds the inhibition decision table).
+`escalate-destructive` (binds the inhibition decision table). A fourth
+universal operates at **session level** rather than per spawn:
+`retrospect` — every nontrivial session closes with a cited retrospective
+(went well / didn't / skillify / lessons / cannot-be-automated) run inside
+consolidation; agent reports feed it, the main session runs it.
 
 Composable: `parallel-breadth` (explorer), `adversarial-handoff` (reviewer
 spawn before done), `test-driven`, `visual-verify`, `reversible-change`,

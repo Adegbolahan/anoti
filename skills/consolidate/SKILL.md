@@ -45,10 +45,16 @@ the single writer; agents (including the consolidator) only propose.
    does this itself; append-event leaves trust to the flow's end).
 10. **Questions:** promote surviving report doubts to `open_questions`
     with `{id, date, question, raised_by, context, status, refs}`.
-11. **Close the episode:** session state `episode: committed`. Also update
-    TODOS.md (done/new items) and LESSONS-LEARNT.md (process lessons —
-    a lesson that becomes falsifiable and gathers evidence graduates into
-    a claim later).
+11. **Run the session retrospective** (policy-retrospect, universal):
+    what went well, what didn't, what to skillify, what to learn, what
+    cannot be automated — each cited to the trail. Route: lessons →
+    LESSONS-LEARNT.md; skillify candidates → TODOS.md; cannot-automate
+    boundaries → LESSONS-LEARNT.md (promotable to `policy` records).
+    Trivial sessions route nothing — silence is the fast path.
+12. **Close the episode:** `scripts/set-episode <session-id> committed`.
+    Also update TODOS.md (done/new items) and LESSONS-LEARNT.md (a lesson
+    that becomes falsifiable and gathers evidence graduates into a claim
+    later).
 
 In human-absent contexts: candidates queue in session state, everything
 that would need ratification waits, and nothing lands above `pending`.

@@ -20,3 +20,5 @@ grep -qi "lifetime" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -q "p
 assert_ok $? "deliberate carries the plan-persistence lifetime rule"
 grep -qi "resume the original builder" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -qi "pre-fix snapshot" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
 assert_ok $? "deliberate codifies D011 fix-round continuation"
+grep -qi "retrospect" "$ROOT/skills/consolidate/SKILL.md" 2>/dev/null
+assert_ok $? "consolidate runs the session retrospective"

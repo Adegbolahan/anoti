@@ -1,5 +1,7 @@
 # anoti — Design Spec
 
+> **Outsource some of the thinking, but never outsource understanding.**
+
 **Date:** 2026-08-12
 **Status:** Approved in brainstorming; pending user review of this document
 **Grounding:** Discoveries D001–D004 and open question Q001 in `GROUNDING.yaml`
@@ -26,6 +28,13 @@ evidence, falsifiability, and evidence-driven status transitions.
   defer to each other.
 
 ## Design principles
+
+The slogan governs every layer of the architecture, in both directions: the
+human outsources thinking to the system (breadth, drafts, analysis, recall)
+but never understanding — goals, values, ratification of what becomes
+established truth. And the main session outsources thinking to subagents
+(exploration, verification, role work) but never understanding — synthesis
+and memory writes stay in the one context that holds the whole picture.
 
 1. **Dual-process, not rituals.** Every hook is a classifier with a fast path.
    Structure is always present (hooks always run); processing depth is
@@ -149,33 +158,61 @@ main loop.
 
 ### The practitioner and role profiles
 
-One agent definition wears every engineering hat. The human analog is task-set
-switching: a person is one cognitive architecture that loads different
-professional schemas — the same mind thinks _as_ a reviewer differently than
-it thinks _as_ a builder. The AI-native mechanic is prompt composition: the
-deliberate stage decomposes work, picks a hat per subtask, and spawns the
-practitioner with the matching **role profile** injected alongside the
-attention frame.
+One agent definition wears every hat in the software development process. The
+human analog is task-set switching: a person is one cognitive architecture
+that loads different professional schemas — the same mind thinks _as_ a
+reviewer differently than it thinks _as_ a builder. The AI-native mechanic is
+prompt composition: the deliberate stage decomposes work, picks a hat per
+subtask, and spawns the practitioner with the matching **role profile**
+injected alongside the attention frame.
 
 A role profile (one markdown file per role in `roles/`) defines four things:
 
-1. **Lens** — what this role attends to first (frontend: user-visible states;
-   database: data integrity; reviewer: what could break).
-2. **Execution approach** — how this role works, and these genuinely differ:
-   - _frontend_: story-down — start from the user-visible behavior; verify by
-     running the app and looking; loading/error/empty states are part of done.
-   - _backend_: contract-first — define the interface before implementing;
-     test-driven; error paths and idempotency are part of done.
-   - _database_: invariant-first — state data-integrity invariants before any
-     change; schema changes only as reversible migrations; destructive
-     operations always escalate (the inhibition hook applies inside subagents
-     too).
-   - _reviewer_: adversarial — try to break the work; report findings with
-     evidence; **never edits** (the hat that judges must not hold the pen).
+1. **Lens** — what this role attends to first.
+2. **Execution approach** — how this role works; these genuinely differ per
+   role (see library below).
 3. **Definition of done** — the role-specific verification standard the
    practitioner must satisfy before returning.
 4. **Defaults** — suggested model/effort for the role (deliberate may override
    per task complexity).
+
+### The role library (v1)
+
+The library spans the whole lifecycle, not just engineering. Each row
+compresses a profile; the full lens/approach/done/defaults live in that
+role's file.
+
+| Phase         | Role                   | Lens — attends to first   | Execution approach                                                                                              |
+| ------------- | ---------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Vision        | `visionary`            | The why and the future    | Narrative-first: paints the target state, names the bet; done when direction has falsifiable success metrics    |
+| Vision        | `product-manager`      | Value versus cost         | Trade-off-first: prioritizes by impact/effort, cuts scope, sequences the roadmap                                |
+| Discovery     | `requirements-analyst` | What "done" means         | Acceptance-first: turns intent into testable stories and edge cases                                             |
+| Discovery     | `ux-researcher`        | The user's reality        | Evidence-first: personas, task flows, findings from observation, never assumption                               |
+| Design        | `architect`            | Boundaries and trade-offs | Constraint-first: components, interfaces, failure modes defined before code                                     |
+| Design        | `ui-designer`          | Hierarchy and interaction | System-first: tokens, states, consistency; mockups before pixels-in-code                                        |
+| Build         | `frontend`             | User-visible states       | Story-down: starts from visible behavior, verifies by running and looking; loading/error/empty are part of done |
+| Build         | `backend`              | The contract              | Contract-first: interface before implementation, test-driven; error paths and idempotency are part of done      |
+| Build         | `database`             | Data integrity            | Invariant-first: invariants stated before change; reversible migrations only; destructive ops always escalate   |
+| Build         | `mobile`               | Platform constraints      | Platform-first: offline states, app lifecycle, store rules shape the design                                     |
+| Build         | `ai-ml`                | Measurable behavior       | Eval-first: defines evaluation before touching models or prompts; measures, never vibes                         |
+| Build         | `devops`               | Reproducibility           | Pipeline-first: environments as code, rollback paths proven before deploy paths                                 |
+| Quality       | `qa`                   | The risky paths           | Break-first: test pyramid and automation aimed where failure hurts most                                         |
+| Quality       | `reviewer`             | What could break          | Adversarial: tries to break the work, reports findings with evidence; **never edits**                           |
+| Quality       | `security`             | The attack surface        | Threat-model-first: assets, entry points, least privilege; assumes hostile input everywhere                     |
+| Quality       | `performance`          | The measured baseline     | Measure-first: baseline and budget before profiling, profiling before optimizing                                |
+| Communication | `technical-writer`     | The newcomer reader       | Reader-first: docs written for the uninitiated and verified by running what they describe                       |
+| Business      | `sales`                | The objection             | Objection-first: value narrative built by anticipating the "no"                                                 |
+| Business      | `marketing`            | The audience segment      | Audience-first: messaging per segment, launch sequencing                                                        |
+| Business      | `legal`                | Exposure and obligation   | Risk-first: licenses, privacy, terms, compliance; produces drafts for counsel, never acts as counsel            |
+| Business      | `support`              | The user's friction       | Friction-first: failure modes users actually hit, fed back as requirements                                      |
+
+**Advisory roles** (Vision, Discovery, and Business phases): their work
+products are documents and analysis — vision briefs, story drafts, risk
+memos — written to `specs/` or `docs/`; they never edit code. Where an
+advisory role's output targets a human-owned organ (`ROADMAP.md`,
+`HIGH-LEVEL-STORIES.md`), the practitioner _proposes_ a draft and the human
+ratifies — ownership does not transfer. Judgment-heavy hats (legal, security,
+visionary) inform human decisions; they never replace them.
 
 Rules of the hat system: a hat changes the _approach_, never the _cycle_ —
 every role still states hypotheses before tests and traces work to the
@@ -201,10 +238,12 @@ anoti/                              # plugin root
 │   ├── skeptic.md                  # inherit, read-only: adversarial claim verification
 │   └── practitioner.md             # model per role: one worker, parameterized by role profile
 ├── roles/                          # role profiles for the practitioner (lens, approach,
-│   ├── frontend.md                 # definition-of-done, defaults); extensible via skillify
-│   ├── backend.md
-│   ├── database.md
-│   └── reviewer.md
+│   │                               # definition-of-done, defaults); one file per role in the
+│   │                               # role library table; extensible via skillify
+│   ├── visionary.md  product-manager.md  requirements-analyst.md  ux-researcher.md
+│   ├── architect.md  ui-designer.md  frontend.md  backend.md  database.md  mobile.md
+│   ├── ai-ml.md  devops.md  qa.md  reviewer.md  security.md  performance.md
+│   └── technical-writer.md  sales.md  marketing.md  legal.md  support.md
 ├── commands/review.md              # /anoti:review — promotion/demotion ritual with evidence displayed
 └── templates/                      # GROUNDING.yaml (schema v2 + evidence:), ROADMAP.md,
                                     # HIGH-LEVEL-STORIES.md, TODOS.md, LESSONS-LEARNT.md, specs/, plans/

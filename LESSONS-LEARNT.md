@@ -58,3 +58,10 @@
   in storeless projects, so governed sessions never learned anoti existed
   (arm B's empty shell). Apply by: empty-project git repos now get a
   one-line skillify offer (fixed in 66e0a98).
+
+- 2026-08-13 — Agents were opening helper scripts just to learn calling
+  conventions, burning tokens on what one line answers. Why: skills named
+  scripts without signatures. Apply by: any skill that tells an agent to
+  run a script carries the exact invocation inline (consolidate now has a
+  quick-reference block); a signature in the skill is cheaper than a
+  Read in every session.

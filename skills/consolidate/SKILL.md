@@ -8,6 +8,19 @@ description: anoti memory-write protocol — type candidates, cite evidence, rou
 The only path by which anything enters shared memory. The main session is
 the single writer; agents (including the consolidator) only propose.
 
+## Helper quick reference (exact signatures — never open the scripts)
+
+```
+scripts/append-classification <session-id> <fast|slow> <reason...>
+scripts/set-episode <session-id> <idle|candidate-detected|awaiting-approval|committed>
+scripts/append-record <store.yaml>              # record as JSON on stdin
+scripts/append-event <store.yaml> <record-id> <action> <by> <note...>
+scripts/append-evidence <store.yaml> <record-id> <type> <note> [refs...]
+scripts/trust <store.yaml>                      # provenance approval
+scripts/regen-index <store.yaml>
+scripts/validate-workspace <store.yaml>
+```
+
 ## Procedure
 
 0. **No store? Bootstrap first.** If GROUNDING.yaml does not exist,

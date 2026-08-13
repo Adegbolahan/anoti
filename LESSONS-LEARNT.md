@@ -15,3 +15,19 @@
   (TODOS.md) belong at episode close, inside the consolidation flow — a
   tick attempted before candidates were queued was correctly denied.
   (2026-08-13)
+- Fix-round messages must carry the full text of every finding they
+  reference: the sample-app builder was told to "list F3, F5-F9 as known
+  limitations" but only F1/F2/F4 bodies were relayed, so it correctly
+  refused to restate findings it had never seen. Relay findings verbatim
+  or not at all. (2026-08-13, sample-app cascade)
+- A pre-fix snapshot lets an advisory trial run against the broken state
+  in parallel with the fix, with no file races — cheap isolation, worked
+  cleanly for the Q004 support trial. (2026-08-13, sample-app cascade)
+- Hand-serialized session-state YAML is fragile under the inhibition
+  hook: one structurally bad Edit (a mapping inserted mid-list) made yq
+  fail, the hook fell back to episode=idle and denied a legitimate
+  consolidation write; the misleading denial then prompted a wrong-way
+  session-id rename before the real cause was found. Reinforces the
+  existing TODOS item: session-state writes need a mechanical helper, and
+  a state file should be yq-validated after every hand edit.
+  (2026-08-13, sample-app cascade)

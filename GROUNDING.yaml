@@ -52,6 +52,18 @@ index:
     type: claim
     topic: anoti.full_cycle
     statement: The complete anoti cycle functions live end-to-end in an installed session — slow-path classification, attention framing, deliberation with adversarial handoff, inhibition denials enforced against the agent, Stop-gate consolidation, and selective human ratification.
+  - ref: D010
+    type: claim
+    topic: anoti.support_haiku_trial
+    statement: >
+      A haiku support-role dispatch handles the reproduce-and-translate duty at trial quality: it reproduced two Important failures from user-style tickets with cited command/output/exit-code evidence, its root-cause call chains matched an independent reviewer's findings, and it rewrote both as requirements with testable acceptance criteria.
+
+  - ref: D011
+    type: decision
+    topic: anoti.fix_round_continuation
+    statement: >
+      Fix rounds continue the original builder agent (message-resume) rather than spawning a fresh builder: the builder's own context yields a more coherent fix, and the continuation costs zero spawn budget.
+
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -268,12 +280,65 @@ records: # generated — do not edit by hand
         refs:
           - "commits 0fdf2b6, bffc4c6 (artifacts of the observed session)"
           - "records D006, D007 and questions Q002-Q004 (written under in-session ratification)"
+      - date: 2026-08-13
+        type: observation
+        note: >
+          Cascade re-ran end-to-end on a fresh build task (sample-app in a tmp dir) and exercised facets the first run did not: conditional fix branch via resuming the original builder agent, an opportunistic open-question trial (Q004) run in parallel against a pre-fix snapshot to avoid file races, and main-session self-adjudication of the fix round by re-running the reviewer's exact failure probes live. Zero human gates fired mid-cascade (conductor judged demo scale needs no roadmap/stories); ratification arrived only at consolidation, per design.
+
+        refs:
+          - "session ec7c8951 trail: reviewer verdict issues (F1/F2 Important), fix round 11 RED -> 49/49 GREEN, five probes re-run clean by main session"
+          - docs/trials/2026-08-13-q004-haiku-support-trial.md
     relationships:
       - {type: refines, target: D005}
       - {type: refines, target: D008}
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
+      - {date: 2026-08-13, action: evidence-appended, by: session, note: second end-to-end run, sample-app cascade; approved in consolidation: ''}
+  - id: D010
+    date: 2026-08-13
+    type: claim
+    topic: anoti.support_haiku_trial
+    statement: >
+      A haiku support-role dispatch handles the reproduce-and-translate duty at trial quality: it reproduced two Important failures from user-style tickets with cited command/output/exit-code evidence, its root-cause call chains matched an independent reviewer's findings, and it rewrote both as requirements with testable acceptance criteria.
+
+    epistemic_status: probable
+    ratification: approved
+    source: {type: observation, context: sample-app cascade, Q004 opportunistic trial: ''}
+    evidence:
+      - date: 2026-08-13
+        type: observation
+        note: >
+          Trial against a frozen pre-fix snapshot of the sample app: both tickets reproduced with predictions stated first; root-cause citations (tasks.py lines 87-109, 134-146) matched the reviewer's independent F1/F2 findings exactly; both requirements carried 4+ testable acceptance criteria; it surfaced the except-BaseException masking subtlety unprompted. Caveats: it did not reconcile its next_id judgment with the app's documented next_id >= 1 invariant, and it dropped rather than refuted a false "keeps renumbering" detail in one ticket. Single trial; assessed by the main session reading the deliverable, not the agent's self-report.
+
+        refs:
+          - docs/trials/2026-08-13-q004-haiku-support-trial.md
+          - roles/support.md
+    relationships:
+      - {type: refines, target: D006, note: first live evidence for the haiku assignment to the support role}
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+  - id: D011
+    date: 2026-08-13
+    type: decision
+    topic: anoti.fix_round_continuation
+    statement: >
+      Fix rounds continue the original builder agent (message-resume) rather than spawning a fresh builder: the builder's own context yields a more coherent fix, and the continuation costs zero spawn budget.
+
+    ratification: approved
+    source: {type: session, context: sample-app cascade, conductor plan step 4: ''}
+    evidence:
+      - date: 2026-08-13
+        type: observation
+        note: >
+          The conductor proposed the mechanism while explicitly flagging resume mechanics as unverified. Validated live: the builder resumed from its transcript with full context, added 11 RED regression tests before fixing, closed F1/F2/F4 to 49/49 GREEN, and its new contract judgments stayed consistent with its original ones. The main session self-adjudicated the fix by re-running the reviewer's exact probes rather than spending a second reviewer spawn.
+
+        refs:
+          - "session ec7c8951 trail (conductor plan, fix-round RED/GREEN transcripts, main-session probe verification)"
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
 open_questions:
   - id: Q001
     date: 2026-08-12
@@ -317,3 +382,4 @@ open_questions:
     status: open
     refs:
       - roles/support.md
+      - "D010 — first trial evidence (positive, with caveats); closure decision belongs to /anoti:review"

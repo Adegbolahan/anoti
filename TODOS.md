@@ -16,3 +16,12 @@
       re-serialized the YAML list instead of appending — add a mechanical
       append helper (scripts/log-classification) and have attend/classify use
       it. Observed live 2026-08-13. (raised 2026-08-13)
+- [ ] If D011 survives /anoti:review, codify fix-round continuation (resume
+      the original builder vs fresh spawn) in the deliberate skill's cascade
+      section. (raised 2026-08-13, sample-app cascade)
+- [ ] Extend the session-state helper case (see classification-log bug) to all
+      hand-edited state sections: a structurally bad Edit made yq fail and the
+      inhibition hook silently degraded to episode=idle, denying a legitimate
+      consolidation write with a misleading reason. Consider the helper
+      validating the whole file after each write. Observed live 2026-08-13.
+      (raised 2026-08-13)

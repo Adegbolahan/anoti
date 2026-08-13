@@ -78,8 +78,13 @@ evidence.
 **Goal:** anoti usable beyond this repo, honestly marketed by its
 evidence.
 
-**Key Deliverables:** global memory opt-in UX; v1.1 roles validated at
-working scale; marketplace publication.
+**Key Deliverables:**
+
+- [x] Marketplace publication ✅ 2026-08-13 — repo takeover complete
+      (github.com/Adegbolahan/anoti, D017): storefront README, CI with
+      changelog-gated release tags, schema'd marketplace manifest
+- [ ] Global memory opt-in UX
+- [ ] v1.1 roles validated at working scale
 
 **Dependencies:** Phase 3's verdict.
 
@@ -101,4 +106,4 @@ status against live evidence, and the plugin's value claims are
 | Self-report bias in dogfood evidence         | Medium     | High   | Pre-registration, blinded graders, independence rule at promotion        |
 | Direction-doc status decay                   | Medium     | Medium | Dated statuses mandatory; audit sections supersede stale cells           |
 
-**Last Updated:** 2026-08-13
+**Last Updated:** 2026-08-13 (takeover)

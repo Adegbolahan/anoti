@@ -15,7 +15,7 @@ understanding.
 ## Quick Start
 
 ```
-/plugin marketplace add https://github.com/Adegbolahan/getting-started-claude
+/plugin marketplace add https://github.com/Adegbolahan/anoti
 /plugin install anoti@anoti
 ```
 

@@ -28,11 +28,11 @@ evidence-less.
 
 Goal: the falsifiable version of anoti's value.
 
-- [ ] Design and file the benchmark experiment spec
-      (docs/specs/YYYY-MM-DD-exp-h1-h3-benchmark.md): H1 governed memory,
-      H2 structure-over-instructions, H3 ratification-prevents-rot —
-      measured against vanilla Claude Code on contradiction rate, recall
-      success, bad-memory rate, interruptions, latency, token cost
+- [x] Design and file the benchmark experiment spec ✅ 2026-08-13
+      (docs/specs/2026-08-13-exp-h1-h3-benchmark.md — pre-registered:
+      three arms incl. instructions-only for H2 isolation, planted answer
+      key, blinded grader with human spot-audit, decision rules fixed
+      before any run)
 - [ ] Run the benchmark; record results as evidence on H1–H3 claims —
       promoted or demoted, either outcome honored
 - [ ] Fast-path calibration from .anoti/telemetry.log (classifier

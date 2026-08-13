@@ -3,6 +3,16 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.3] — 2026-08-13
+
+- Git craft skill: branches (never on main without consent), worktrees
+  (per-checkout anoti state and trust — provenance per checkout),
+  finishing discipline (suite green on the integrated tree; integration
+  is the human's decision, always), commit messages (conventional,
+  why-first bodies; attribution trailers never added unless asked,
+  existing trailers never stripped), explicit staging (cf730d6
+  codified), CI-only tags. Wired into implement and the cascade.
+
 ## [0.5.2] — 2026-08-13
 
 - Field-report fixes from the first second-project session (livingsyncs):

@@ -4,8 +4,14 @@
 # A: vanilla (plugin disabled). B: anoti (plugin enabled). C: instructions-only.
 # The answer key NEVER enters the workdir. Plugin state is restored on exit.
 set -u
-DRY=0
-[ "${1:-}" = "--dry-run" ] && { DRY=1; shift; }
+DRY=0; AUTOI=0
+while :; do
+  case "${1:-}" in
+    --dry-run) DRY=1; shift ;;
+    --auto-interactive) AUTOI=1; shift ;;
+    *) break ;;
+  esac
+done
 arm="${1:?usage: run-arm [--dry-run] <A|B|C> <workdir>}"
 w="${2:?workdir required}"
 SELF="$(cd "$(dirname "$0")" && pwd)"
@@ -40,6 +46,14 @@ while [ "$i" -lt "$n" ]; do
     inter="$(jq -r ".sessions[$i].prompts[$j].interactive" "$SELF/sessions.json")"
     if [ "$DRY" -eq 1 ]; then
       [ "$j" -eq 0 ] && echo "session $sid: would run ${pn} prompt(s) in $w (arm $arm)"
+    elif [ "$inter" = "true" ] && [ "$AUTOI" = "1" ]; then
+      # protocol deviation, recorded: interactive point executed headless
+      echo "{\"deviation\":\"$pid executed headless (--auto-interactive)\"}" >> "$trials/deviations.jsonl"
+      start="$(date +%s)"
+      ( cd "$w" && claude -p "$txt" --output-format json --dangerously-skip-permissions ) > "$trials/$pid.json" 2> "$trials/$pid.err"
+      end="$(date +%s)"
+      printf '{"prompt":"%s","seconds":%s}\n' "$pid" "$((end-start))" >> "$trials/timing.jsonl"
+      echo "session $sid prompt $pid: done headless ($((end-start))s) [deviation logged]"
     elif [ "$inter" = "true" ]; then
       echo ""
       echo "=== INTERACTIVE POINT ($pid) — human required ==="
@@ -50,7 +64,7 @@ while [ "$i" -lt "$n" ]; do
       read -r _
     else
       start="$(date +%s)"
-      ( cd "$w" && claude -p "$txt" --output-format json ) > "$trials/$pid.json" 2> "$trials/$pid.err"
+      ( cd "$w" && claude -p "$txt" --output-format json --dangerously-skip-permissions ) > "$trials/$pid.json" 2> "$trials/$pid.err"
       end="$(date +%s)"
       printf '{"prompt":"%s","seconds":%s}\n' "$pid" "$((end-start))" >> "$trials/timing.jsonl"
       echo "session $sid prompt $pid: done ($((end-start))s)"

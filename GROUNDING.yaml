@@ -70,6 +70,10 @@ index:
     type: decision
     topic: anoti.workspace_layout
     statement: Memory stores live at project root (GROUNDING.yaml, TODOS.md, LESSONS-LEARNT.md) where hooks machine-read them each session; direction and deliberation documents live under docs/ (docs/ROADMAP.md, docs/HIGH-LEVEL-STORIES.md, docs/specs/, docs/plans/, docs/trials/).
+  - ref: "D013"
+    type: "decision"
+    topic: "anoti.role_tools_deferral"
+    statement: "Per-role tools allowlists and effort defaults are deliberately deferred: the practitioner inherits session tools, boundary enforcement lives in the inhibition decision table and native permissions, and per-role allowlists wait for evidence of need."
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -397,6 +401,7 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: "they should live in docs/"}
+  - {"id": "D013", "date": "2026-08-13", "type": "decision", "topic": "anoti.role_tools_deferral", "statement": "Per-role tools allowlists and effort defaults are deliberately deferred: the practitioner inherits session tools, boundary enforcement lives in the inhibition decision table and native permissions, and per-role allowlists wait for evidence of need.", "ratification": "approved", "source": {"type": "conversation", "context": "Q003 ruling, review follow-up"}, "rationale": "YAGNI: 23 unverifiable frontmatter fields add contract surface without a demonstrated failure; revisit if a role-boundary violation is observed live.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "defer with recorded decision"}]}
 open_questions:
   - id: Q001
     date: 2026-08-12
@@ -415,10 +420,11 @@ open_questions:
 
     raised_by: reviewer-spawn
     context: v1.1 role set review, Issue 3
-    status: open
+    status: answered
     refs:
       - docs/specs/2026-08-12-anoti-plugin-design.md
       - roles/ui-designer.md
+    resolution: '2026-08-13 — answered: reworded class-based (class: advisory, whatever the phase); spec amended, changelog entry added'
   - id: Q003
     date: 2026-08-13
     question: >
@@ -426,10 +432,11 @@ open_questions:
 
     raised_by: reviewer-spawn
     context: v1.1 role set review, Issue 2
-    status: open
+    status: answered
     refs:
       - docs/specs/2026-08-12-anoti-plugin-design.md
       - roles/
+    resolution: '2026-08-13 — answered: deferred with recorded decision D013; spec contract and validation criterion amended'
   - id: Q004
     date: 2026-08-13
     question: >

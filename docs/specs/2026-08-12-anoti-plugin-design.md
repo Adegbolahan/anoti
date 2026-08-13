@@ -319,7 +319,9 @@ A role profile (`roles/<role>.md`) defines: **lens** (what the role attends to
 first), **policy stack** (composition from the policy library), **definition
 of done** (the role's verification standard, with required evidence
 artifacts), **defaults** (model/effort; deliberate may override), and
-**tools** (the role's allowlist — reviewer-class roles get read-only lists).
+**tools/effort** (deliberately deferred per decision D013: the practitioner
+inherits session tools; boundary enforcement lives in the inhibition table
+and native permissions; per-role allowlists wait for evidence of need).
 
 ### The policy library
 
@@ -356,7 +358,7 @@ maintenance action.
 `devops`, `performance`, `sales`, `marketing`, `legal`, `support`.
 
 Validation means: every policy reference resolves, the definition-of-done is
-testable, and the tools list matches the role class. Twenty-two untested
+testable, and the class field is valid. Twenty-two untested
 profiles is a liability, not a library.
 
 | Phase         | Role                   | Lens — attends to first   | Execution approach (policy-stack summary)                                                                  |
@@ -384,7 +386,7 @@ profiles is a liability, not a library.
 | Business      | `legal`                | Exposure and obligation   | Risk-first: licenses, privacy, terms, compliance; drafts for counsel, never counsel                        |
 | Business      | `support`              | The user's friction       | Friction-first: failure modes users actually hit, fed back as requirements                                 |
 
-**Advisory roles** (Vision, Discovery, Delivery, Business): outputs are
+**Advisory roles** (class: `advisory`, whatever their phase): outputs are
 documents and analysis written to `docs/specs/` or `docs/`; never code edits.
 Outputs targeting human-owned organs are proposals the human ratifies.
 
@@ -545,7 +547,7 @@ enforcement layer.
 
 - **Structural:** plugin-validator on manifest/layout; `validate-workspace`
   on templates; every role profile validated (policy refs resolve, done
-  criteria testable, tools list matches class); every script exercised with
+  criteria testable, class valid — tools/effort deferred per D013); every script exercised with
   synthetic hook-input JSON fixtures.
 - **State-machine fixtures:** status transitions (promotion, demotion,
   grandfathering, contradiction, scoped exception) tested against controlled
@@ -587,3 +589,10 @@ enforcement layer.
    manufactured live promotions).
 4. No session is ever blocked by a plugin failure.
 5. The workspace remains fully usable plain files if the plugin is removed.
+
+## Changelog
+
+- 2026-08-13 — Q002 ruling: advisory-roles wording changed from a phase
+  list to class-based (`class: advisory`, whatever the phase).
+- 2026-08-13 — Q003 ruling: per-role tools/effort fields deliberately
+  deferred (decision D013); validation criterion reworded accordingly.

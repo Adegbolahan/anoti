@@ -9,7 +9,7 @@ Substrate (0.1.0), cognition layer (0.2.0), live dogfooding across four
 sessions. Done when: every mechanism observed working live.
 Evidence: D009 (established), D005/D008. Closed 2026-08-13.
 
-## Phase 2 — Can the substrate be trusted? ✅ substantially complete; carry-overs open
+## Phase 2 — Can the substrate be trusted? ✅ complete 2026-08-13
 
 Goal: memory that cannot be quietly corrupted; claims that carry real
 evidence.
@@ -17,9 +17,10 @@ evidence.
 - [x] Mechanical write helpers (0.3.0) — hand-serialized YAML eliminated
 - [x] Split-scalar corruption repaired; validator detects the class
 - [x] End-of-session retrospective policy (universal, session-level)
-- [ ] Carry-over: evidence backfill for D001–D003 → re-promotion via /anoti:review
-- [ ] Carry-over: rulings on Q002 (advisory-phase wording) and Q003 (tools/effort fields)
-- [ ] Carry-over: unreadable-state stderr note; helper adoption verified live
+- [x] Carry-over: evidence backfill for D001–D003 → re-promotion via /anoti:review
+      ✅ 2026-08-13 — D001/D002 promoted (verify-then-promote); D003 held by independence rule
+- [x] Carry-over: rulings on Q002 and Q003 ✅ 2026-08-13 — class-based rewording; tools/effort deferred (D013)
+- [x] Carry-over: unreadable-state stderr note ✅ 2026-08-13; helper adoption verified live this session
 
 Done when: no open data-integrity TODOs; no grandfathered claim remains
 evidence-less.

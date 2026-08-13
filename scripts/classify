@@ -1,0 +1,9 @@
+#!/bin/bash
+# UserPromptSubmit: the attention-tax instruction. Must stay <= 10 lines of context.
+set -u
+cat >/dev/null 2>&1 || true
+ctx='<anoti-attend>
+Before answering, classify this prompt. Routine (small, unambiguous, low-consequence): proceed normally, ignore this note. Novel, ambiguous, or consequential: invoke the anoti attend skill first to build an attention frame. Either way, append one classification line (fast/slow + reason) to your session state file under classifications.
+</anoti-attend>'
+jq -n --arg c "$ctx" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$c}}'
+exit 0

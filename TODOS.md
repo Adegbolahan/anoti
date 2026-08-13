@@ -21,9 +21,10 @@
 - [ ] Fast-path calibration: analyze .anoti/telemetry.log (fast/slow verdicts
       + reasons, now durably logged) during Plan 3 to measure classifier
       eagerness against outcomes. (raised 2026-08-13)
-- [ ] If D011 survives /anoti:review, codify fix-round continuation (resume
+- [x] If D011 survives /anoti:review, codify fix-round continuation (resume
       the original builder vs fresh spawn) in the deliberate skill's cascade
       section. (raised 2026-08-13, sample-app cascade)
+      (done 2026-08-13 — codified in skills/deliberate/SKILL.md with test)
 - [ ] Extend the session-state helper case (see classification-log bug) to all
       hand-edited state sections: a structurally bad Edit made yq fail and the
       inhibition hook silently degraded to episode=idle, denying a legitimate

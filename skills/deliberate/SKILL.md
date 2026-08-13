@@ -73,3 +73,13 @@ A plan's lifetime matches its artifacts' lifetime:
 The same rule governs minimal specs: a contract embedded in the artifact
 itself (module docstring, interface file) is an acceptable spec-of-record
 when the cascade plan cites it; anything larger files to `docs/specs/`.
+
+## Fix rounds (ratified decision D011)
+
+When a review returns findings, **resume the original builder** — its
+context holds the task, the code, and its own choices; a fresh spawn
+rebuilds all three at full cost. Relay the findings **verbatim**: a
+builder asked to fix findings it was never shown will rightly refuse.
+Advisory or trial work running parallel to a fix isolates against a
+**pre-fix snapshot** of the artifact, so its observations stay
+reproducible and are not contaminated by the fix landing mid-analysis.

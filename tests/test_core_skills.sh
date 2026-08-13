@@ -18,3 +18,5 @@ grep -qi "idempotent" "$ROOT/skills/skillify/SKILL.md" 2>/dev/null && grep -qi "
 assert_ok $? "skillify covers idempotent bootstrap + dry-run"
 grep -qi "lifetime" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -q "plans/" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
 assert_ok $? "deliberate carries the plan-persistence lifetime rule"
+grep -qi "resume the original builder" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -qi "pre-fix snapshot" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
+assert_ok $? "deliberate codifies D011 fix-round continuation"

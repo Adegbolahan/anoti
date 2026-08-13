@@ -17,8 +17,8 @@ If you cannot honestly pass the review, say so and stop.
 
 ## Step 1: Scope
 
-Read what changed (`git diff --stat`) and re-read the spec and plan
-**properly** — the most common review failure is reviewing what you
+Read what changed (`git diff --stat`), locate the plan's declared
+**Spec:** line, and re-read that spec and the plan **properly** — the most common review failure is reviewing what you
 remember building rather than what was asked. Decide which dimensions
 below apply to this diff; reviewing inapplicable dimensions produces
 noise, and noise trains people to skip reviews.

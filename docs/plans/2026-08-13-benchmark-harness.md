@@ -1,5 +1,7 @@
 # Benchmark Harness (H1–H3 experiment runner)
 
+**Spec:** docs/specs/2026-08-13-exp-h1-h3-benchmark.md
+
 **Goal:** everything needed to execute
 `docs/specs/2026-08-13-exp-h1-h3-benchmark.md` exists and is structurally
 tested — fixture, answer key, session scripts, arm builders, runner,

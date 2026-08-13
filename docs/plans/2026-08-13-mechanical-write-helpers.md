@@ -1,5 +1,7 @@
 # Mechanical Write Helpers (anoti 0.3.0)
 
+**Spec:** none — authority: live-session retrospective directive + D-records on data-integrity incidents (pre-dates the traceability rule)
+
 **Goal:** eliminate model hand-serialized YAML — the root cause of every
 data-integrity incident to date (state-file corruption → misleading
 fail-open; unquoted flow scalars → split-key store corruption).

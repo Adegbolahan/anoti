@@ -15,6 +15,12 @@ dispatch; ephemeral work stays in session state).
 
 ## Implementation plan — required sections
 
+0. **Spec** — the governing spec's path, immediately under the title.
+   One spec may parent many plans (1:N is normal); a plan with no spec
+   declares `**Spec:** none — authority: <ratified directive or decision
+   record>` explicitly. This line is what lets review-work cross-check
+   the plan against what was actually asked — an undeclared parent makes
+   that check impossible, which is how plans drift.
 1. **Goal** — one sentence: what exists when this is done.
 2. **Architecture** — 2–3 sentences on approach; the tech stack with
    version constraints.

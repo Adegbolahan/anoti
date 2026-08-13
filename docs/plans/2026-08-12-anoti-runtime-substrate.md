@@ -1,5 +1,7 @@
 # anoti Runtime Substrate Implementation Plan (Plan 1 of 3)
 
+**Spec:** docs/specs/2026-08-12-anoti-plugin-design.md (Plan 1 of 3)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A working Claude Code plugin skeleton whose six lifecycle hooks, memory-store schema, and executable scripts all function and pass a fixture-driven test suite — the substrate Plans 2 (cognition content) and 3 (benchmark) build on.

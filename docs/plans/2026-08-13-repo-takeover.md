@@ -1,5 +1,7 @@
 # Repo Takeover: anoti replaces getting-started-claude (Plan)
 
+**Spec:** none — authority: human directive 2026-08-13 (option C, four commands if they integrate) + decision record to follow
+
 **Goal:** anoti 0.4.0 content ready to replace the remote
 (github.com/Adegbolahan/getting-started-claude), deprecating
 project-scaffolder while adopting its four commands (adapted) and its

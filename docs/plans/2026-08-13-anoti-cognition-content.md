@@ -1,5 +1,7 @@
 # anoti Cognition Content Implementation Plan (Plan 2 of 3)
 
+**Spec:** docs/specs/2026-08-12-anoti-plugin-design.md (Plan 2 of 3)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The plugin's cognition layer — four core skills, ten policy skills, four agents, ten core-v1 roles (led by the conductor), three commands — plus migration of this repo's own GROUNDING.yaml to schema v3, so the plugin governs the project that builds it.

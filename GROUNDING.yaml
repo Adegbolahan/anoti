@@ -220,6 +220,10 @@ records: # generated — do not edit by hand
 
         refs:
           - docs/specs/2026-08-12-anoti-plugin-design.md
+      - date: "2026-08-13"
+        type: experiment
+        note: 'Q001 pilot: four information-identical encodings, blinded haiku readers, 10 exact-answer questions each. All formats 10/10 including sigil — no accuracy separation at 8-fact scale (tension with founding observation noted; mechanism plausibly scale-dependent). Cost separated: MD 745B < sigil 986B < v1 1249B < v3 2388B; v3''s overhead is governance payload, not syntax.'
+        refs: ["docs/trials/2026-08-13-q001-formats/RESULTS.md", "docs/specs/2026-08-13-exp-q001-formats.md"]
     relationships:
       - {type: refines, target: D002}
       - {type: compares, target: D001, note: AI priors modulate parsing the way human top-down expectations modulate perception}
@@ -239,6 +243,10 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-12, action: created, by: session}
       - {date: 2026-08-13, action: migrated, by: session, note: v2 -> v3; evidence entry formalized from v2 source/details}
+      - date: "2026-08-13"
+        action: evidence-appended
+        by: session
+        note: 'Q001 pilot run; decision rule: YES via agent-Markdown; ceiling caveat recorded'
   - id: D005
     date: 2026-08-13
     type: claim

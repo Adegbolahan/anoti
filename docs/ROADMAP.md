@@ -41,7 +41,7 @@ Goal: the falsifiable version of anoti's value.
       Sequence 2 pending human decision
 - [ ] Fast-path calibration from .anoti/telemetry.log (classifier
       eagerness vs outcomes)
-- [ ] Q001 format-comprehension experiment rides along
+- [x] Q001 format-comprehension experiment ✅ 2026-08-13 — all formats 10/10 (ceiling); cost discriminated (MD cheapest, v3 largest = governance payload); closure proposed, human ruling pending
 
 Done when: H1–H3 each carry benchmark evidence and their claims have
 moved on the ladder accordingly.

@@ -2,8 +2,8 @@
 
 ## anoti
 
-<!-- Human-owned; format: the direction skill (livingsyncs-derived
-     template + anoti anti-decay guardrails). Drafts only via
+<!-- Human-owned; format: the direction skill (adopted template with
+     anti-decay guardrails). Drafts only via
      ratification; the human merges. Ratified 2026-08-13. -->
 
 ## Vision

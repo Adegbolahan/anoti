@@ -12,7 +12,7 @@ The human merges; ownership never transfers.
 
 ## docs/ROADMAP.md — required shape (adopted 2026-08-13)
 
-Structure (from the livingsyncs template, with anoti guardrails):
+Structure (adopted external template, hardened with anoti guardrails):
 
 1. `# Project Roadmap` + project name; format pointer comment.
 2. `## Vision` — one sentence: what the project achieves when complete.

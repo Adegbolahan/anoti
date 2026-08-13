@@ -37,6 +37,10 @@ Then write a TodoWrite checklist of every AC + prerequisite + gap.
 
 ## Phase 1: Plan
 
+Multi-component features (several roles, parallel research): run the
+cascade via the deliberate skill instead of planning inline — the
+conductor's plan then feeds this phase.
+
 Per the **plan skill**: file inventory in dependency order, exact
 integration contracts, risks with mitigations. Save to
 `docs/plans/us-XXX-plan.md`; present the summary and **wait for

@@ -47,6 +47,9 @@ attention_frame:
    never hand-edit session YAML (unquoted scalars split into spurious
    keys; the helpers quote and validate for you).
 
+**Then hand off: invoke the deliberate skill** — the frame is its
+input; attention without deliberation is a stare.
+
 The frame is what every later stage traces to (policy-trace-to-frame), what
 the inhibition hook checks actions against, and what practitioner spawns
 receive alongside their role profile. A weak frame propagates into every

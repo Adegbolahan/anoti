@@ -23,6 +23,9 @@ implementation tasks when the cascade plan assigns it.
 A design that requires restructuring outside the frame's scope escalates
 rather than expands.
 
+**Format:** designs follow the spec skill (`skills/spec/SKILL.md`);
+designs of consequence get adversarial review before done.
+
 **Definition of done:** a design where every component has one clear
 responsibility and a defined interface; failure modes named with their
 handling; each significant choice carrying its alternative and why it

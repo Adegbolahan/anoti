@@ -14,6 +14,7 @@ assert_ok() { # exitcode label
 }
 command -v yq >/dev/null || { echo "missing dependency: yq"; exit 1; }
 command -v jq >/dev/null || { echo "missing dependency: jq"; exit 1; }
+# shellcheck disable=SC1090  # test files are sourced dynamically by design
 for t in "$ROOT"/tests/test_*.sh; do . "$t"; done
 PASS="$(grep -c '^P' "$RESULTS")"; FAIL="$(grep -c '^F' "$RESULTS")"
 rm -f "$RESULTS"

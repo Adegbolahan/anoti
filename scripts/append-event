@@ -16,7 +16,7 @@ TS="$(date -u +%Y-%m-%d)" RID="$rid" A="$action" B="$by" N="$note" \
   yq '(.records[] | select(.id == strenv(RID)) | .events) += [{"date": strenv(TS), "action": strenv(A), "by": strenv(B), "note": strenv(N)}]' "$f" > "$f.tmp" \
   || { rm -f "$f.tmp"; exit 1; }
 "$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "append-event: result failed validation; store untouched" >&2; exit 1; }
-pm="$(stat -f %Lp "$f" 2>/dev/null || stat -c %a "$f" 2>/dev/null || echo "")"
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
 [ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
 mv "$f.tmp" "$f"
 exit 0

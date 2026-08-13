@@ -111,11 +111,11 @@ assert_ok $? "scoped-exception event appends on a global record (precedence mech
 tmp="$(mktemp -d)"; ( cd "$tmp"
 cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml && chmod 600 s.yaml
 "$ROOT/scripts/append-event" s.yaml D001 test session "mode check" >/dev/null
-assert_eq "$(stat -f %Lp s.yaml 2>/dev/null || stat -c %a s.yaml)" "600" "append-event preserves 600"
+assert_eq "$(stat -c %a s.yaml 2>/dev/null || stat -f %Lp s.yaml 2>/dev/null)" "600" "append-event preserves 600"
 "$ROOT/scripts/regen-index" s.yaml
-assert_eq "$(stat -f %Lp s.yaml 2>/dev/null || stat -c %a s.yaml)" "600" "regen-index preserves 600"
+assert_eq "$(stat -c %a s.yaml 2>/dev/null || stat -f %Lp s.yaml 2>/dev/null)" "600" "regen-index preserves 600"
 printf '%s' '{"id":"M001","date":"2026-08-13","type":"policy","topic":"t.m","statement":"Mode test","ratification":"approved","events":[{"date":"2026-08-13","action":"created","by":"session"}]}' | "$ROOT/scripts/append-record" s.yaml 2>/dev/null
-assert_eq "$(stat -f %Lp s.yaml 2>/dev/null || stat -c %a s.yaml)" "600" "append-record preserves 600"
+assert_eq "$(stat -c %a s.yaml 2>/dev/null || stat -f %Lp s.yaml 2>/dev/null)" "600" "append-record preserves 600"
 ); rm -rf "$tmp"
 # #1/#2: session-append covers every list the skills instruct; frames are a list
 tmp="$(mktemp -d)"; ( cd "$tmp"

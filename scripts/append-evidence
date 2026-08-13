@@ -18,7 +18,7 @@ TS="$(date -u +%Y-%m-%d)" RID="$rid" T="$typ" N="$note" R="$refs_json" \
   yq '(.records[] | select(.id == strenv(RID)) | .evidence) += [{"date": strenv(TS), "type": strenv(T), "note": strenv(N), "refs": (strenv(R) | fromjson)}]' "$f" > "$f.tmp" \
   || { rm -f "$f.tmp"; exit 1; }
 "$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "append-evidence: result failed validation; store untouched" >&2; exit 1; }
-pm="$(stat -f %Lp "$f" 2>/dev/null || stat -c %a "$f" 2>/dev/null || echo "")"
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
 [ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
 mv "$f.tmp" "$f"
 exit 0

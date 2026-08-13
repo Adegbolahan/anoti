@@ -73,3 +73,12 @@ printf '%s' "$ctx" | grep -q "40 records"; assert_ok $? "counts survive when ind
 ! printf '%s' "$ctx" | grep -q "B001"; assert_ok $? "oversized index omitted from digest"
 [ "${#ctx}" -le 4200 ]; assert_ok $? "digest stays within ~1k-token budget (got ${#ctx} chars)"
 ); rm -rf "$tmp"
+
+# roadmap line prefers the phase marked "current" over the first heading
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME" docs
+printf '# R\n\n## Phase 1 — done\n\n## Phase 2 — now <- current\n' > docs/ROADMAP.md
+ctx="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$ctx" | grep -q "Phase 2"; assert_ok $? "digest shows the current phase"
+! printf '%s' "$ctx" | grep -q "roadmap phase: Phase 1"; assert_ok $? "not the first heading"
+); rm -rf "$tmp"

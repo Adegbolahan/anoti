@@ -47,7 +47,12 @@ g="$HOME/.claude/anoti/GROUNDING.yaml"
 [ -f "$g" ] && store_digest "$g" "global memory"
 [ -f GROUNDING.yaml ] && store_digest GROUNDING.yaml "project memory"
 [ -f TODOS.md ] && emit "- open todos: $(grep -c '^- \[ \]' TODOS.md 2>/dev/null || echo 0) (see TODOS.md)"
-RM=""; [ -f docs/ROADMAP.md ] && RM=docs/ROADMAP.md; [ -z "$RM" ] && [ -f ROADMAP.md ] && RM=ROADMAP.md; [ -n "$RM" ] && emit "- roadmap phase: $(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //') (see $RM)"
+RM=""; [ -f docs/ROADMAP.md ] && RM=docs/ROADMAP.md; [ -z "$RM" ] && [ -f ROADMAP.md ] && RM=ROADMAP.md
+if [ -n "$RM" ]; then
+  ph="$(grep -m1 -i '^## .*current' "$RM" 2>/dev/null | sed 's/^## //')"
+  [ -z "$ph" ] && ph="$(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //')"
+  [ -n "$ph" ] && emit "- roadmap phase: $ph (see $RM)"
+fi
 [ -f .anoti/pending.md ] && emit "- pending human-absent escalations: .anoti/pending.md"
 ab="$(ls .anoti/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
 [ -n "$ab" ] && emit "- abandoned session state found: $ab (surfaced, not auto-loaded)"

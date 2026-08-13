@@ -3,94 +3,151 @@
 > **Outsource some of the thinking, but never outsource understanding.**
 
 **Date:** 2026-08-12
-**Status:** Approved in brainstorming; pending user review of this document
-**Grounding:** Discoveries D001–D004 and open question Q001 in `GROUNDING.yaml`
+**Status:** Revised after external review; implementation-ready draft pending user approval
+**Grounding:** Discoveries D001–D004 and Q001 in `GROUNDING.yaml` — cited below as
+motivation and hypotheses, not as established consequences (see "Why").
 
 ## What this is
 
 A Claude Code plugin that gives AI agents a human-shaped cognitive work cycle —
 retrieve, attend, deliberate, act/inhibit, consolidate — implemented with
 AI-native mechanics (context injection, skills, subagents, hooks), with the
-human as a structural component of the architecture supplying what agents lack
-per D003: goals, values, and deciding what is worth remembering. Knowledge
-shared between human and agent is governed by scientific methodology: claims,
-evidence, falsifiability, and evidence-driven status transitions.
+human as a structural component of the architecture: goals, values, and
+ratification of what is remembered stay human. Shared knowledge is governed by
+an explicit epistemic model: typed records, evidence, falsifiability for
+claims, and separated epistemic/ratification status.
 
-## Why
+**The differentiation is not memory — Claude Code already has CLAUDE.md,
+auto-memory, and subagent memory. The differentiation is _governed,
+evidence-bearing, human-ratified_ memory plus an enforced work cycle.**
 
-- Agents start every session from zero and re-derive or contradict established
-  facts (no long-term memory, D002).
-- Instructions alone don't reliably shape agent behavior; priors dominate
-  (D004). Structure (hooks) is needed at the points where agent design is
-  missing an organ.
-- Human and AI cognition diverge (D003); a shared epistemic protocol —
-  scientific method — is required for the two to converge on truth rather than
-  defer to each other.
+## Why (design hypotheses, not established facts)
+
+D001–D004 motivated this design but do not prove it. Stated honestly:
+
+- **H1 — Governed memory beats ad-hoc memory.** A structured, evidence-bearing,
+  ratified store reduces re-derivation, contradiction, and acting on stale
+  facts, compared to native free-form memory. _Testable; see Success criteria._
+- **H2 — Structure beats instructions for cycle adherence.** D004 showed
+  familiar syntax is comprehended more reliably than invented notation; it
+  suggests — but does not establish — that hook-enforced structure outperforms
+  instruction-only methodology. _Registered as an experiment._
+- **H3 — Human ratification prevents memory rot.** Keeping promotion of memory
+  in human hands reduces bad-memory incidents (acting on wrong claims).
+  _Testable via bad-memory rate._
+
+**Relationship to native Claude Code memory:** CLAUDE.md remains the
+instruction layer and is not managed by anoti. Native auto-memory is treated
+as an _inbox_: anoti's consolidation may import its notes as candidate
+records, never the reverse. anoti disables nothing silently.
 
 ## Design principles
 
-The slogan governs every layer of the architecture, in both directions: the
-human outsources thinking to the system (breadth, drafts, analysis, recall)
-but never understanding — goals, values, ratification of what becomes
-established truth. And the main session outsources thinking to subagents
-(exploration, verification, role work) but never understanding — synthesis
-and memory writes stay in the one context that holds the whole picture.
+The slogan governs every layer, in both directions: the human outsources
+thinking to the system (breadth, drafts, analysis, recall) but never
+understanding — goals, values, ratification. The main session outsources
+thinking to subagents (exploration, verification, role work) but never
+understanding — synthesis and memory writes stay in the one context that
+holds the whole picture.
 
 1. **Dual-process, not rituals.** Every hook is a classifier with a fast path.
-   Structure is always present (hooks always run); processing depth is
-   proportional to novelty/ambiguity/consequence. Trivial prompts must incur
-   zero visible overhead.
+   Trivial prompts incur zero visible overhead.
 2. **Never fight the model's design.** Hooks compensate only for structural
-   gaps (memory in/out, inhibition on risk); skills guide everything the model
-   can already do well in-context.
-3. **Human as component, not supervisor.** The human occupies defined roles in
-   the cycle: goal disambiguation (attend), value judgment on consequential
-   actions (inhibit), salience filter on memory (consolidate/review).
-4. **Evidence over authority.** No claim is established without evidence; no
-   contradiction is resolved by rank. Demotion is as legitimate as promotion.
+   gaps; skills guide everything the model already does well in-context.
+3. **Human as component, not supervisor.** Defined roles: goal disambiguation
+   (attend), value judgment on consequential actions (inhibit), ratification
+   of memory (consolidate/review).
+4. **Evidence over authority — and authority over storage.** Evidence alone
+   moves epistemic status; the human alone approves storage and action. Two
+   separate dimensions (see Record model).
 5. **Degrade toward vanilla Claude Code, never toward blockage.** All hooks
-   fail open. The only hard-block is catastrophic destructive patterns.
+   fail open with a visible report. The only hard-deny is the explicit
+   catastrophic list. Native permission rules remain the real enforcement
+   boundary; anoti's inhibition is a narrow guardrail on top, not a security
+   layer.
+6. **Native-first.** Prefer Claude Code's own mechanisms (permissions,
+   memory, skills) over parallel inventions; integrate, don't shadow.
 
 ## The cognitive cycle
 
-| Stage            | Human analog (D001)           | Implementation (D002-native)                                                                                                    | Human role (D003 gaps)                              |
-| ---------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| 1. Retrieve      | Top-down priors from LTM      | SessionStart hook injects GROUNDING index + established claims + open questions                                                 | — (automatic)                                       |
-| 2. Attend        | Attention bottleneck          | UserPromptSubmit classifier: routine → silent pass; novel/ambiguous/consequential → `attend` skill produces an attention frame  | Goal ambiguities escalated as questions             |
-| 3. Deliberate    | Working-memory manipulation   | `deliberate` skill: hypothesis-before-test, subagents for parallel breadth, synthesis over accumulation                         | —                                                   |
-| 4. Act + Inhibit | Selective response inhibition | PreToolUse hook, narrow matcher (destructive bash, deploy/publish, GROUNDING writes): "does this trace to the attention frame?" | Value judgment on escalated actions                 |
-| 5. Consolidate   | Memory consolidation (sleep)  | Stop hook gate → consolidator subagent proposes claims; approved appends land as `status: probable`                             | Promotion to `established` via `/anoti:review` only |
+| Stage            | Human analog (D001)           | Implementation (D002-native)                                                                                                   | Human role (D003 gaps)                      |
+| ---------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| 1. Retrieve      | Top-down priors from LTM      | SessionStart injects a small identity/project digest; attend pulls topic-relevant records; `/anoti:recall` on demand           | — (automatic)                               |
+| 2. Attend        | Attention bottleneck          | UserPromptSubmit classifier: routine → silent pass; novel/ambiguous/consequential → `attend` skill produces an attention frame | Goal ambiguities escalated as questions     |
+| 3. Deliberate    | Working-memory manipulation   | `deliberate` skill: hypothesis-before-test, role/hat assignment, bounded parallelism, synthesis over accumulation              | —                                           |
+| 4. Act + Inhibit | Selective response inhibition | PreToolUse decision table (allow/ask/deny) on a narrow matcher                                                                 | Value judgment on `ask` escalations         |
+| 5. Consolidate   | Memory consolidation          | Per-episode state machine + Stop-hook gate + `/anoti:consolidate` fallback; consolidator proposes, human approves              | Ratification; promotion via `/anoti:review` |
 
-## The epistemic engine
+## Record model (the epistemic engine, made precise)
 
-GROUNDING.yaml (schema v2, extended) operates as a scientific process:
+### Record types
 
-- **Claims, not notes.** Every discovery is stated falsifiably. The
-  consolidator must reject non-falsifiable candidates.
-- **Evidence-driven status ladder.** `speculative` (no evidence) → `probable`
-  (some evidence) → `established` (tested or independently confirmed). Schema
-  gains an `evidence:` list per discovery: dated observations, experiments,
-  sources. Demotion on contradicting evidence is symmetric and expected.
-- **Open questions are the research agenda.** The attend stage checks whether
-  the current task can cheaply generate evidence for an open question and says
-  so (opportunistic experimentation).
-- **Contradiction protocol.** New work contradicting an established claim never
-  overwrites it: record a `contradicts` relationship, spawn an open question
-  with a verification method, resolve by evidence.
-- **Hypothesis before test.** In deliberation, predictions are stated before
-  experiments run — for debugging, design choices, and benchmarks alike.
+Not everything stored is a falsifiable claim. Five types, one shared envelope:
+
+| Type         | What it is                              | Epistemic status? | Example                                        |
+| ------------ | --------------------------------------- | ----------------- | ---------------------------------------------- |
+| `claim`      | Falsifiable, evidence-bearing statement | Yes               | "Familiar formats are parsed more reliably"    |
+| `preference` | User-confirmed, revisable taste         | No                | "User prefers terse commit messages"           |
+| `decision`   | A choice, with rationale + supersession | No                | "We chose YAML over sigil notation (see D004)" |
+| `goal`       | Desired state with success criteria     | No                | "Plugin v1 passes all behavioral tests"        |
+| `policy`     | Normative operating rule                | No                | "Prefer reversible deployments"                |
+
+The consolidator classifies candidates by type; only `claim` records enter the
+evidence ladder. A value like "prefer reversible deployments" is a `policy`,
+never mislabeled as scientific truth.
+
+### Two independent status dimensions
+
+```yaml
+epistemic_status: speculative | probable | established # claims only; moved ONLY by evidence
+ratification: pending | approved | rejected # all types; moved ONLY by the human
+```
+
+Human approval decides whether anoti stores and acts on a record. Evidence
+decides how epistemically strong a claim is. Neither moves the other.
+
+### Evidence rules
+
+- Ladder: `speculative` (no evidence) → `probable` (some evidence) →
+  `established` (tested or independently confirmed). Demotion on contradicting
+  evidence is symmetric and expected.
+- **Independence** means a different session, agent lineage, or method.
+  Chains of self-citation never establish a claim.
+- **Contradiction protocol:** new work contradicting an established claim never
+  overwrites; record a `contradicts` relationship, spawn an open question with
+  a verification method, resolve by evidence.
+- **Hypothesis before test**, in deliberation, always.
+- **Experiments are filed as specs**: `specs/YYYY-MM-DD-exp-<topic>.md`
+  (design + results); evidence entries reference the file.
+
+### Store mechanics (append-only, made coherent)
+
+- **Record content is immutable** after creation. All change — status moves,
+  ratification, scoped exceptions, demotions, question resolution — is an
+  appended `events:` entry (`{date, action, by, note}`). Current status is
+  derived from the event log (cached fields are regenerator output, not
+  hand-edits).
+- **IDs:** allocated as max-existing + 1 per store, scope-qualified when
+  referenced across stores (`global:D004` vs `project:D012`).
+- **The index is generated**, never hand-maintained: `scripts/regen-index`
+  rebuilds it from records; consolidation runs it after every append.
+- **Atomicity & recovery:** writes go to a temp file then rename; every read
+  schema-validates; an invalid store is quarantined (renamed aside) and
+  reported, never silently "fixed."
+- **Grandfathering:** current D001–D003 are `established` with no evidence
+  list — they violate this very protocol. On migration they demote to
+  `probable` with an event noting "grandfathered; evidence pending," and
+  queue for review. The methodology applies to its own history first.
 
 ## The externalized workspace
 
-The plugin scaffolds and maintains a document system in every project it is
-installed into. These files are not paperwork: each one is an externalized
-cognitive organ of the human+AI pair — durable where both human working memory
-and agent context windows are volatile. The plugin's hooks and skills read and
-write them; the human owns their direction.
+The plugin scaffolds and maintains a document system in every project. Each
+file is an externalized cognitive organ of the human+AI pair; the human owns
+direction.
 
 | Artifact                | Cognitive organ                                | Owned by | Touched by                                            |
 | ----------------------- | ---------------------------------------------- | -------- | ----------------------------------------------------- |
-| `GROUNDING.yaml`        | Semantic memory — what is true                 | shared   | retrieve (read), consolidate (write), review          |
+| `GROUNDING.yaml`        | Semantic memory — records per the model above  | shared   | retrieve (read), consolidate (write), review          |
 | `ROADMAP.md`            | Goal hierarchy — where we are going            | human    | attend traces work to it; human edits direction       |
 | `HIGH-LEVEL-STORIES.md` | Values/perspective — what "good" means         | human    | attend + inhibit reference it as the value standard   |
 | `TODOS.md`              | Prospective memory — open intentions           | shared   | retrieve (surface), deliberate + consolidate (update) |
@@ -98,281 +155,382 @@ write them; the human owns their direction.
 | `specs/`                | Deliberation artifacts — designs as hypotheses | shared   | deliberate writes; one dated file per design          |
 | `plans/`                | Deliberation artifacts — protocols             | shared   | deliberate writes; one plan per implementation        |
 
-Division of memory: GROUNDING holds falsifiable claims about the world
-(semantic); LESSONS-LEARNT holds process lessons about how to work
+GROUNDING holds typed records (semantic); LESSONS-LEARNT holds process lessons
 (procedural). A lesson that becomes falsifiable and gathers evidence graduates
-into a GROUNDING claim.
+into a `claim`.
 
-The **`skillify` skill** is the organ-maintenance function: invoked to
-bootstrap the workspace in a fresh project (create all artifacts from
-templates, wire CLAUDE.md) and to maintain it afterward — which document
-updates on which event, keeping TODOS consistent with ROADMAP, dating and
-filing specs/plans, and pruning staleness.
+### skillify: bootstrap and maintenance contract
+
+- **Bootstrap is idempotent**: re-running creates only what is missing; it
+  never overwrites. `--dry-run` prints the plan. Existing files get a dated
+  backup before any migration touches them. Project root = the git toplevel
+  (or CWD if not a repo, with a warning).
+- **Brownfield adoption:** existing docs/CLAUDE.md are mapped onto organs;
+  only gaps are created; existing content referenced in place.
+- **Migration:** the workspace records the plugin/schema version that
+  scaffolded it; on mismatch skillify proposes a migration diff, the human
+  ratifies. No silent upgrades.
+- **Uninstall:** the workspace is plain files and simply remains — designed
+  degradation. skillify offers (never forces) removal of `.anoti/` ephemera.
+- **CLAUDE.md:** retrieval is the SessionStart hook's job, period. skillify
+  does not wire retrieval pointers into CLAUDE.md (one responsibility, one
+  owner); it may add a short human-facing note documenting that the workspace
+  exists, clearly marked as documentation.
+- Maintenance: which document updates on which event; TODOS kept consistent
+  with ROADMAP; specs/plans dated and filed; staleness pruned via events, not
+  deletions.
+- Workspace files are committed to git — shared ground truth deserves
+  history. `.anoti/` (session state, queues, logs, trust records) is local
+  ephemera, gitignored by bootstrap.
 
 ## Memory hierarchy
 
-Three tiers, mirroring human memory scopes; all long-term stores share the
-GROUNDING schema:
+| Tier                 | Human analog                        | Store                                                  | Lifetime        |
+| -------------------- | ----------------------------------- | ------------------------------------------------------ | --------------- |
+| Short-term (session) | Working memory                      | Context window + `.anoti/sessions/<session-id>.yaml`   | One session     |
+| Project long-term    | Domain knowledge                    | Project workspace: `GROUNDING.yaml` + document system  | Life of project |
+| Global long-term     | General knowledge of self and world | `~/.claude/anoti/GROUNDING.yaml` (opt-in; same schema) | Spans projects  |
 
-| Tier                 | Human analog                        | Store                                                                                                                       | Lifetime        |
-| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| Short-term (session) | Working memory                      | Context window + `.anoti/session.md` (attention frame, active hypotheses, in-flight state)                                  | One session     |
-| Project long-term    | Domain knowledge                    | Project workspace: `GROUNDING.yaml` + the document system above                                                             | Life of project |
-| Global long-term     | General knowledge of self and world | `~/.claude/anoti/GROUNDING.yaml`: claims about the user, their preferences, and cross-project lessons about how agents work | Spans projects  |
+### Retrieval (split by what each moment can know)
 
-- **Retrieval order** (SessionStart): global first (who am I working with),
-  then project (what do we know here), then session scratch on resume (what
-  was I doing). Inject digests — indexes, established claims, open questions,
-  open todos — never full files.
-- **Scope routing** (consolidation): each approved claim is routed by scope —
-  about-this-project → project store; about-the-user or about-how-agents-work
-  → global store. The human confirms routing; misfiled memory is worse than no
-  memory.
-- **Compaction survival:** a PreCompact hook persists the session's short-term
-  state to `.anoti/session.md` so context compaction cannot lobotomize an
-  in-flight task; SessionStart re-injects it on resume.
+SessionStart fires before any prompt exists, so it cannot judge task
+relevance. Retrieval therefore splits:
+
+1. **SessionStart — small fixed digest** (budget ≤ ~1k tokens): store
+   summaries (record counts, index only if small), open questions, open
+   todos, roadmap phase, pending queue, review nudge (probable count ≥ 5 or
+   oldest ≥ 14 days), abandoned-session notices.
+2. **Attend — topical retrieval:** when the slow path engages, the attend
+   skill queries the stores for records relevant to the task (the files stay
+   yq/grep-queryable precisely for this) and pulls full entries into the
+   frame.
+3. **On demand — `/anoti:recall <topic>`:** explicit retrieval anytime.
+
+Cross-tier precedence: a project record conflicting with a global record wins
+inside that project; recorded once as a scoped-exception event on the global
+record, not re-litigated every session.
+
+### Trust boundary and privacy model
+
+Auto-injected memory is an attack surface and a privacy risk. Mandatory:
+
+- **Untrusted-data envelope:** injected memory is always framed as reference
+  data, never instructions.
+- **Provenance:** `.anoti/trust` records content hashes of store files this
+  user's sessions have written. A store never written by the user's own
+  sessions — or changed outside them — is not auto-injected; the hook reports
+  its presence and asks before first use. This blocks poisoned-repo
+  grounding and repo content poisoning global memory (project sessions
+  cannot write the global store without the human approving scope routing).
+- **Global memory is opt-in** at first use, per user.
+- **Never-store categories** (consolidator hard-filter + review checklist):
+  credentials and secrets always; health, legal, and financial details by
+  default.
+- **User rights:** `/anoti:review` supports viewing, correcting (via
+  events), deleting, and exporting global records. The global store file is
+  created with `0600` permissions.
+- Global records are context, never content: not quoted into work products
+  or committed artifacts.
+
+### Session state (short-term memory, made real)
+
+A PreCompact command hook cannot infer semantic state from a transcript. So
+the main session maintains structured state _continuously_ — the skills write
+it at defined points — and hooks only read/flush it.
+
+`.anoti/sessions/<session-id>.yaml`:
+
+```yaml
+session: { id, started, source }
+episode: idle | candidate-detected | awaiting-approval | committed # consolidation state machine
+attention_frame: # written when attend completes; updated on re-framing
+  goal: ...
+  success_criteria: [...]
+  scope: { in: [...], out: [...] }
+  constraints: [...]
+  risks: [...]
+  open_questions: [...]
+  evidence_plan: ... # how this work will know it's right
+  roadmap_ref: ... # which ROADMAP item this traces to
+hypotheses: [{ id, statement, predicted, observed, verdict }] # deliberate appends
+in_flight: [...] # current subtasks / hats out
+classifications: [{ ts, verdict: fast|slow, reason }] # attend classifier log
+candidates: [{ type, statement, evidence, scope }] # future memory records
+```
+
+Update points: attend completion (frame), each hypothesis (deliberate), each
+discovery (candidates + episode → `candidate-detected`), consolidation
+approval flow (`awaiting-approval` → `committed`). Writes are atomic
+(temp + rename). Cleanup: SessionEnd removes the file when the episode is
+`idle`/`committed`, else marks it abandoned; abandoned state is _surfaced_
+at next SessionStart, never silently re-injected. Resumed/forked sessions
+reattach by session id. `.anoti/` is gitignored.
 
 ## Agent roster
 
-Model policy: match the model to the cognitive demand of the stage; use
-aliases (`haiku`/`sonnet`/`inherit`) so the plugin tracks model evolution
-without edits. Agents divide into two classes. **Memory-facing agents**
-(consolidator, explorer, skeptic) are strictly read-only — they analyze and
-propose; only the main session mutates state. **The work-facing agent**
-(practitioner) writes work products (code, configs, docs under construction)
-but never memory organs — GROUNDING, the workspace documents, and session
-state remain main-session-only for every agent, always. Each agent's
-definition states its expectation as an output contract, checked by the main
-session before use.
+Model policy: match model to cognitive demand; aliases (`haiku`/`sonnet`/
+`inherit`) track model evolution without edits.
 
-| Agent          | Stage          | Model                     | Expectation (output contract)                                                                                                                  |
-| -------------- | -------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consolidator` | Consolidate    | `sonnet`                  | Falsifiable claims + evidence + suggested status + scope (project/global); deduped against both stores; contradictions flagged, never resolved |
-| `explorer`     | Deliberate     | `haiku`                   | Synthesized findings relevant to the attention frame, token-capped; conclusions with file references, never raw dumps                          |
-| `skeptic`      | Epistemic      | `inherit` (session model) | Attempts to refute a claim; verdict + evidence; defaults to "not established" when uncertain                                                   |
-| `practitioner` | Deliberate/Act | per role profile          | Work executed per the assigned role's approach and definition-of-done, verified before return; reviewer role returns findings only, no edits   |
+**Read-only is enforced by tool allowlists, not intent**, since denying
+Write/Edit alone leaves mutating Bash. Each agent's frontmatter carries an
+explicit `tools:` list:
 
-The attend stage is deliberately **not** an agent: attention needs the full
-conversation context, which subagents don't inherit. It stays a skill in the
-main loop.
+| Agent          | Stage          | Model            | Tools                  | Expectation (output contract)                                                                                                                                  |
+| -------------- | -------------- | ---------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consolidator` | Consolidate    | `sonnet`         | Read, Grep, Glob       | Typed candidates (claim/preference/decision/goal/policy) + evidence + suggested status + scope; deduped vs both stores; contradictions flagged, never resolved |
+| `explorer`     | Deliberate     | `haiku`          | Read, Grep, Glob       | Synthesized findings relevant to the attention frame, token-capped; conclusions with file references, never raw dumps                                          |
+| `skeptic`      | Epistemic      | `inherit`        | Read, Grep, Glob, Bash | Attempts to refute a claim; verdict + evidence; defaults to "not established" when uncertain                                                                   |
+| `practitioner` | Deliberate/Act | per role profile | per role profile       | Work per the role's policy stack + definition-of-done; done-claims arrive with evidence artifacts, not assertions                                              |
+
+Known enforcement gap, stated honestly: the skeptic needs Bash to run
+refutation tests, which makes its "read-only" advisory; the PreToolUse
+decision table and native permissions still gate destructive patterns inside
+it. Memory organs (GROUNDING stores, workspace docs, session state) are
+writable only by the main session: enforced by a PreToolUse path rule that
+denies writes to those paths unless the session state shows the matching
+consolidation/skillify flow is active.
+
+Done-claims are checked by the main session against the role's contract
+(artifact present, criteria met); roles carrying `adversarial-handoff` also
+get a reviewer spawn's verdict. The attend stage is deliberately **not** an
+agent: attention needs the full conversation context, which subagents don't
+inherit.
 
 ### The practitioner and role profiles
 
-One agent definition wears every hat in the software development process. The
-human analog is task-set switching: a person is one cognitive architecture
-that loads different professional schemas — the same mind thinks _as_ a
-reviewer differently than it thinks _as_ a builder. The AI-native mechanic is
-prompt composition: the deliberate stage decomposes work, picks a hat per
-subtask, and spawns the practitioner with the matching **role profile**
-injected alongside the attention frame.
+One agent definition wears every hat in the software development process
+(human analog: task-set switching; AI mechanic: prompt composition — the
+deliberate stage picks a hat per subtask and spawns the practitioner with the
+role profile injected alongside the attention frame).
 
-A role profile (one markdown file per role in `roles/`) defines four things:
-
-1. **Lens** — what this role attends to first.
-2. **Policies** — the role's execution approach, declared as a composition of
-   named policies from the policy library (see below). A role has multiple
-   policies; its "approach" in the library table is the summary of its stack.
-3. **Definition of done** — the role-specific verification standard the
-   practitioner must satisfy before returning.
-4. **Defaults** — suggested model/effort for the role (deliberate may override
-   per task complexity).
+A role profile (`roles/<role>.md`) defines: **lens** (what the role attends to
+first), **policy stack** (composition from the policy library), **definition
+of done** (the role's verification standard, with required evidence
+artifacts), **defaults** (model/effort; deliberate may override), and
+**tools** (the role's allowlist — reviewer-class roles get read-only lists).
 
 ### The policy library
 
-Policies are modes of operating procedure — reusable, named, one file each in
-`policies/`. Roles compose them instead of duplicating procedure prose; the
-cognitive analog is that professionals share practices across professions (a
-surgeon and a pilot both run checklists — the checklist is the policy, the
-domain differs). Crucially, policies don't invent new machinery: each one
-binds the plugin's existing skills and agents into a procedure.
+Policies are modes of operating procedure — reusable, one file each in
+`policies/`; roles compose them instead of duplicating prose. Policies bind
+existing machinery (skills, agents, hooks), never invent new machinery.
 
-**Universal policies** — attached to every role by default:
+Universal (attached to every role): `epistemic` (hypothesis before test;
+claims carry evidence; significant claims to the skeptic before asserting),
+`trace-to-frame` (untraceable work stops and escalates),
+`escalate-destructive` (binds the inhibition decision table).
 
-| Policy                 | Procedure                                                                                   | Leverages                |
-| ---------------------- | ------------------------------------------------------------------------------------------- | ------------------------ |
-| `epistemic`            | Hypothesis before test; claims carry evidence; significant claims verified before asserting | skeptic agent, GROUNDING |
-| `trace-to-frame`       | All work traces to the attention frame; untraceable work stops and escalates                | attend skill             |
-| `escalate-destructive` | Destructive or outward actions escalate to the human                                        | inhibition hook          |
+Composable: `parallel-breadth` (explorer), `adversarial-handoff` (reviewer
+spawn before done), `test-driven`, `visual-verify`, `reversible-change`,
+`draft-for-ratification`, `reader-run`. Policy changes propagate to every
+declaring role — methodology stays DRY. Adding/amending either is a skillify
+maintenance action.
 
-**Composable policies** — roles declare the ones that fit:
+### The role library
 
-| Policy                   | Procedure                                                            | Leverages                   | Typical roles                        |
-| ------------------------ | -------------------------------------------------------------------- | --------------------------- | ------------------------------------ |
-| `parallel-breadth`       | Delegate exploration; synthesize conclusions, never accumulate dumps | explorer agent              | architect, researcher-type hats      |
-| `adversarial-handoff`    | Finished work goes to a reviewer spawn before it counts as done      | practitioner (reviewer hat) | frontend, backend, database          |
-| `test-driven`            | Failing test before implementation                                   | deliberate skill            | backend, qa, ai-ml                   |
-| `visual-verify`          | Run it and look; states seen, not assumed                            | run/browse tooling          | frontend, ui-designer, mobile        |
-| `reversible-change`      | Every change ships with its undo; rollback proven before rollout     | deliberate skill            | database, devops                     |
-| `draft-for-ratification` | Output is a proposal; the human ratifies before it takes effect      | consolidate flow            | advisory roles, anything human-owned |
-| `reader-run`             | Execute what you document; docs that weren't run aren't done         | run tooling                 | technical-writer, support            |
+**Core v1 (9 roles, fully validated):** `architect`, `frontend`, `backend`,
+`database`, `qa`, `reviewer`, `security`, `project-manager`,
+`technical-writer`.
 
-Adding or amending a policy is a `skillify` maintenance action, and a policy
-change propagates to every role that declares it — methodology stays DRY.
+**v1.1 (ship after structural validation):** `visionary`, `product-manager`,
+`requirements-analyst`, `ux-researcher`, `ui-designer`, `mobile`, `ai-ml`,
+`devops`, `performance`, `sales`, `marketing`, `legal`, `support`.
 
-### The role library (v1)
+Validation means: every policy reference resolves, the definition-of-done is
+testable, and the tools list matches the role class. Twenty-two untested
+profiles is a liability, not a library.
 
-The library spans the whole lifecycle, not just engineering. Each row
-compresses a profile; the full lens/approach/done/defaults live in that
-role's file.
+| Phase         | Role                   | Lens — attends to first   | Execution approach (policy-stack summary)                                                                  |
+| ------------- | ---------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Vision        | `visionary`            | The why and the future    | Narrative-first: target state and the bet; done when direction has falsifiable success metrics             |
+| Vision        | `product-manager`      | Value versus cost         | Trade-off-first: impact/effort prioritization, scope cuts, sequencing                                      |
+| Discovery     | `requirements-analyst` | What "done" means         | Acceptance-first: intent → testable stories and edge cases                                                 |
+| Discovery     | `ux-researcher`        | The user's reality        | Evidence-first: personas, task flows, observation over assumption                                          |
+| Design        | `architect`            | Boundaries and trade-offs | Constraint-first: components, interfaces, failure modes before code                                        |
+| Design        | `ui-designer`          | Hierarchy and interaction | System-first: tokens, states, consistency; mockups before pixels-in-code                                   |
+| Build         | `frontend`             | User-visible states       | Story-down: visible behavior first; verifies by running and looking; loading/error/empty are part of done  |
+| Build         | `backend`              | The contract              | Contract-first: interface before implementation, test-driven; error paths and idempotency are part of done |
+| Build         | `database`             | Data integrity            | Invariant-first: invariants before change; reversible migrations only; destructive ops escalate            |
+| Build         | `mobile`               | Platform constraints      | Platform-first: offline states, app lifecycle, store rules shape the design                                |
+| Build         | `ai-ml`                | Measurable behavior       | Eval-first: evaluation defined before touching models or prompts                                           |
+| Build         | `devops`               | Reproducibility           | Pipeline-first: environments as code, rollback proven before deploy                                        |
+| Quality       | `qa`                   | The risky paths           | Break-first: test pyramid aimed where failure hurts most                                                   |
+| Quality       | `reviewer`             | What could break          | Adversarial: tries to break the work, findings with evidence; **never edits**                              |
+| Quality       | `security`             | The attack surface        | Threat-model-first: assets, entry points, least privilege; hostile input assumed                           |
+| Quality       | `performance`          | The measured baseline     | Measure-first: baseline and budget, then profile, then optimize                                            |
+| Delivery      | `project-manager`      | The critical path         | Sequence-first: dependencies, risks, unblocking; keeps TODOS and ROADMAP current and honest                |
+| Communication | `technical-writer`     | The newcomer reader       | Reader-first: docs verified by running what they describe                                                  |
+| Business      | `sales`                | The objection             | Objection-first: value narrative built by anticipating the "no"                                            |
+| Business      | `marketing`            | The audience segment      | Audience-first: messaging per segment, launch sequencing                                                   |
+| Business      | `legal`                | Exposure and obligation   | Risk-first: licenses, privacy, terms, compliance; drafts for counsel, never counsel                        |
+| Business      | `support`              | The user's friction       | Friction-first: failure modes users actually hit, fed back as requirements                                 |
 
-| Phase         | Role                   | Lens — attends to first   | Execution approach                                                                                              |
-| ------------- | ---------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Vision        | `visionary`            | The why and the future    | Narrative-first: paints the target state, names the bet; done when direction has falsifiable success metrics    |
-| Vision        | `product-manager`      | Value versus cost         | Trade-off-first: prioritizes by impact/effort, cuts scope, sequences the roadmap                                |
-| Discovery     | `requirements-analyst` | What "done" means         | Acceptance-first: turns intent into testable stories and edge cases                                             |
-| Discovery     | `ux-researcher`        | The user's reality        | Evidence-first: personas, task flows, findings from observation, never assumption                               |
-| Design        | `architect`            | Boundaries and trade-offs | Constraint-first: components, interfaces, failure modes defined before code                                     |
-| Design        | `ui-designer`          | Hierarchy and interaction | System-first: tokens, states, consistency; mockups before pixels-in-code                                        |
-| Build         | `frontend`             | User-visible states       | Story-down: starts from visible behavior, verifies by running and looking; loading/error/empty are part of done |
-| Build         | `backend`              | The contract              | Contract-first: interface before implementation, test-driven; error paths and idempotency are part of done      |
-| Build         | `database`             | Data integrity            | Invariant-first: invariants stated before change; reversible migrations only; destructive ops always escalate   |
-| Build         | `mobile`               | Platform constraints      | Platform-first: offline states, app lifecycle, store rules shape the design                                     |
-| Build         | `ai-ml`                | Measurable behavior       | Eval-first: defines evaluation before touching models or prompts; measures, never vibes                         |
-| Build         | `devops`               | Reproducibility           | Pipeline-first: environments as code, rollback paths proven before deploy paths                                 |
-| Quality       | `qa`                   | The risky paths           | Break-first: test pyramid and automation aimed where failure hurts most                                         |
-| Quality       | `reviewer`             | What could break          | Adversarial: tries to break the work, reports findings with evidence; **never edits**                           |
-| Quality       | `security`             | The attack surface        | Threat-model-first: assets, entry points, least privilege; assumes hostile input everywhere                     |
-| Quality       | `performance`          | The measured baseline     | Measure-first: baseline and budget before profiling, profiling before optimizing                                |
-| Communication | `technical-writer`     | The newcomer reader       | Reader-first: docs written for the uninitiated and verified by running what they describe                       |
-| Business      | `sales`                | The objection             | Objection-first: value narrative built by anticipating the "no"                                                 |
-| Business      | `marketing`            | The audience segment      | Audience-first: messaging per segment, launch sequencing                                                        |
-| Business      | `legal`                | Exposure and obligation   | Risk-first: licenses, privacy, terms, compliance; produces drafts for counsel, never acts as counsel            |
-| Business      | `support`              | The user's friction       | Friction-first: failure modes users actually hit, fed back as requirements                                      |
+**Advisory roles** (Vision, Discovery, Delivery, Business): outputs are
+documents and analysis written to `specs/` or `docs/`; never code edits.
+Outputs targeting human-owned organs are proposals the human ratifies.
 
-**Advisory roles** (Vision, Discovery, and Business phases): their work
-products are documents and analysis — vision briefs, story drafts, risk
-memos — written to `specs/` or `docs/`; they never edit code. Where an
-advisory role's output targets a human-owned organ (`ROADMAP.md`,
-`HIGH-LEVEL-STORIES.md`), the practitioner _proposes_ a draft and the human
-ratifies — ownership does not transfer. Judgment-heavy hats (legal, security,
-visionary) inform human decisions; they never replace them.
+**The product-owner seat is deliberately not a role.** Accepting work on
+behalf of stakeholders is understanding, not thinking; it stays with the
+human. Any future role whose essence is acceptance authority is rejected on
+the same ground.
 
-Rules of the hat system: a hat changes the _approach_, never the _cycle_ —
-every role still states hypotheses before tests and traces work to the
-attention frame. One practitioner instance wears one hat; a subtask needing
-two hats is two spawns (builder's work can then be judged by a reviewer spawn
-with clean separation). Adding a role to the library is a `skillify`
-maintenance action — a new profile file, never a new agent.
+Rules of the hat system: a hat changes the _approach_, never the _cycle_; one
+spawn wears one hat; builder work is judged by a separate reviewer spawn.
+
+**Proportionality (cost governance):** fan-out must be justified by the
+attention frame; defaults: ≤ 3 concurrent subagents, ≤ 8 per session, raised
+only by explicit human instruction. A one-file fix never convenes a
+committee; deliberate states in one line why each spawn earns its cost.
+
+## Human-absent operation
+
+The human is a structural component, so absence is a defined state, not an
+error. In headless contexts (cron, CI, autonomous loops) or on non-response:
+
+- **Escalations queue; work continues where safe.** Goal-ambiguity and
+  ratification requests append to `.anoti/pending.md`; the agent proceeds
+  only along paths supported by ratified records and the explicit task.
+- **Destructive escalations never proceed in absence.** "Nobody answered" is
+  not authorization; the action queues.
+- **All new knowledge lands unratified** (`ratification: pending`).
+- **The queue surfaces at the next interactive SessionStart** — absence
+  delays judgment, never deletes it.
 
 ## Components
 
 ```
 anoti/                              # plugin root
 ├── .claude-plugin/plugin.json      # manifest: name, description, version
-├── hooks/hooks.json                # wires the five lifecycle hooks
+├── hooks/hooks.json                # wires the six lifecycle hooks to scripts
+├── scripts/                        # executable layer (POSIX sh + yq/jq; no network)
+│   ├── retrieve                    #   SessionStart digest builder
+│   ├── inhibit                     #   PreToolUse decision table
+│   ├── persist-session             #   PreCompact state flush
+│   ├── consolidation-gate          #   Stop episode-state check
+│   ├── cleanup-session             #   SessionEnd scratch lifecycle
+│   ├── regen-index                 #   rebuild store indexes from records
+│   └── validate-workspace          #   schema validation; used by skillify + tests
 ├── skills/
-│   ├── attend/SKILL.md             # slow-path attention → attention frame
-│   ├── deliberate/SKILL.md         # WM discipline, hypothesis-before-test, parallelism, hat assignment
-│   ├── consolidate/SKILL.md        # memory-write protocol (claim shape, dedupe, scope routing, append mechanics)
-│   └── skillify/SKILL.md           # workspace bootstrap + maintenance rules
+│   ├── attend/SKILL.md             # slow-path attention → attention frame (writes session state)
+│   ├── deliberate/SKILL.md         # WM discipline, hypotheses, hat assignment, spawn budget
+│   ├── consolidate/SKILL.md        # record typing, dedupe, scope routing, event-append mechanics
+│   └── skillify/SKILL.md           # workspace bootstrap + maintenance contract
 ├── agents/
-│   ├── consolidator.md             # sonnet, read-only: session review → claims + evidence + scope
-│   ├── explorer.md                 # haiku, read-only: parallel breadth for deliberation
-│   ├── skeptic.md                  # inherit, read-only: adversarial claim verification
-│   └── practitioner.md             # model per role: one worker, parameterized by role profile
-├── policies/                       # operating procedures, one file each: epistemic.md,
-│   │                               # trace-to-frame.md, escalate-destructive.md (universal);
-│   │                               # parallel-breadth.md, adversarial-handoff.md, test-driven.md,
-│   │                               # visual-verify.md, reversible-change.md,
-│   │                               # draft-for-ratification.md, reader-run.md (composable)
-├── roles/                          # role profiles: lens, policy stack, definition-of-done,
-│   │                               # defaults; one file per role in the role library table;
-│   │                               # extensible via skillify
-│   ├── visionary.md  product-manager.md  requirements-analyst.md  ux-researcher.md
-│   ├── architect.md  ui-designer.md  frontend.md  backend.md  database.md  mobile.md
-│   ├── ai-ml.md  devops.md  qa.md  reviewer.md  security.md  performance.md
-│   └── technical-writer.md  sales.md  marketing.md  legal.md  support.md
-├── commands/review.md              # /anoti:review — promotion/demotion ritual with evidence displayed
-└── templates/                      # GROUNDING.yaml (schema v2 + evidence:), ROADMAP.md,
-                                    # HIGH-LEVEL-STORIES.md, TODOS.md, LESSONS-LEARNT.md, specs/, plans/
+│   ├── consolidator.md             # sonnet; tools: Read, Grep, Glob
+│   ├── explorer.md                 # haiku; tools: Read, Grep, Glob
+│   ├── skeptic.md                  # inherit; tools: Read, Grep, Glob, Bash (see enforcement gap)
+│   └── practitioner.md             # model/tools per role profile
+├── policies/                       # epistemic, trace-to-frame, escalate-destructive (universal);
+│                                   # parallel-breadth, adversarial-handoff, test-driven,
+│                                   # visual-verify, reversible-change, draft-for-ratification, reader-run
+├── roles/                          # one file per role; core-v1 set validated first
+├── commands/
+│   ├── review.md                   # /anoti:review — ratification + promotion/demotion with evidence
+│   ├── recall.md                   # /anoti:recall <topic> — on-demand retrieval
+│   └── consolidate.md              # /anoti:consolidate — manual consolidation fallback
+└── templates/                      # GROUNDING.yaml (v3 record model), ROADMAP.md, HIGH-LEVEL-STORIES.md,
+                                    # TODOS.md, LESSONS-LEARNT.md, specs/, plans/, .gitignore fragment
 ```
 
 ### Hook specifications
 
-1. **SessionStart (Retrieve).** Reads the memory tiers in order — global
-   grounding, project grounding, open TODOS, current ROADMAP phase, and (on
-   resume) `.anoti/session.md` — and injects digests as context. Missing
-   workspace → inject a one-line offer to bootstrap via `skillify`. Malformed
-   YAML → report and skip; never crash. Replaces the manual CLAUDE.md pointer
-   convention.
-2. **UserPromptSubmit (Attend classifier).** Injects a small instruction (a few
-   lines; it runs on every prompt so its token cost is the permanent
-   "attention tax"): classify the prompt — routine → proceed; novel, ambiguous,
-   or consequential → invoke `attend` first.
-3. **PreToolUse (Inhibition).** Matcher limited to: destructive bash
-   (`rm -rf`, force-push, drop/truncate), deploy/publish commands, and writes
-   to `GROUNDING.yaml`. Injects a trace-to-frame check and escalates to the
-   human when uncertain. Warns rather than blocks, except catastrophic
-   patterns (`rm -rf /`-class), which hard-block.
-4. **PreCompact (Working-memory persistence).** Before context compaction,
-   persists the session's short-term state — attention frame, active
-   hypotheses, in-flight work — to `.anoti/session.md` so compaction cannot
-   lobotomize the task. SessionStart re-injects it on resume.
-5. **Stop (Consolidation gate).** Asks once per session (stop-loop guarded):
-   any unrecorded discoveries? No → silent pass. Yes → run the consolidator,
-   present its proposals (with scope routing: project vs global) to the human;
-   candidates the human okays are appended by the main session as `probable`.
-   Consolidation also updates TODOS (done/new items) and LESSONS-LEARNT
-   (process lessons). Status stays `probable` regardless — promotion to
-   `established` happens only later, in `/anoti:review`, with evidence
-   displayed.
+All hooks are **command** hooks (SessionStart and PreCompact support no other
+kind; consistency elsewhere keeps the runtime uniform). Runtime: POSIX shell +
+`yq`/`jq`; no network access; every script honors its timeout and **fails
+open** — on error it emits a one-line stderr report and exits 0 with no
+decision/context.
 
-### Component boundaries
+| #   | Event            | Script                 | Timeout | Reads                                                                           | Writes                     | Output (JSON)                                         |
+| --- | ---------------- | ---------------------- | ------- | ------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------- |
+| 1   | SessionStart     | `retrieve`             | 10s     | trust file, global+project stores, TODOS, ROADMAP, pending queue, session files | `.anoti/trust` (first-use) | `additionalContext`: digest in untrusted envelope     |
+| 2   | UserPromptSubmit | (inline in hooks.json) | 5s      | —                                                                               | —                          | `additionalContext`: ≤ 10-line classifier instruction |
+| 3   | PreToolUse       | `inhibit`              | 5s      | tool_input, session state (episode/frame)                                       | —                          | `permissionDecision`: allow/ask/deny + reason         |
+| 4   | PreCompact       | `persist-session`      | 5s      | session state file                                                              | session state file (flush) | none (side effect only)                               |
+| 5   | Stop             | `consolidation-gate`   | 5s      | session state (episode)                                                         | session state (episode)    | continue or block-with-reason (once per episode)      |
+| 6   | SessionEnd       | `cleanup-session`      | 5s      | session state                                                                   | removes/marks session file | none                                                  |
 
-- The consolidator subagent is **read-only**: it analyzes and proposes; the
-  main session writes. The thing that analyzes memory never mutates it.
-- Skills contain all methodology prose; hooks contain only classification and
-  wiring. Changing the methodology means editing skills, not hook logic.
-- GROUNDING.yaml remains a plain, tool-queryable file (yq/grep verified);
-  the plugin depends on its schema, not vice versa.
+**Stop semantics, corrected:** Stop fires whenever the main agent finishes a
+response — not when the user exits — and does not fire on interruption. The
+gate therefore runs a per-episode state machine (in session state):
+`idle → candidate-detected → awaiting-approval → committed`. It blocks-with-
+reason exactly once, when episode is `candidate-detected` (guarded by
+`stop_hook_active`); at `idle` or `committed` it passes silently. New
+discoveries after a committed episode open a new episode. Interrupted or
+abandoned sessions are caught by SessionEnd/next SessionStart surfacing, and
+`/anoti:consolidate` is always available manually.
+
+**Inhibition decision table** (`inhibit`):
+
+| Condition                                                        | Decision                |
+| ---------------------------------------------------------------- | ----------------------- |
+| Not matched by any pattern                                       | allow (no decision)     |
+| Consequential pattern, traced to frame, non-destructive          | allow + reason logged   |
+| Consequential pattern, untraced or uncertain                     | **ask** (human decides) |
+| Memory-organ write outside an active consolidation/skillify flow | **deny** + reason       |
+| Explicit catastrophic list (below)                               | **deny**                |
+| Hook error                                                       | fail open + report      |
+
+Catastrophic deny-list (complete, versioned in the script, not extensible at
+runtime): `rm -rf` targeting `/`, `~`, or the repo root; force-push to the
+default branch; `git reset --hard` + `push` to shared branches; `DROP
+DATABASE` / `TRUNCATE` against non-local connection strings. This is a
+guardrail, not a security boundary — native permission rules remain the
+enforcement layer.
 
 ## Failure behavior
 
-- All hooks fail open; any hook error degrades the session to vanilla Claude
-  Code behavior plus a visible one-line report.
-- Consolidator failure → session ends normally; discoveries wait for the next
-  session or manual `/anoti:review`.
-- Stop gate fires at most once per session (loop guard).
-- Hard-block list is explicit, short, and reviewed as part of the spec — not
-  extensible at runtime.
+- Every hook fails open; any error degrades the session to vanilla Claude
+  Code plus a one-line report.
+- Consolidator failure → session ends normally; candidates wait in session
+  state for `/anoti:consolidate` or the next episode.
+- Invalid store files are quarantined and reported, never auto-repaired.
+- Stale/abandoned session state is surfaced, never silently re-injected.
+- The deny-list is explicit and versioned; everything else defers to native
+  permissions.
 
 ## Testing
 
-- **Structural:** plugin-validator agent on manifest/layout; hook configs
-  exercised with synthetic transcripts.
-- **Behavioral (dogfood on anoti itself):**
-  - trivial prompt → zero visible overhead (hard requirement);
-  - ambiguous prompt → attend engages, attention frame produced;
-  - matched destructive command → inhibition fires exactly once;
-  - session with a genuine discovery → consolidation proposal appears;
-  - session without discoveries → silent close;
-  - `skillify` bootstraps a fresh project → full workspace passes structural
-    validation;
-  - compaction mid-task → attention frame and in-flight state survive via
-    `.anoti/session.md`;
-  - claim routed to global memory in one project → surfaces at SessionStart in
-    a different project;
-  - practitioner in reviewer role → findings with evidence, zero file
-    modifications;
-  - practitioner in a builder role → work satisfies that role's
-    definition-of-done before returning.
-- **Epistemic:** Q001 (format-comprehension experiment) is the first
-  registered experiment run under the methodology; behavioral test results are
-  recorded in GROUNDING as evidence for claims about the plugin itself.
+- **Structural:** plugin-validator on manifest/layout; `validate-workspace`
+  on templates; every role profile validated (policy refs resolve, done
+  criteria testable, tools list matches class); every script exercised with
+  synthetic hook-input JSON fixtures.
+- **State-machine fixtures:** status transitions (promotion, demotion,
+  grandfathering, contradiction, scoped exception) tested against controlled
+  store fixtures — promotion is _not_ a launch requirement, so it cannot be
+  manufactured.
+- **Behavioral (dogfood):** trivial prompt → zero visible overhead (hard
+  requirement); ambiguous prompt → attend + frame; matched destructive
+  command → correct table row (allow/ask/deny); discovery session →
+  episode reaches `awaiting-approval` exactly once; no-discovery session →
+  silent close; skillify bootstrap → valid workspace, idempotent re-run;
+  compaction mid-task → frame survives; global claim from project A →
+  digest in project B; poisoned foreign GROUNDING → not injected, reported;
+  headless session → queue grows, nothing blocks, destructive actions
+  deferred; concurrent sessions → no state collision; reviewer role → zero
+  file modifications.
+- **Comparative (H1–H3):** scripted week of tasks run with and without the
+  plugin, measuring contradiction rate, successful-recall rate, bad-memory
+  rate (acting on wrong/stale records), unnecessary interruptions, added
+  session-start latency, and token overhead. The plugin justifies itself
+  with evidence or not at all.
 
 ## Out of scope (v1)
 
-- Cross-agent portability (Codex etc.) — Claude Code only, per deliverable
-  decision.
-- Automatic memory decay/archival beyond the existing `reverify_after_days`.
+- Cross-agent portability (Codex etc.) — Claude Code only.
+- Automatic memory decay/archival beyond `reverify_after_days` + staleness
+  events.
 - Team-shared or synced memory (multi-user); global memory is per-user.
 - Any UI beyond Claude Code's own surfaces.
+- v1.1 role set (ships only after structural validation).
 
 ## Success criteria
 
-1. All ten behavioral tests pass.
-2. GROUNDING.yaml in a dogfooded project accumulates claims with evidence, and
-   at least one claim traverses the full ladder (speculative → established) or
-   is demoted by evidence during initial dogfooding on this project.
-3. The attention tax stays under ~10 lines of injected context per prompt.
+1. All behavioral tests pass; all state-machine fixtures pass.
+2. Comparative run shows measurable benefit over vanilla Claude Code on at
+   least: contradiction rate, successful recall, and bad-memory rate — within
+   acceptable latency (< 2s added at SessionStart) and token overhead
+   (digest ≤ ~1k tokens; attention tax ≤ 10 lines/prompt).
+3. Status-transition correctness demonstrated on fixtures (not on
+   manufactured live promotions).
 4. No session is ever blocked by a plugin failure.
+5. The workspace remains fully usable plain files if the plugin is removed.

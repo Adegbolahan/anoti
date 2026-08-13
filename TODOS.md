@@ -10,3 +10,7 @@
 - [ ] v1.1 role set (13 remaining roles) after core-10 prove out. (raised 2026-08-13)
 - [ ] Consider renaming /anoti:consolidate command if the skill/command name
       collision causes ambiguity in practice. (raised 2026-08-13, minor)
+- [ ] Bug: session-state classification log duplicated entries when the model
+      re-serialized the YAML list instead of appending — add a mechanical
+      append helper (scripts/log-classification) and have attend/classify use
+      it. Observed live 2026-08-13. (raised 2026-08-13)

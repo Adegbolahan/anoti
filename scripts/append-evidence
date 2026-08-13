@@ -1,20 +1,34 @@
 #!/bin/bash
 # append-evidence <store.yaml> <record-id> <type> <note> [<ref>...]
+# append-evidence <store.yaml> <record-id>   (evidence JSON on stdin:
+#   {type, note, date?, refs?} — the helper-set convention, issue #8)
 # Mechanical, quoting-safe evidence attach. Evidence accumulates without
 # ratification (status still moves only in /anoti:review). Refuses unknown
 # ids; never leaves the store invalid.
 set -u
-f="${1:?usage: append-evidence <store> <record-id> <type> <note> [refs...]}"
+f="${1:?usage: append-evidence <store> <record-id> <type> <note> [refs...]  |  append-evidence <store> <record-id> < evidence.json}"
 rid="${2:?record id required}"
-typ="${3:?evidence type required}"
-note="${4:?note required}"
-shift 4
 SELF="$(cd "$(dirname "$0")" && pwd)"
 RID="$rid" yq -e '.records[] | select(.id == strenv(RID))' "$f" >/dev/null 2>&1 \
   || { echo "append-evidence: no record '$rid' in $f" >&2; exit 1; }
-refs_json="[]"
-[ "$#" -gt 0 ] && refs_json="$(printf '%s\n' "$@" | jq -R . | jq -s -c .)"
-TS="$(date -u +%Y-%m-%d)" RID="$rid" T="$typ" N="$note" R="$refs_json" \
+ts=""
+if [ "$#" -eq 2 ]; then
+  json="$(cat)"
+  printf '%s' "$json" | jq -e '.type and .note' >/dev/null 2>&1 \
+    || { echo "append-evidence: stdin JSON must carry type and note" >&2; exit 1; }
+  typ="$(printf '%s' "$json" | jq -r '.type')"
+  note="$(printf '%s' "$json" | jq -r '.note')"
+  ts="$(printf '%s' "$json" | jq -r '.date // empty')"
+  refs_json="$(printf '%s' "$json" | jq -c '.refs // []')"
+else
+  typ="${3:?evidence type required}"
+  note="${4:?note required}"
+  shift 4
+  refs_json="[]"
+  [ "$#" -gt 0 ] && refs_json="$(printf '%s\n' "$@" | jq -R . | jq -s -c .)"
+fi
+[ -n "$ts" ] || ts="$(date -u +%Y-%m-%d)"
+TS="$ts" RID="$rid" T="$typ" N="$note" R="$refs_json" \
   yq '(.records[] | select(.id == strenv(RID)) | .evidence) += [{"date": strenv(TS), "type": strenv(T), "note": strenv(N), "refs": (strenv(R) | fromjson)}]' "$f" > "$f.tmp" \
   || { rm -f "$f.tmp"; exit 1; }
 "$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "append-evidence: result failed validation; store untouched" >&2; exit 1; }

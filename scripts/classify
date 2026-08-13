@@ -5,6 +5,13 @@ set -u
 input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
 [ -n "$sid" ] || sid="<session-id>"
+# #7: machine-generated turns are not prompts. Completion notifications
+# for framed work are continuation — classified when the frame was built
+# — so they are exempt from the attention tax entirely.
+p="$(printf '%s' "$input" | jq -r '.prompt // empty' 2>/dev/null || true)"
+case "$p" in
+  "[SYSTEM NOTIFICATION - NOT USER INPUT]"*|"<task-notification"*) exit 0 ;;
+esac
 SELF="$(cd "$(dirname "$0")" && pwd)"
 ctx="<anoti-attend>
 Classify this prompt BEFORE exploring or answering. SLOW if any apply: it establishes or changes project decisions/conventions; it touches a stated ground rule or multiple files; its goal is ambiguous; it is destructive or outward-facing. Otherwise FAST (small, unambiguous, low-consequence). Slow-path: invoke the anoti attend skill first and build a frame. Headless sessions classify identically — slow still frames; escalations queue per human-absent rules. Log the verdict mechanically — never hand-edit session YAML:

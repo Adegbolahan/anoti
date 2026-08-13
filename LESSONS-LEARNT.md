@@ -65,3 +65,5 @@
   run a script carries the exact invocation inline (consolidate now has a
   quick-reference block); a signature in the skill is cheaper than a
   Read in every session.
+
+- 2026-08-13 — yq's string == does wildcard matching: 'select(.id == strenv(ID))' with ID='c*' matches c1, c2, and c*. Why: ids are freeform LLM-chosen strings, so pattern chars will eventually appear. How to apply: never let untrusted-format strings reach a yq ==; resolve to indices by exact shell comparison first (scripts/session-consume is the reference)

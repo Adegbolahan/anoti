@@ -206,3 +206,56 @@ cd "$tmp"; mkdir plain && cd plain
 out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_path":"note.md"}}' | "$ROOT/scripts/inhibit")"
 [ -z "$out" ]; assert_ok $? "non-git directory is fail-open allowed"
 ); rm -rf "$tmp"
+
+# --- #9 session-consume: mark-applied candidate consumption ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+printf '%s' '{"id":"c1","type":"claim","statement":"first"}' | "$ROOT/scripts/session-append" sc candidates
+printf '%s' '{"id":"c2","type":"lesson","statement":"second"}' | "$ROOT/scripts/session-append" sc candidates
+"$ROOT/scripts/session-consume" sc candidates --ids c1
+assert_ok $? "session-consume exits 0 for a named id"
+assert_eq "$(yq -r '.candidates[] | select(.id=="c1") | .applied' .anoti/sessions/sc.yaml)" "true" "named candidate marked applied"
+assert_eq "$(yq -r '.candidates[] | select(.id=="c2") | .applied // "absent"' .anoti/sessions/sc.yaml)" "absent" "unnamed candidate untouched"
+assert_eq "$(yq -r '.candidates | length' .anoti/sessions/sc.yaml)" "2" "nothing deleted — mark-applied, never removal"
+"$ROOT/scripts/session-consume" sc candidates
+assert_ok $? "no --ids consumes all unapplied"
+assert_eq "$(yq -r '[.candidates[] | select(.applied == true)] | length' .anoti/sessions/sc.yaml)" "2" "all candidates now applied"
+yq -e '.candidates[0].applied_date' .anoti/sessions/sc.yaml >/dev/null 2>&1
+assert_ok $? "applied entries carry a date"
+"$ROOT/scripts/session-consume" sc candidates --ids NOPE 2>/dev/null
+assert_eq "$?" "1" "unknown candidate id fails loudly"
+printf '%s' '{"id":"c*","type":"claim","statement":"glob id"}' | "$ROOT/scripts/session-append" sc candidates
+touch c1file c2file
+"$ROOT/scripts/session-consume" sc candidates --ids 'c*'
+assert_ok $? "glob-shaped id matches literally, never expands against the cwd"
+assert_eq "$(yq -r '.candidates[2].applied' .anoti/sessions/sc.yaml)" "true" "glob-shaped id marked applied (index-checked: yq == wildcards)"
+yq -e '.' .anoti/sessions/sc.yaml >/dev/null 2>&1; assert_ok $? "session state stays parseable"
+); rm -rf "$tmp"
+
+# --- #8 append-evidence: JSON-stdin mode joins the helper convention ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+printf '%s' '{"type":"observation","note":"json-mode evidence: colon, comma","refs":["trial X"]}' | "$ROOT/scripts/append-evidence" s.yaml D001
+assert_ok $? "append-evidence accepts JSON on stdin (2-arg form)"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .evidence[-1].note' s.yaml)" "json-mode evidence: colon, comma" "json-mode note lands intact"
+yq -e '.records[] | select(.id=="D001") | .evidence[-1].date' s.yaml >/dev/null 2>&1
+assert_ok $? "json-mode defaults the date"
+"$ROOT/scripts/append-evidence" s.yaml D001 literature "positional still works" "ref1"
+assert_ok $? "positional form still accepted"
+printf 'not json' | "$ROOT/scripts/append-evidence" s.yaml D001 2>/dev/null
+assert_eq "$?" "1" "garbage JSON rejected in stdin mode"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1; assert_ok $? "store valid after both modes"
+); rm -rf "$tmp"
+
+# --- #7 classify: machine-notification turns are exempt ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+out="$(printf '%s' '{"session_id":"cx","prompt":"[SYSTEM NOTIFICATION - NOT USER INPUT] subagent skeptic completed"}' | "$ROOT/scripts/classify")"
+[ -z "$out" ]; assert_ok $? "bracketed system notification skips the attention tax"
+out="$(printf '%s' '{"session_id":"cx","prompt":"<task-notification>workflow wf_x finished</task-notification>"}' | "$ROOT/scripts/classify")"
+[ -z "$out" ]; assert_ok $? "task-notification turns skip the attention tax"
+out="$(printf '%s' '{"session_id":"cx","prompt":"fix the login bug"}' | "$ROOT/scripts/classify")"
+printf '%s' "$out" | grep -q "anoti-attend"
+assert_ok $? "real prompts still get the classifier context"
+out="$(printf '%s' '{"session_id":"cx","prompt":"why does my log show [SYSTEM NOTIFICATION - NOT USER INPUT] lines?"}' | "$ROOT/scripts/classify")"
+printf '%s' "$out" | grep -q "anoti-attend"
+assert_ok $? "a prompt merely quoting the marker is still classified (prefix match only)"
+); rm -rf "$tmp"

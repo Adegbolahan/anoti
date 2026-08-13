@@ -20,6 +20,8 @@ scripts/set-episode <session-id> <idle|candidate-detected|awaiting-approval|comm
 scripts/append-record <store.yaml>              # record as JSON on stdin
 scripts/append-event <store.yaml> <record-id> <action> <by> <note...>
 scripts/append-evidence <store.yaml> <record-id> <type> <note> [refs...]
+scripts/append-evidence <store.yaml> <record-id>     # or evidence JSON on stdin: {type, note, date?, refs?}
+scripts/session-consume <session-id> candidates [--ids id1,id2]  # mark candidates consumed after their writes land
 scripts/trust <store.yaml>                      # provenance approval
 scripts/regen-index <store.yaml>
 scripts/validate-workspace <store.yaml>
@@ -32,8 +34,12 @@ scripts/validate-workspace <store.yaml>
    regen-index, trust) before any candidate work — never substitute an
    ad-hoc memory file; ungoverned memory is the failure mode this skill
    exists to prevent (pilot finding, arm B).
-1. **Collect candidates** from session state (`candidates:`) — or dispatch
-   the consolidator agent to review the session and propose them.
+1. **Collect candidates** from session state (`candidates:`), skipping
+   any already marked `applied: true` (consumed by an earlier
+   consolidation) — or dispatch the consolidator agent to review the
+   session and propose them. Convention note: structured-record helpers
+   speak JSON on stdin; the prose-line helpers (append-todo,
+   append-lesson) stay text-args by design.
 2. **Type every candidate** — exactly one of: `claim` (falsifiable,
    evidence-bearing), `preference` (user taste), `decision` (choice +
    rationale), `goal` (desired state + success criteria), `policy`
@@ -68,6 +74,12 @@ scripts/validate-workspace <store.yaml>
    `scripts/append-event <store> <id> <action> <by> "<note>"`. Episode
    transitions: `scripts/set-episode <session-id> <state>`. IDs allocate
    as max-existing + 1.
+8b. **Mark candidates consumed** the moment their writes land:
+   `scripts/session-consume <session-id> candidates --ids <the ids just
+   applied>` (or no `--ids` once every approved candidate is written).
+   Skipping this leaves applied candidates collectable and re-proposable
+   next consolidation — the staleness half of the failure issue #9
+   reported (D021).
 9. **After event appends:** run `scripts/trust <store>` (append-record
    does this itself; append-event leaves trust to the flow's end).
 10. **Questions:** promote surviving report doubts mechanically —

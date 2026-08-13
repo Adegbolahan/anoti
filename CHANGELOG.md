@@ -3,6 +3,20 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.6] — 2026-08-13
+
+- Third field-report batch (issues #7–#9, livingsyncs):
+  `session-consume` closes the candidate-consumption gap that lost a
+  real memory candidate — mark-applied semantics (`applied: true` +
+  date, never deletion, D021), `--ids` or all-unapplied, loud failure
+  on unknown ids; the consolidate skill collects only unapplied
+  candidates and names the consume step (#9). `append-evidence` joins
+  the JSON-stdin convention (2-arg form reads `{type, note, date?,
+  refs?}`; positional unchanged; prose-line helpers stay text-args by
+  design) (#8). The classify hook exempts machine-generated turns —
+  bracketed system notifications and task-notifications are
+  continuation of already-framed work, not prompts (#7).
+
 ## [0.5.5] — 2026-08-13
 
 - Feedback skill: the field-report → human-gated GitHub issue procedure

@@ -1,0 +1,54 @@
+#!/bin/bash
+# session-consume <session-id> candidates [--ids id1,id2,...]
+# Mark-applied consumption of session-state candidates — never deletion
+# (issue #9: raw clearing edits clobbered a candidate list mid-session).
+# Sets applied: true + applied_date on each target; the consolidate skill
+# collects only unapplied entries, so consumed candidates cannot
+# re-propose. Without --ids, every unapplied candidate is consumed.
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
+sid="${1:?usage: session-consume <session-id> candidates [--ids id1,id2,...]}"
+key="${2:?list key required}"
+[ "$key" = "candidates" ] || { echo "session-consume: only 'candidates' is consumable" >&2; exit 1; }
+sf="$AD/sessions/$sid.yaml"
+[ -f "$sf" ] || { echo "session-consume: no session state at $sf" >&2; exit 1; }
+shift 2
+ids=""
+if [ "$#" -gt 0 ]; then
+  [ "$1" = "--ids" ] || { echo "session-consume: unknown option '$1'" >&2; exit 1; }
+  ids="${2:?--ids requires a comma-separated id list}"
+fi
+[ "$(yq -r '.candidates // [] | length' "$sf" 2>/dev/null)" = "0" ] && {
+  [ -z "$ids" ] && exit 0
+  echo "session-consume: no candidates in $sf" >&2; exit 1
+}
+ts="$(date -u +%Y-%m-%d)"
+if [ -n "$ids" ]; then
+  # yq's string == does WILDCARD matching, so requested ids are resolved
+  # to list indices by exact shell comparison — an id like "c*" must
+  # match itself literally, never pattern-match its siblings.
+  IFS=',' read -r -a idarr <<< "$ids"
+  all_ids="$(yq -r '.candidates[] | .id // ""' "$sf")"
+  idxs=""
+  for id in "${idarr[@]}"; do
+    [ -n "$id" ] || continue
+    found=""
+    i=0
+    while IFS= read -r cur; do
+      [ "$cur" = "$id" ] && { idxs="$idxs $i"; found=1; }
+      i=$((i+1))
+    done <<< "$all_ids"
+    [ -n "$found" ] || { echo "session-consume: no candidate '$id' in $sf" >&2; exit 1; }
+  done
+  cp "$sf" "$sf.tmp"
+  for i in $idxs; do
+    TS="$ts" yq -i ".candidates[$i].applied = true | .candidates[$i].applied_date = strenv(TS)" "$sf.tmp" \
+      || { rm -f "$sf.tmp"; exit 1; }
+  done
+else
+  TS="$ts" yq '(.candidates[] | select(.applied != true)) |= (.applied = true | .applied_date = strenv(TS))' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
+fi
+yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; echo "session-consume: refusing to write unparseable state" >&2; exit 1; }
+mv "$sf.tmp" "$sf"
+exit 0

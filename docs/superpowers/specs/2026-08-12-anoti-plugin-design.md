@@ -169,12 +169,45 @@ injected alongside the attention frame.
 A role profile (one markdown file per role in `roles/`) defines four things:
 
 1. **Lens** — what this role attends to first.
-2. **Execution approach** — how this role works; these genuinely differ per
-   role (see library below).
+2. **Policies** — the role's execution approach, declared as a composition of
+   named policies from the policy library (see below). A role has multiple
+   policies; its "approach" in the library table is the summary of its stack.
 3. **Definition of done** — the role-specific verification standard the
    practitioner must satisfy before returning.
 4. **Defaults** — suggested model/effort for the role (deliberate may override
    per task complexity).
+
+### The policy library
+
+Policies are modes of operating procedure — reusable, named, one file each in
+`policies/`. Roles compose them instead of duplicating procedure prose; the
+cognitive analog is that professionals share practices across professions (a
+surgeon and a pilot both run checklists — the checklist is the policy, the
+domain differs). Crucially, policies don't invent new machinery: each one
+binds the plugin's existing skills and agents into a procedure.
+
+**Universal policies** — attached to every role by default:
+
+| Policy                 | Procedure                                                                                   | Leverages                |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ------------------------ |
+| `epistemic`            | Hypothesis before test; claims carry evidence; significant claims verified before asserting | skeptic agent, GROUNDING |
+| `trace-to-frame`       | All work traces to the attention frame; untraceable work stops and escalates                | attend skill             |
+| `escalate-destructive` | Destructive or outward actions escalate to the human                                        | inhibition hook          |
+
+**Composable policies** — roles declare the ones that fit:
+
+| Policy                   | Procedure                                                            | Leverages                   | Typical roles                        |
+| ------------------------ | -------------------------------------------------------------------- | --------------------------- | ------------------------------------ |
+| `parallel-breadth`       | Delegate exploration; synthesize conclusions, never accumulate dumps | explorer agent              | architect, researcher-type hats      |
+| `adversarial-handoff`    | Finished work goes to a reviewer spawn before it counts as done      | practitioner (reviewer hat) | frontend, backend, database          |
+| `test-driven`            | Failing test before implementation                                   | deliberate skill            | backend, qa, ai-ml                   |
+| `visual-verify`          | Run it and look; states seen, not assumed                            | run/browse tooling          | frontend, ui-designer, mobile        |
+| `reversible-change`      | Every change ships with its undo; rollback proven before rollout     | deliberate skill            | database, devops                     |
+| `draft-for-ratification` | Output is a proposal; the human ratifies before it takes effect      | consolidate flow            | advisory roles, anything human-owned |
+| `reader-run`             | Execute what you document; docs that weren't run aren't done         | run tooling                 | technical-writer, support            |
+
+Adding or amending a policy is a `skillify` maintenance action, and a policy
+change propagates to every role that declares it — methodology stays DRY.
 
 ### The role library (v1)
 
@@ -237,9 +270,14 @@ anoti/                              # plugin root
 │   ├── explorer.md                 # haiku, read-only: parallel breadth for deliberation
 │   ├── skeptic.md                  # inherit, read-only: adversarial claim verification
 │   └── practitioner.md             # model per role: one worker, parameterized by role profile
-├── roles/                          # role profiles for the practitioner (lens, approach,
-│   │                               # definition-of-done, defaults); one file per role in the
-│   │                               # role library table; extensible via skillify
+├── policies/                       # operating procedures, one file each: epistemic.md,
+│   │                               # trace-to-frame.md, escalate-destructive.md (universal);
+│   │                               # parallel-breadth.md, adversarial-handoff.md, test-driven.md,
+│   │                               # visual-verify.md, reversible-change.md,
+│   │                               # draft-for-ratification.md, reader-run.md (composable)
+├── roles/                          # role profiles: lens, policy stack, definition-of-done,
+│   │                               # defaults; one file per role in the role library table;
+│   │                               # extensible via skillify
 │   ├── visionary.md  product-manager.md  requirements-analyst.md  ux-researcher.md
 │   ├── architect.md  ui-designer.md  frontend.md  backend.md  database.md  mobile.md
 │   ├── ai-ml.md  devops.md  qa.md  reviewer.md  security.md  performance.md

@@ -1,7 +1,7 @@
 # anoti
 
 This repository IS the anoti Claude Code plugin (spec:
-`docs/superpowers/specs/2026-08-12-anoti-plugin-design.md`).
+`docs/specs/2026-08-12-anoti-plugin-design.md`).
 
 When the anoti plugin is installed, its SessionStart hook injects the
 memory digest automatically and its skills govern memory writes — never

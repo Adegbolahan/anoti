@@ -8,6 +8,8 @@ meta:
     - date: 2026-08-12
       note: Created as schema v1; migrated to v2 same day (index, provenance, typed relationships, verification rules).
     - date: 2026-08-13
+      note: spec/plan file paths updated for the docs/ layout move (refs only; statements untouched).
+    - date: 2026-08-13
       note: >
         Migrated v2 -> v3 (typed records, epistemic/ratification split, event log, generated index). Grandfathering applied: D001-D003 were established with no evidence list and demote to probable per the spec's own protocol. All v2 detail fields preserved verbatim on each record.
 
@@ -64,6 +66,10 @@ index:
     statement: >
       Fix rounds continue the original builder agent (message-resume) rather than spawning a fresh builder: the builder's own context yields a more coherent fix, and the continuation costs zero spawn budget.
 
+  - ref: D012
+    type: decision
+    topic: anoti.workspace_layout
+    statement: Memory stores live at project root (GROUNDING.yaml, TODOS.md, LESSONS-LEARNT.md) where hooks machine-read them each session; direction and deliberation documents live under docs/ (docs/ROADMAP.md, docs/HIGH-LEVEL-STORIES.md, docs/specs/, docs/plans/, docs/trials/).
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -161,7 +167,7 @@ records: # generated — do not edit by hand
           Codex, reading a YAML grounding file and an equivalent bespoke sigil-notation file cold, judged YAML "easier to understand accurately" and the sigil file "error-prone, requires interpretation"; two agent judgments, not a controlled evaluation.
 
         refs:
-          - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+          - docs/specs/2026-08-12-anoti-plugin-design.md
     relationships:
       - {type: refines, target: D002}
       - {type: compares, target: D001, note: AI priors modulate parsing the way human top-down expectations modulate perception}
@@ -238,7 +244,7 @@ records: # generated — do not edit by hand
 
         refs:
           - roles/performance.md
-          - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+          - docs/specs/2026-08-12-anoti-plugin-design.md
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
@@ -268,7 +274,7 @@ records: # generated — do not edit by hand
     type: claim
     topic: anoti.full_cycle
     statement: The complete anoti cycle functions live end-to-end in an installed session — slow-path classification, attention framing, deliberation with adversarial handoff, inhibition denials enforced against the agent, Stop-gate consolidation, and selective human ratification.
-    epistemic_status: probable
+    epistemic_status: established
     ratification: approved
     source: {type: observation, context: live session, v1.1 role-set task: ''}
     evidence:
@@ -295,6 +301,7 @@ records: # generated — do not edit by hand
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
       - {date: 2026-08-13, action: evidence-appended, by: session, note: second end-to-end run, sample-app cascade; approved in consolidation: ''}
+      - {date: 2026-08-13, action: promoted, by: human, note: 'probable -> established in /anoti:review — two independent sessions (v1.1 role-set run outside-relayed', sample-app cascade self-reported with inspectable artifacts): '', distinct task types: ''}
   - id: D010
     date: 2026-08-13
     type: claim
@@ -339,6 +346,17 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+  - id: D012
+    date: 2026-08-13
+    type: decision
+    topic: anoti.workspace_layout
+    statement: Memory stores live at project root (GROUNDING.yaml, TODOS.md, LESSONS-LEARNT.md) where hooks machine-read them each session; direction and deliberation documents live under docs/ (docs/ROADMAP.md, docs/HIGH-LEVEL-STORIES.md, docs/specs/, docs/plans/, docs/trials/).
+    ratification: approved
+    source: {type: conversation, context: human ruling after the plan-persistence question}
+    rationale: Stores are machine-addressed by fixed path every session; documents are human-read on demand. Root visibility for organs the hooks consume; docs/ for what people browse.
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: "they should live in docs/"}
 open_questions:
   - id: Q001
     date: 2026-08-12
@@ -349,7 +367,7 @@ open_questions:
     context: format-comprehension experiment (D004)
     status: open
     refs:
-      - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+      - docs/specs/2026-08-12-anoti-plugin-design.md
   - id: Q002
     date: 2026-08-13
     question: >
@@ -359,7 +377,7 @@ open_questions:
     context: v1.1 role set review, Issue 3
     status: open
     refs:
-      - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+      - docs/specs/2026-08-12-anoti-plugin-design.md
       - roles/ui-designer.md
   - id: Q003
     date: 2026-08-13
@@ -370,7 +388,7 @@ open_questions:
     context: v1.1 role set review, Issue 2
     status: open
     refs:
-      - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+      - docs/specs/2026-08-12-anoti-plugin-design.md
       - roles/
   - id: Q004
     date: 2026-08-13
@@ -379,7 +397,10 @@ open_questions:
 
     raised_by: reviewer-spawn
     context: v1.1 role set review, questions item 3
-    status: open
+    status: answered
+    resolution: >
+      2026-08-13, /anoti:review — answered yes by the D010 trial: haiku handled reproduce-and-translate at trial quality (caveats recorded on D010). Reopen on a contradicting trial, e.g. a non-crash failure class.
+
     refs:
       - roles/support.md
-      - "D010 — first trial evidence (positive, with caveats); closure decision belongs to /anoti:review"
+      - "D010 — trial evidence (positive, with caveats)"

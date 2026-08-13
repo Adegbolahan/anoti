@@ -156,7 +156,7 @@ Mapping (binding):
 - D001–D004 → `records`, `type: claim`, `statement:` = the v2 summary condensed to one sentence; all v2 detail fields (`sequence`, `contrasts`, `details`, `caveats`, `relationships`, `note`, `implications`) preserved verbatim as extra keys on the record.
 - **Grandfathering per spec:** D001–D003 `epistemic_status: probable` with event `{action: demoted, note: grandfathered; evidence pending}`; D004 stays `probable`. All four `ratification: approved` (the human ratified this content during design review).
 - D004 `evidence:` gains its real entry: comparative agent observation, ref to the spec file + conversation.
-- Q001 → `open_questions[0]`: `{id: Q001, date, question, raised_by: session, context: format-comprehension experiment (D004.verification), status: open, refs: [docs/superpowers/specs/2026-08-12-anoti-plugin-design.md]}`.
+- Q001 → `open_questions[0]`: `{id: Q001, date, question, raised_by: session, context: format-comprehension experiment (D004.verification), status: open, refs: [docs/specs/2026-08-12-anoti-plugin-design.md]}`.
 - Then: `scripts/regen-index GROUNDING.yaml` && `scripts/trust GROUNDING.yaml`.
 - CLAUDE.md: replace the manual read-GROUNDING instruction with: plugin hooks own retrieval when anoti is installed; the manual pointer remains only as fallback for sessions without the plugin.
 

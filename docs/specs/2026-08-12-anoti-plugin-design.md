@@ -117,7 +117,7 @@ decides how epistemically strong a claim is. Neither moves the other.
   overwrites; record a `contradicts` relationship, spawn an open question with
   a verification method, resolve by evidence.
 - **Hypothesis before test**, in deliberation, always.
-- **Experiments are filed as specs**: `specs/YYYY-MM-DD-exp-<topic>.md`
+- **Experiments are filed as specs**: `docs/specs/YYYY-MM-DD-exp-<topic>.md`
   (design + results); evidence entries reference the file.
 
 ### Store mechanics (append-only, made coherent)
@@ -148,12 +148,12 @@ direction.
 | Artifact                | Cognitive organ                                | Owned by | Touched by                                            |
 | ----------------------- | ---------------------------------------------- | -------- | ----------------------------------------------------- |
 | `GROUNDING.yaml`        | Semantic memory — records per the model above  | shared   | retrieve (read), consolidate (write), review          |
-| `ROADMAP.md`            | Goal hierarchy — where we are going            | human    | attend traces work to it; human edits direction       |
-| `HIGH-LEVEL-STORIES.md` | Values/perspective — what "good" means         | human    | attend + inhibit reference it as the value standard   |
+| `docs/ROADMAP.md`            | Goal hierarchy — where we are going            | human    | attend traces work to it; human edits direction       |
+| `docs/HIGH-LEVEL-STORIES.md` | Values/perspective — what "good" means         | human    | attend + inhibit reference it as the value standard   |
 | `TODOS.md`              | Prospective memory — open intentions           | shared   | retrieve (surface), deliberate + consolidate (update) |
 | `LESSONS-LEARNT.md`     | Procedural memory — how we work                | shared   | consolidate writes process lessons here               |
-| `specs/`                | Deliberation artifacts — designs as hypotheses | shared   | deliberate writes; one dated file per design          |
-| `plans/`                | Deliberation artifacts — protocols             | shared   | deliberate writes; one plan per implementation        |
+| `docs/specs/`                | Deliberation artifacts — designs as hypotheses | shared   | deliberate writes; one dated file per design          |
+| `docs/plans/`                | Deliberation artifacts — protocols             | shared   | deliberate writes; one plan per implementation        |
 
 GROUNDING holds typed records (semantic); LESSONS-LEARNT holds process lessons
 (procedural). A lesson that becomes falsifiable and gathers evidence graduates
@@ -381,7 +381,7 @@ profiles is a liability, not a library.
 | Business      | `support`              | The user's friction       | Friction-first: failure modes users actually hit, fed back as requirements                                 |
 
 **Advisory roles** (Vision, Discovery, Delivery, Business): outputs are
-documents and analysis written to `specs/` or `docs/`; never code edits.
+documents and analysis written to `docs/specs/` or `docs/`; never code edits.
 Outputs targeting human-owned organs are proposals the human ratifies.
 
 **The product-owner seat is deliberately not a role.** Accepting work on

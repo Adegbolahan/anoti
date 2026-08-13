@@ -63,7 +63,7 @@ A plan's lifetime matches its artifacts' lifetime:
 
 - Work producing **durable artifacts** (anything committed to the repo):
   persist the ratified cascade plan to
-  `plans/YYYY-MM-DD-<topic>-cascade.md` before dispatching. The
+  `docs/plans/YYYY-MM-DD-<topic>-cascade.md` before dispatching. The
   session-state copy is the working copy; the file is the record —
   session state is deleted on clean exit, and a ratified plan must not
   evaporate with it.
@@ -72,4 +72,4 @@ A plan's lifetime matches its artifacts' lifetime:
 
 The same rule governs minimal specs: a contract embedded in the artifact
 itself (module docstring, interface file) is an acceptable spec-of-record
-when the cascade plan cites it; anything larger files to `specs/`.
+when the cascade plan cites it; anything larger files to `docs/specs/`.

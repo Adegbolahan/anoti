@@ -76,3 +76,32 @@ tmp="$(mktemp -d)"; ( cd "$tmp"
 [ -f .anoti/.gitignore ] && [ "$(cat .anoti/.gitignore)" = "*" ]
 assert_ok $? "state dir self-ignoring via .anoti/.gitignore"
 ); rm -rf "$tmp"
+
+# --- global trust adjacency (spec: global-memory-tier) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"
+cp "$ROOT/tests/fixtures/store_valid.yaml" "$HOME/.claude/anoti/GROUNDING.yaml"
+"$ROOT/scripts/trust" "$HOME/.claude/anoti/GROUNDING.yaml" 2>/dev/null
+assert_eq "$?" "1" "global store without --global refused"
+[ ! -f "$HOME/.claude/anoti/trust" ]; assert_ok $? "no trust written on refusal"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
+assert_ok $? "global trust with --global succeeds"
+[ -f "$HOME/.claude/anoti/trust" ]; assert_ok $? "trust adjacent to global store"
+[ ! -f .anoti/trust ]; assert_ok $? "project trust untouched by global op"
+ln -s "$HOME/.claude/anoti" "$tmp/link"
+"$ROOT/scripts/trust" "$tmp/link/GROUNDING.yaml" 2>/dev/null
+assert_eq "$?" "1" "symlinked global path refused without --global (realpath)"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/missing.yaml" 2>/dev/null
+assert_eq "$?" "1" "missing store file is an error, never false success"
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+[ -f .anoti/trust ]; assert_ok $? "project store trust unchanged"
+ls "$HOME/.claude/anoti/"*.tmp 2>/dev/null | grep -q . && f8=1 || f8=0
+assert_eq "$f8" "0" "no tmp residue (atomic write)"
+# helper parity on the global store: append works; auto-trust stays project-only
+printf '%s' '{"id":"G001","date":"2026-08-13","type":"preference","topic":"user.style","statement":"Terse commits","ratification":"approved","events":[{"date":"2026-08-13","action":"created","by":"session"}]}' \
+  | "$ROOT/scripts/append-record" "$HOME/.claude/anoti/GROUNDING.yaml" 2>/dev/null
+assert_ok $? "append-record works on the global store"
+"$ROOT/scripts/append-event" "$HOME/.claude/anoti/GROUNDING.yaml" G001 scoped-exception session "project overrides in-project" >/dev/null
+assert_ok $? "scoped-exception event appends on a global record (precedence mechanics)"
+); rm -rf "$tmp"

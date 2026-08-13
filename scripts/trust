@@ -1,11 +1,29 @@
 #!/bin/bash
-# trust <store.yaml> — record this store's content hash as user-approved.
+# trust [--global] <store.yaml> — record the store's content hash as
+# user-approved. Trust lives ADJACENT to its store: realpath-normalized
+# store path under realpath-normalized $HOME/.claude/anoti/ ->
+# $HOME/.claude/anoti/trust (requires --global: deliberate friction on
+# the machine-wide path); otherwise <state-dir>/trust. Atomic writes.
 set -u
-f="${1:?usage: trust <store.yaml>}"
+GLOBAL=0
+[ "${1:-}" = "--global" ] && { GLOBAL=1; shift; }
+f="${1:?usage: trust [--global] <store.yaml>}"
+[ -f "$f" ] || { echo "trust: no such store: $f" >&2; exit 1; }
 SELF="$(cd "$(dirname "$0")" && pwd)"
-AD="$("$SELF/anoti-dir")"
-mkdir -p "$AD"
-[ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore"
-shasum -a 256 "$f" | cut -d' ' -f1 >> "$AD/trust"
-sort -u "$AD/trust" -o "$AD/trust"
+real="$(cd "$(dirname "$f")" && pwd -P)/$(basename "$f")"
+ghome="$(cd "$HOME" 2>/dev/null && pwd -P)"
+gdir="$ghome/.claude/anoti"
+case "$real" in
+  "$gdir"/*)
+    [ "$GLOBAL" = "1" ] || { echo "trust: store is under $gdir — machine-wide scope requires --global" >&2; exit 1; }
+    tdir="$gdir" ;;
+  *)
+    AD="$("$SELF/anoti-dir")"
+    tdir="$AD"
+    mkdir -p "$tdir"
+    [ -f "$tdir/.gitignore" ] || printf '*\n' > "$tdir/.gitignore" ;;
+esac
+tf="$tdir/trust"
+{ [ -f "$tf" ] && cat "$tf"; shasum -a 256 "$f" | cut -d' ' -f1; } | sort -u > "$tf.tmp" \
+  && mv "$tf.tmp" "$tf"
 echo "trusted: $f"

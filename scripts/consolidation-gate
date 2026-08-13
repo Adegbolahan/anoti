@@ -1,0 +1,13 @@
+#!/bin/bash
+# Stop hook: block exactly once per episode when candidates await consolidation. Fail-open.
+set -u
+input="$(cat 2>/dev/null || true)"
+sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
+[ -n "$sid" ] || exit 0
+[ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ] && exit 0
+sf=".anoti/sessions/$sid.yaml"
+[ -f "$sf" ] || exit 0
+[ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" = "candidate-detected" ] || exit 0
+yq '.episode = "awaiting-approval"' "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
+jq -n '{decision:"block",reason:"anoti: memory candidates await consolidation. Review the candidates in the session state file and run /anoti:consolidate to propose them to the human, or set episode: idle to skip."}'
+exit 0

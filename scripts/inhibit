@@ -1,0 +1,47 @@
+#!/bin/bash
+# PreToolUse decision table. deny-list v1 — versioned here; complete; not runtime-extensible.
+# Fail-open: any parse error -> exit 0 with no decision (allow).
+set -u
+input="$(cat 2>/dev/null || true)"
+tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)" || exit 0
+[ -n "$tool" ] || exit 0
+sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
+decide() {
+  jq -n --arg d "$1" --arg r "$2" \
+    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:$d,permissionDecisionReason:$r}}'
+  exit 0
+}
+case "$tool" in
+  Write|Edit)
+    p="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
+    case "$p" in
+      *GROUNDING.yaml|*ROADMAP.md|*HIGH-LEVEL-STORIES.md|*TODOS.md|*LESSONS-LEARNT.md)
+        ep="idle"
+        [ -n "$sid" ] && [ -f ".anoti/sessions/$sid.yaml" ] &&
+          ep="$(yq -r '.episode // "idle"' ".anoti/sessions/$sid.yaml" 2>/dev/null || echo idle)"
+        case "$ep" in
+          awaiting-approval|committed) exit 0 ;;
+          *) decide deny "memory-organ write outside an active consolidation flow (episode=$ep); use /anoti:consolidate" ;;
+        esac ;;
+    esac ;;
+  Bash)
+    c="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
+    # deny row 1: recursive delete of /, ~, or repo root
+    if printf '%s' "$c" | grep -qE '(^|[;&| ])rm .*-rf? +("?/"?|~|\.)($|[ ;&|])|(^|[;&| ])rm .*-rf? +~/'; then
+      decide deny "catastrophic: recursive delete of /, ~, or repo root"
+    fi
+    # deny row 2: force-push to default branch
+    if printf '%s' "$c" | grep -qE 'git push .*(--force|-f)' && printf '%s' "$c" | grep -qE '(main|master)'; then
+      decide deny "catastrophic: force-push to default branch"
+    fi
+    # deny row 3: destructive SQL at non-local target
+    if printf '%s' "$c" | grep -qiE 'DROP DATABASE|TRUNCATE ' && ! printf '%s' "$c" | grep -qE 'localhost|127\.0\.0\.1'; then
+      decide deny "catastrophic: destructive SQL against non-local target"
+    fi
+    # ask row: consequential commands
+    if printf '%s' "$c" | grep -qE '(^|[;&| ])(git push|npm publish|terraform (apply|destroy)|kubectl (delete|apply)|gh release|rm -r )'; then
+      decide ask "consequential action — confirm it traces to the current goal"
+    fi
+    ;;
+esac
+exit 0

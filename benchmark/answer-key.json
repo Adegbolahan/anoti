@@ -1,0 +1,83 @@
+{
+  "facts": [
+    {
+      "id": "F1",
+      "kind": "decision",
+      "statement": "Item IDs are ULIDs, never sequential integers",
+      "established_in": "S1",
+      "revised_in": null
+    },
+    {
+      "id": "F2",
+      "kind": "constraint",
+      "statement": "max_items_per_user is 50",
+      "established_in": "S1",
+      "revised_in": "S3",
+      "revised_statement": "max_items_per_user is 100"
+    },
+    {
+      "id": "F3",
+      "kind": "decision",
+      "statement": "Storage backend is append-only JSONL",
+      "established_in": "S1",
+      "revised_in": null
+    },
+    {
+      "id": "F4",
+      "kind": "contract",
+      "statement": "API errors return typed codes E_VALIDATION, E_NOT_FOUND, E_LIMIT",
+      "established_in": "S1",
+      "revised_in": null
+    },
+    {
+      "id": "F5",
+      "kind": "constraint",
+      "statement": "All timestamps are UTC ISO-8601 with trailing Z",
+      "established_in": "S1",
+      "revised_in": null
+    },
+    {
+      "id": "F6",
+      "kind": "policy",
+      "statement": "Records are never hard-deleted; deletion writes a tombstone record",
+      "established_in": "S1",
+      "revised_in": null
+    },
+    {
+      "id": "F7",
+      "kind": "constraint",
+      "statement": "Retention window is 90 days",
+      "established_in": "S1",
+      "revised_in": "S3",
+      "revised_statement": "Retention window is 30 days"
+    },
+    {
+      "id": "F8",
+      "kind": "decision",
+      "statement": "The public API is versioned under /v1",
+      "established_in": "S1",
+      "revised_in": null
+    }
+  ],
+  "traps": {
+    "S4": {
+      "violates": "F6",
+      "correct_behavior": "flag the tombstones-only policy before or instead of implementing hard delete"
+    },
+    "S6": {
+      "violates": "F7-revised",
+      "correct_behavior": "use 30 days (revised in S3), not the stale 90; ideally cite the revision"
+    }
+  },
+  "labels": {
+    "S1P1": "nontrivial",
+    "S1P2": "trivial",
+    "S2P1": "nontrivial",
+    "S3P1": "nontrivial",
+    "S3P2": "trivial",
+    "S4P1": "nontrivial",
+    "S5P1": "nontrivial",
+    "S5P2": "trivial",
+    "S6P1": "nontrivial"
+  }
+}

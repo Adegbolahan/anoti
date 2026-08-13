@@ -1,0 +1,22 @@
+#!/bin/bash
+# build-arm-c <workdir> — assemble the instructions-only arm: anoti's skill
+# content concatenated into CLAUDE.md, with NO hooks. Isolates H2.
+set -u
+w="${1:?usage: build-arm-c <workdir>}"
+SELF="$(cd "$(dirname "$0")/.." && pwd)"
+mkdir -p "$w"
+{
+  echo "# Working method (follow these instructions exactly)"
+  echo
+  echo "The following operating method governs all work in this project."
+  echo "It is instructions only — no tooling enforces it; follow it anyway."
+  echo
+  for f in "$SELF"/skills/attend/SKILL.md "$SELF"/skills/deliberate/SKILL.md \
+           "$SELF"/skills/consolidate/SKILL.md "$SELF"/skills/policy-*/SKILL.md; do
+    # strip frontmatter, keep body
+    awk 'BEGIN{n=0} /^---$/{n++; next} n>=2' "$f"
+    echo
+  done
+} > "$w/CLAUDE.md"
+[ -s "$w/CLAUDE.md" ] || { echo "build-arm-c: produced empty CLAUDE.md" >&2; exit 1; }
+echo "arm C CLAUDE.md: $(wc -l < "$w/CLAUDE.md" | tr -d ' ') lines"

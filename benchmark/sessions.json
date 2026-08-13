@@ -1,0 +1,87 @@
+{
+  "sessions": [
+    {
+      "id": "S1",
+      "purpose": "establish",
+      "prompts": [
+        {
+          "id": "S1P1",
+          "interactive": false,
+          "text": "We're building this item-tracker service together and I want to lock in our ground rules before we write more code. Decisions, please record them however you keep track of things: item IDs are ULIDs, never sequential integers. Storage is append-only JSONL. API errors return typed codes E_VALIDATION, E_NOT_FOUND, E_LIMIT. All timestamps are UTC ISO-8601 with a trailing Z. Records are never hard-deleted - deletion writes a tombstone record instead. The retention window is 90 days. The public API is versioned under /v1. And max_items_per_user is 50. With those set: implement the add_item function in api.py respecting the ID and limit rules, with tests."
+        },
+        {
+          "id": "S1P2",
+          "interactive": true,
+          "text": "What's in the README?",
+          "note": "interactive point 1: for governed arms, the consolidation dialog lands here; respond per the response script (approve all fact candidates)."
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "purpose": "build-on-facts",
+      "prompts": [
+        {
+          "id": "S2P1",
+          "interactive": false,
+          "text": "Implement list_items and get_item in api.py with tests. Make sure error handling and timestamps follow our conventions."
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "purpose": "revise",
+      "prompts": [
+        {
+          "id": "S3P1",
+          "interactive": false,
+          "text": "Two of our earlier decisions change today: max_items_per_user goes up to 100, and the retention window comes down to 30 days. Please make sure these updates stick wherever we track decisions, and update any code that hardcodes the old values."
+        },
+        {
+          "id": "S3P2",
+          "interactive": false,
+          "text": "How many files are in this project?"
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "purpose": "contradiction-trap",
+      "prompts": [
+        {
+          "id": "S4P1",
+          "interactive": false,
+          "text": "Add a purge_item(item_id) function that permanently deletes the record from storage - just remove the line from the file entirely."
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "purpose": "recall-probe",
+      "prompts": [
+        {
+          "id": "S5P1",
+          "interactive": true,
+          "text": "Before we onboard a teammate: write me a short summary of every convention and decision we've made on this project so far, including anything that changed along the way - and for each one, say where that decision is recorded.",
+          "note": "interactive point 2: for governed arms, run the review ritual per the response script before answering (approve nothing new; observe only)."
+        },
+        {
+          "id": "S5P2",
+          "interactive": false,
+          "text": "What does config.py contain right now?"
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "purpose": "stale-trap",
+      "prompts": [
+        {
+          "id": "S6P1",
+          "interactive": false,
+          "text": "Write the cleanup job: a script that removes items older than our retention window - I think we said 90 days."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+#!/bin/bash
+# run-arm [--dry-run] <A|B|C> <workdir> — execute one arm of the H1-H3
+# benchmark per docs/specs/2026-08-13-exp-h1-h3-benchmark.md.
+# A: vanilla (plugin disabled). B: anoti (plugin enabled). C: instructions-only.
+# The answer key NEVER enters the workdir. Plugin state is restored on exit.
+set -u
+DRY=0
+[ "${1:-}" = "--dry-run" ] && { DRY=1; shift; }
+arm="${1:?usage: run-arm [--dry-run] <A|B|C> <workdir>}"
+w="${2:?workdir required}"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SELF/.." && pwd)"
+case "$arm" in A|B|C) ;; *) echo "run-arm: arm must be A, B, or C" >&2; exit 1 ;; esac
+trials="$ROOT/docs/trials/$(date +%F)-h1h3-arm$arm"
+plugin_restore=""
+cleanup() { [ -n "$plugin_restore" ] && claude plugin "$plugin_restore" anoti@anoti-dev >/dev/null 2>&1; }
+trap cleanup EXIT
+
+setup() {
+  mkdir -p "$w" "$trials"
+  cp "$SELF"/fixture/*.py "$SELF"/fixture/README.md "$w/"
+  ( cd "$w" && git init -q 2>/dev/null; git add -A 2>/dev/null; git commit -qm "fixture" 2>/dev/null || true )
+  case "$arm" in
+    B) claude plugin enable anoti@anoti-dev >/dev/null 2>&1 && plugin_restore="disable" ;;
+    A|C) claude plugin disable anoti@anoti-dev >/dev/null 2>&1 && plugin_restore="enable" ;;
+  esac
+  [ "$arm" = "C" ] && "$SELF/build-arm-c" "$w" >/dev/null
+}
+
+n="$(jq -r '.sessions | length' "$SELF/sessions.json")"
+i=0
+[ "$DRY" -eq 0 ] && setup
+while [ "$i" -lt "$n" ]; do
+  sid="$(jq -r ".sessions[$i].id" "$SELF/sessions.json")"
+  pn="$(jq -r ".sessions[$i].prompts | length" "$SELF/sessions.json")"
+  j=0
+  while [ "$j" -lt "$pn" ]; do
+    pid="$(jq -r ".sessions[$i].prompts[$j].id" "$SELF/sessions.json")"
+    txt="$(jq -r ".sessions[$i].prompts[$j].text" "$SELF/sessions.json")"
+    inter="$(jq -r ".sessions[$i].prompts[$j].interactive" "$SELF/sessions.json")"
+    if [ "$DRY" -eq 1 ]; then
+      [ "$j" -eq 0 ] && echo "session $sid: would run ${pn} prompt(s) in $w (arm $arm)"
+    elif [ "$inter" = "true" ]; then
+      echo ""
+      echo "=== INTERACTIVE POINT ($pid) — human required ==="
+      echo "Open a session in $w and run this prompt yourself, following"
+      echo "the response script in benchmark/response-script.md:"
+      echo "  $txt"
+      printf "Press enter when the interactive session is complete... "
+      read -r _
+    else
+      start="$(date +%s)"
+      ( cd "$w" && claude -p "$txt" --output-format json ) > "$trials/$pid.json" 2> "$trials/$pid.err"
+      end="$(date +%s)"
+      printf '{"prompt":"%s","seconds":%s}\n' "$pid" "$((end-start))" >> "$trials/timing.jsonl"
+      echo "session $sid prompt $pid: done ($((end-start))s)"
+    fi
+    j=$((j+1))
+  done
+  i=$((i+1))
+done
+[ "$DRY" -eq 1 ] || echo "arm $arm complete; transcripts in $trials"

@@ -21,3 +21,10 @@ grep -qi "cycle" "$ROOT/commands/review-work.md" && grep -qi "evidence" "$ROOT/c
 assert_ok $? "review-work keeps evidence contract, cycle cap, no-rubber-stamp"
 grep -qi "never downgrade\|newer than the installed" "$ROOT/commands/update.md" && grep -q "skillify" "$ROOT/commands/update.md"
 assert_ok $? "update wraps skillify migration with never-downgrade"
+
+# /anoti:audit — the longitudinal audit + staleness sweep, loop-schedulable
+f="$ROOT/commands/audit.md"
+[ -s "$f" ]; assert_ok $? "command exists: audit"
+grep -q "exp-longitudinal" "$f" && grep -qi "stale" "$f" && grep -qi "/loop" "$f"
+assert_ok $? "audit implements the longitudinal spec + staleness sweep + loop wiring"
+grep -qi "reverify_after_days" "$f"; assert_ok $? "audit checks record reverify windows"

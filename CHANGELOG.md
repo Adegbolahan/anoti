@@ -3,6 +3,18 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.1] — 2026-08-13
+
+- Feedback loop: the retrospective now routes anoti-caused friction to
+  human-gated GitHub issues on the anoti repo — every governed project
+  feeds the plugin's improvement loop, never automatically.
+- /anoti:audit: the pre-registered longitudinal audit + staleness sweep
+  (reverify windows, direction-doc freshness, aging TODOS and probables,
+  abandoned sessions) as a schedulable command — wire with /loop 7d or
+  a scheduled routine; the audit never schedules itself.
+- attend mirrors an active /goal into the frame and escalates prompts
+  that conflict with it.
+
 ## [0.5.0] — 2026-08-13
 
 - Global memory tier implemented per its adversarially reviewed spec:

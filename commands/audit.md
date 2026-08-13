@@ -1,0 +1,39 @@
+---
+description: Run the longitudinal audit + staleness sweep over this project's anoti trail. Schedulable — wire with /loop 7d /anoti:audit or a scheduled routine.
+---
+
+Run the weekly audit per the pre-registered protocol
+(docs/specs/2026-08-13-exp-longitudinal.md) — its metrics, decision
+rules, and honest limitations govern; this command is the executable
+form. **Spec:** docs/specs/2026-08-13-exp-longitudinal.md.
+
+1. **Scope the week:** the git range since the last audit report in
+   docs/trials/longitudinal-*.md (or since the protocol's start date if
+   none). Read only durable artifacts — git history, GROUNDING events,
+   LESSONS-LEARNT, telemetry log, trial docs — never session memory.
+2. **Score the seven protocol metrics** exactly as the spec's table
+   defines them (contradiction incidents, bad-memory incidents, recall
+   successes, ratification integrity, guardrail activity with
+   false-positive count, store health, cross-project citations), citing
+   trail evidence for every count.
+3. **Staleness sweep** (the audit's freshness dimension):
+   - records past their `reverify_after_days` window (default 180; per
+     the store's meta.policy) → list for the next /anoti:review;
+   - direction docs whose `Last Updated` predates the newest phase
+     transition → flag as due-an-audit per the direction skill's rule;
+   - TODOS items raised >30 days ago with no linked progress → list;
+   - abandoned session files in the state dir → list;
+   - probable claims older than 14 days (the digest already nudges;
+     the audit records the queue's depth over time).
+4. **Apply the frozen decision rules** — incidents produce evidence
+   events + mandatory lessons; four clean audits may append one
+   observational supporting event (probable-cap); ratification-integrity
+   violations are critical.
+5. **File the report** to docs/trials/longitudinal-YYYY-MM-DD.md; the
+   human spot-audits the counts (measurement ratified). Store writes go
+   through the consolidate flow as usual.
+
+**Scheduling:** the human wires the cadence — `/loop 7d /anoti:audit`
+for an in-terminal loop, or a scheduled cloud routine where available.
+The audit never schedules itself; recurring token spend is the human's
+call, once.

@@ -11,7 +11,10 @@ produce an **attention frame** before any work begins.
 
 ## Procedure
 
-1. **Restate the intent** in one sentence. If the goal is genuinely
+1. **Restate the intent** in one sentence. If the harness has an
+   active /goal, the frame's `goal` field mirrors it verbatim and the
+   restatement reconciles the prompt against it — a prompt that
+   conflicts with the standing /goal is escalated, not silently obeyed. If the goal is genuinely
    ambiguous — two readings lead to different work — escalate to the human
    as ONE concrete question with options. Goal disambiguation is the
    human's structural role; guessing is not attention.

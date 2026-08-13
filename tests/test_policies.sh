@@ -13,3 +13,5 @@ grep -qi "never edits" "$ROOT/skills/policy-adversarial-handoff/SKILL.md" 2>/dev
 assert_ok $? "adversarial-handoff: judge never edits"
 grep -qi "went well" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null && grep -qi "skillif" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null && grep -qi "cannot be automated" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null
 assert_ok $? "retrospect covers went-well/skillify/cannot-be-automated"
+grep -qi "issue" "$ROOT/skills/policy-retrospect/SKILL.md" && grep -qi "outward-facing" "$ROOT/skills/policy-retrospect/SKILL.md"
+assert_ok $? "retrospect routes anoti friction to human-gated issues"

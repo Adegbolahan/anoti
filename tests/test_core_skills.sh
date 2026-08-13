@@ -51,3 +51,5 @@ awk '/project store as a normal record/{a=NR} /scope-deferred/{if(!b)b=NR} END{e
 assert_ok $? "deferral is record-then-event, in that order"
 grep -qi "routing classes" "$ROOT/skills/consolidate/SKILL.md" && grep -qi "scoped-exception" "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "consolidate carries routing classes + cross-tier precedence"
+grep -q "/goal" "$ROOT/skills/attend/SKILL.md"
+assert_ok $? "attend mirrors an active /goal into the frame"

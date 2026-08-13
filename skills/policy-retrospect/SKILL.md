@@ -32,7 +32,13 @@ each run it.)
 **Routing:** lessons → LESSONS-LEARNT.md; skillify candidates → TODOS.md;
 cannot-automate boundaries → LESSONS-LEARNT.md (promotable to `policy`
 records via consolidation + ratification); anything falsifiable →
-candidate claim.
+candidate claim. **Friction caused by anoti itself** (helper errors,
+hook false positives, unclear skills, guardrail misfires) → propose a
+GitHub issue on the anoti repo — draft the title/body with trail
+citations and ask the human before filing (`gh issue create -R
+Adegbolahan/anoti`): issue creation is outward-facing, so it is
+escalate-gated, never automatic. This is how every governed project
+feeds anoti's own improvement loop.
 
 **Fast path:** a genuinely trivial session with nothing to report reports
 nothing — the retrospective's silence is itself the fast-path verdict.

@@ -1,0 +1,15 @@
+{
+  "note": "The 10 comprehension questions asked of every Q001 reader, with the grading key. Committed post-run to close a reproducibility gap: the run used these verbatim from the dispatch prompts.",
+  "questions": [
+    { "n": 1, "q": "What is the current max_items_per_user?", "key": "100" },
+    { "n": 2, "q": "What was its original value?", "key": "50" },
+    { "n": 3, "q": "What is the current retention window in days?", "key": "30" },
+    { "n": 4, "q": "Which two rules were revised from their original values?", "key": "max_items_per_user (F2) and retention window (F7)" },
+    { "n": 5, "q": "What ID scheme do items use?", "key": "ULIDs" },
+    { "n": 6, "q": "What is the storage backend?", "key": "append-only JSONL" },
+    { "n": 7, "q": "What happens when a record is deleted?", "key": "never hard-deleted; a tombstone record is written" },
+    { "n": 8, "q": "List the typed API error codes.", "key": "E_VALIDATION, E_NOT_FOUND, E_LIMIT" },
+    { "n": 9, "q": "What timestamp format is required?", "key": "UTC ISO-8601 with a trailing Z" },
+    { "n": 10, "q": "What prefix versions the public API?", "key": "/v1" }
+  ]
+}

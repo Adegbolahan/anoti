@@ -12,10 +12,15 @@
       Q002–Q004)
 - [ ] Consider renaming /anoti:consolidate command if the skill/command name
       collision causes ambiguity in practice. (raised 2026-08-13, minor)
-- [ ] Bug: session-state classification log duplicated entries when the model
+- [x] Bug: session-state classification log duplicated entries when the model
       re-serialized the YAML list instead of appending — add a mechanical
       append helper (scripts/log-classification) and have attend/classify use
-      it. Observed live 2026-08-13. (raised 2026-08-13)
+      it. Observed live 2026-08-13. (raised 2026-08-13; done 2026-08-13 —
+      four helpers shipped in 0.3.0: append-classification, set-episode,
+      append-event, append-record; all skills/commands rewired)
+- [ ] Fast-path calibration: analyze .anoti/telemetry.log (fast/slow verdicts
+      + reasons, now durably logged) during Plan 3 to measure classifier
+      eagerness against outcomes. (raised 2026-08-13)
 - [ ] If D011 survives /anoti:review, codify fix-round continuation (resume
       the original builder vs fresh spawn) in the deliberate skill's cascade
       section. (raised 2026-08-13, sample-app cascade)

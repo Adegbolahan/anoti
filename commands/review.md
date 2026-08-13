@@ -16,7 +16,8 @@ and, if present, `~/.claude/anoti/GROUNDING.yaml`):
 3. For each item, ask the human: approve / reject / promote / demote /
    correct / delete (global records also support export). Present the
    evidence, take their decision — never batch-assume.
-4. Apply decisions as appended `events:` entries (records stay immutable;
+4. Apply decisions via `scripts/append-event <store> <id> <action> human
+   "<note>"` — never hand-edit (records stay immutable;
    deletion of global records is the one exception, per user rights).
    Promotion to `established` requires independent evidence (different
    session, agent lineage, or method — self-citation chains do not count).

@@ -33,11 +33,16 @@ the single writer; agents (including the consolidator) only propose.
    human said so explicitly; otherwise `pending`. Claims enter at
    `speculative`/`probable` per their evidence — promotion to
    `established` happens only in /anoti:review.
-8. **Append mechanics:** records are immutable; every change is an
-   appended `events:` entry `{date, action, by, note}`. IDs allocate as
-   max-existing + 1. Write via temp file + rename.
-9. **After every write:** run `scripts/regen-index <store>` then
-   `scripts/trust <store>` (the store's hash changed; re-record provenance).
+8. **Append mechanics — always via the helpers, never hand-written:**
+   records are immutable; every change is an appended `events:` entry.
+   New records: build the record as JSON and pipe to
+   `scripts/append-record <store>` (validates, runs regen-index and
+   trust automatically). Status/ratification changes:
+   `scripts/append-event <store> <id> <action> <by> "<note>"`. Episode
+   transitions: `scripts/set-episode <session-id> <state>`. IDs allocate
+   as max-existing + 1.
+9. **After event appends:** run `scripts/trust <store>` (append-record
+   does this itself; append-event leaves trust to the flow's end).
 10. **Questions:** promote surviving report doubts to `open_questions`
     with `{id, date, question, raised_by, context, status, refs}`.
 11. **Close the episode:** session state `episode: committed`. Also update

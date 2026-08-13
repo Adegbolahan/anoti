@@ -1,9 +1,14 @@
 #!/bin/bash
 # UserPromptSubmit: the attention-tax instruction. Must stay <= 10 lines of context.
+# Embeds the real session id + helper path so classification writes are mechanical.
 set -u
-cat >/dev/null 2>&1 || true
-ctx='<anoti-attend>
-Before answering, classify this prompt. Routine (small, unambiguous, low-consequence): proceed normally, ignore this note. Novel, ambiguous, or consequential: invoke the anoti attend skill first to build an attention frame. Either way, append one classification line (fast/slow + reason) to your session state file under classifications.
-</anoti-attend>'
+input="$(cat 2>/dev/null || true)"
+sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
+[ -n "$sid" ] || sid="<session-id>"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+ctx="<anoti-attend>
+Before answering, classify this prompt. Routine (small, unambiguous, low-consequence): proceed normally, ignore this note. Novel, ambiguous, or consequential: invoke the anoti attend skill first to build an attention frame. Either way, log the verdict mechanically — never hand-edit session YAML:
+$SELF/append-classification $sid fast|slow \"one-line reason\"
+</anoti-attend>"
 jq -n --arg c "$ctx" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$c}}'
 exit 0

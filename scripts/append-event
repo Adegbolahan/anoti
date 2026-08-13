@@ -1,0 +1,20 @@
+#!/bin/bash
+# append-event <store.yaml> <record-id> <action> <by> <note...>
+# Mechanical, quoting-safe event append to an immutable record's log.
+# Refuses unknown ids; never leaves the store invalid.
+set -u
+f="${1:?usage: append-event <store> <record-id> <action> <by> <note>}"
+rid="${2:?record id required}"
+action="${3:?action required}"
+by="${4:?by required}"
+shift 4
+note="${*:?note required}"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+RID="$rid" yq -e '.records[] | select(.id == strenv(RID))' "$f" >/dev/null 2>&1 \
+  || { echo "append-event: no record '$rid' in $f" >&2; exit 1; }
+TS="$(date -u +%Y-%m-%d)" RID="$rid" A="$action" B="$by" N="$note" \
+  yq '(.records[] | select(.id == strenv(RID)) | .events) += [{"date": strenv(TS), "action": strenv(A), "by": strenv(B), "note": strenv(N)}]' "$f" > "$f.tmp" \
+  || { rm -f "$f.tmp"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "append-event: result failed validation; store untouched" >&2; exit 1; }
+mv "$f.tmp" "$f"
+exit 0

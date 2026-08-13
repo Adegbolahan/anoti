@@ -1,0 +1,14 @@
+#!/bin/bash
+# append-record <store.yaml>   (record as JSON on stdin)
+# Mechanical, quoting-safe record append: JSON in eliminates hand-written
+# YAML entirely. Validates, regenerates the index, re-trusts the store.
+set -u
+f="${1:?usage: append-record <store> < record.json}"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+json="$(cat)"
+printf '%s' "$json" | jq -e '.' >/dev/null 2>&1 || { echo "append-record: stdin is not valid JSON" >&2; exit 1; }
+REC="$json" yq '.records += [strenv(REC) | fromjson]' "$f" > "$f.tmp" || { rm -f "$f.tmp"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "append-record: result failed validation; store untouched" >&2; exit 1; }
+mv "$f.tmp" "$f"
+"$SELF/regen-index" "$f" && "$SELF/trust" "$f" >/dev/null
+exit 0

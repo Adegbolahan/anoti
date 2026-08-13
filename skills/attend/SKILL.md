@@ -37,8 +37,10 @@ attention_frame:
   roadmap_ref: which ROADMAP item this traces to (or "none — candidate for cascade")
 ```
 
-5. **Log the classification** (slow + one-line reason) under
-   `classifications` in session state.
+5. **Log the classification mechanically** — run
+   `<plugin>/scripts/append-classification <session-id> slow "reason"`;
+   never hand-edit session YAML (unquoted scalars split into spurious
+   keys; the helpers quote and validate for you).
 
 The frame is what every later stage traces to (policy-trace-to-frame), what
 the inhibition hook checks actions against, and what practitioner spawns

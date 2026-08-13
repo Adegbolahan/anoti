@@ -95,3 +95,12 @@ HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
 out="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve")"
 assert_eq "$out" "" "bare non-git dir stays silent"
 ); rm -rf "$tmp"
+
+# value standard surfaced when HIGH-LEVEL-STORIES.md exists
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME" docs
+printf '# Stories\n\n- As a user, I need X. Done means: Y.\n- As a maintainer, I need Z. Done means: W.\n' > docs/HIGH-LEVEL-STORIES.md
+ctx="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$ctx" | grep -q "value standard"; assert_ok $? "stories surfaced as value standard"
+printf '%s' "$ctx" | grep -q "2 stor"; assert_ok $? "story count included"
+); rm -rf "$tmp"

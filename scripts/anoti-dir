@@ -1,0 +1,14 @@
+#!/bin/bash
+# anoti-dir — resolve the project-local anoti state directory.
+# Order: $ANOTI_DIR (project-relative) > .claude/anoti.local.md frontmatter
+# `state_dir:` > default ".anoti". Always project-relative: the global
+# memory tier (~/.claude/anoti) is a different thing resolved separately —
+# never conflate the two (D016).
+set -u
+if [ -n "${ANOTI_DIR:-}" ]; then printf '%s\n' "$ANOTI_DIR"; exit 0; fi
+f=".claude/anoti.local.md"
+if [ -f "$f" ]; then
+  v="$(sed -n '/^---$/,/^---$/{ /^state_dir:/s/state_dir: *//p; }' "$f" | head -1)"
+  [ -n "$v" ] && { printf '%s\n' "$v"; exit 0; }
+fi
+printf '.anoti\n'

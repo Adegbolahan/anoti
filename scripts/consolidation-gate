@@ -1,11 +1,13 @@
 #!/bin/bash
 # Stop hook: block exactly once per episode when candidates await consolidation. Fail-open.
 set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
 input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
 [ -n "$sid" ] || exit 0
 [ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ] && exit 0
-sf=".anoti/sessions/$sid.yaml"
+sf="$AD/sessions/$sid.yaml"
 [ -f "$sf" ] || exit 0
 if ! yq -e '.' "$sf" >/dev/null 2>&1; then
   echo "anoti: session state unreadable ($sf) — failing open; repair or remove it" >&2

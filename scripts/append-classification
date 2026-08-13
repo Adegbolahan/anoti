@@ -3,12 +3,14 @@
 # Mechanical, quoting-safe append to session state + durable telemetry line.
 # The model must never hand-edit session YAML; it calls this instead.
 set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
 sid="${1:?usage: append-classification <session-id> <fast|slow> <reason>}"
 verdict="${2:?verdict required (fast|slow)}"
 shift 2
 reason="${*:?reason required}"
 case "$verdict" in fast|slow) ;; *) echo "append-classification: verdict must be fast|slow" >&2; exit 1 ;; esac
-d=".anoti/sessions"; mkdir -p "$d"
+d="$AD/sessions"; mkdir -p "$d"
 sf="$d/$sid.yaml"
 if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"
@@ -17,5 +19,5 @@ TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)" V="$verdict" R="$reason" \
   yq '.classifications += [{"ts": strenv(TS), "verdict": strenv(V), "reason": strenv(R)}]' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
 yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; echo "append-classification: refusing to write unparseable state" >&2; exit 1; }
 mv "$sf.tmp" "$sf"
-printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "$verdict" "$reason" >> .anoti/telemetry.log
+printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "$verdict" "$reason" >> "$AD/telemetry.log"
 exit 0

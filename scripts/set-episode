@@ -2,11 +2,13 @@
 # set-episode <session-id> <idle|candidate-detected|awaiting-approval|committed>
 # Mechanical episode transition; rejects unknown states, never corrupts.
 set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
 sid="${1:?usage: set-episode <session-id> <state>}"
 ep="${2:?state required}"
 case "$ep" in idle|candidate-detected|awaiting-approval|committed) ;;
   *) echo "set-episode: invalid state '$ep'" >&2; exit 1 ;; esac
-sf=".anoti/sessions/$sid.yaml"
+sf="$AD/sessions/$sid.yaml"
 [ -f "$sf" ] || { echo "set-episode: no state file for session $sid" >&2; exit 1; }
 E="$ep" yq '.episode = strenv(E)' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
 yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; exit 1; }

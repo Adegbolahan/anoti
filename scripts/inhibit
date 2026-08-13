@@ -2,6 +2,8 @@
 # PreToolUse decision table. deny-list v1 — versioned here; complete; not runtime-extensible.
 # Fail-open: any parse error -> exit 0 with no decision (allow).
 set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
 input="$(cat 2>/dev/null || true)"
 tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)" || exit 0
 [ -n "$tool" ] || exit 0
@@ -17,11 +19,11 @@ case "$tool" in
     case "$p" in
       *GROUNDING.yaml|*ROADMAP.md|*HIGH-LEVEL-STORIES.md|*TODOS.md|*LESSONS-LEARNT.md)
         ep="idle"
-        if [ -n "$sid" ] && [ -f ".anoti/sessions/$sid.yaml" ]; then
-          if yq -e '.' ".anoti/sessions/$sid.yaml" >/dev/null 2>&1; then
-            ep="$(yq -r '.episode // "idle"' ".anoti/sessions/$sid.yaml" 2>/dev/null || echo idle)"
+        if [ -n "$sid" ] && [ -f "$AD/sessions/$sid.yaml" ]; then
+          if yq -e '.' "$AD/sessions/$sid.yaml" >/dev/null 2>&1; then
+            ep="$(yq -r '.episode // "idle"' "$AD/sessions/$sid.yaml" 2>/dev/null || echo idle)"
           else
-            echo "anoti: session state unreadable (.anoti/sessions/$sid.yaml) — treating episode as idle; repair or remove it" >&2
+            echo "anoti: session state unreadable ($AD/sessions/$sid.yaml) — treating episode as idle; repair or remove it" >&2
           fi
         fi
         case "$ep" in

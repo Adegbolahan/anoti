@@ -33,3 +33,5 @@ grep -q "docs/plans/" "$ROOT/skills/plan/SKILL.md" 2>/dev/null && grep -qi "no p
 assert_ok $? "plan skill: filing path + no-placeholders + cascade plan format"
 grep -q "plan skill" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
 assert_ok $? "deliberate references the plan skill"
+grep -q "story_ref" "$ROOT/skills/attend/SKILL.md" 2>/dev/null && grep -qi "HIGH-LEVEL-STORIES" "$ROOT/skills/attend/SKILL.md" 2>/dev/null
+assert_ok $? "attend frames carry story_ref against the value standard"

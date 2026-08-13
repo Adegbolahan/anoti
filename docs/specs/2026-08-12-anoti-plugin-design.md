@@ -596,3 +596,7 @@ enforcement layer.
   list to class-based (`class: advisory`, whatever the phase).
 - 2026-08-13 — Q003 ruling: per-role tools/effort fields deliberately
   deferred (decision D013); validation criterion reworded accordingly.
+- 2026-08-13 — D016: project state dir configurable (ANOTI_DIR >
+  .claude/anoti.local.md state_dir > default .anoti), always
+  project-relative; global tier unaffected. Frame gains story_ref; the
+  retrieval digest surfaces HIGH-LEVEL-STORIES as the value standard.

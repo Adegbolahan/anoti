@@ -1,10 +1,12 @@
 #!/bin/bash
 # PreCompact hook: ensure session state exists and stamp a flush time. Fail-open.
 set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
 input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
 [ -n "$sid" ] || exit 0
-d=".anoti/sessions"; mkdir -p "$d" 2>/dev/null || exit 0
+d="$AD/sessions"; mkdir -p "$d" 2>/dev/null || exit 0
 sf="$d/$sid.yaml"
 if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"

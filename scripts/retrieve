@@ -4,6 +4,7 @@
 # enrichments (index, question text) emit only while they fit the budget.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
 cat >/dev/null 2>&1 || true # consume stdin; digest does not depend on it
 BUDGET=4000 # chars of digest content, ~1k tokens
 lines=""
@@ -11,7 +12,7 @@ emit() { lines="${lines}${1}
 "; }
 try_emit() { [ $(( ${#lines} + ${#1} )) -le "$BUDGET" ] && emit "$1"; }
 hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
-is_trusted() { [ -f .anoti/trust ] && grep -qs "$(hash_of "$1")" .anoti/trust; }
+is_trusted() { [ -f "$AD/trust" ] && grep -qs "$(hash_of "$1")" "$AD/trust"; }
 cutoff="$(date -v-14d +%F 2>/dev/null || date -d '14 days ago' +%F 2>/dev/null || echo "")"
 store_digest() { # $1=file $2=label
   if ! "$SELF/validate-workspace" "$1" >/dev/null 2>&1; then
@@ -47,14 +48,16 @@ g="$HOME/.claude/anoti/GROUNDING.yaml"
 [ -f "$g" ] && store_digest "$g" "global memory"
 [ -f GROUNDING.yaml ] && store_digest GROUNDING.yaml "project memory"
 [ -f TODOS.md ] && emit "- open todos: $(grep -c '^- \[ \]' TODOS.md 2>/dev/null || echo 0) (see TODOS.md)"
+HS=""; [ -f docs/HIGH-LEVEL-STORIES.md ] && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && [ -f HIGH-LEVEL-STORIES.md ] && HS=HIGH-LEVEL-STORIES.md
+[ -n "$HS" ] && emit "- value standard: $HS ($(grep -c '^- ' "$HS" 2>/dev/null || echo 0) stories) — attend traces goals to it"
 RM=""; [ -f docs/ROADMAP.md ] && RM=docs/ROADMAP.md; [ -z "$RM" ] && [ -f ROADMAP.md ] && RM=ROADMAP.md
 if [ -n "$RM" ]; then
   ph="$(grep -m1 -i '^## .*current' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -z "$ph" ] && ph="$(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -n "$ph" ] && emit "- roadmap phase: $ph (see $RM)"
 fi
-[ -f .anoti/pending.md ] && emit "- pending human-absent escalations: .anoti/pending.md"
-ab="$(ls .anoti/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
+[ -f "$AD/pending.md" ] && emit "- pending human-absent escalations: $AD/pending.md"
+ab="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
 [ -n "$ab" ] && emit "- abandoned session state found: $ab (surfaced, not auto-loaded)"
 if [ -z "$lines" ]; then
   if [ -d .git ] && [ ! -f GROUNDING.yaml ]; then

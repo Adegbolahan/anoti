@@ -2,7 +2,9 @@
 # trust <store.yaml> — record this store's content hash as user-approved.
 set -u
 f="${1:?usage: trust <store.yaml>}"
-mkdir -p .anoti
-shasum -a 256 "$f" | cut -d' ' -f1 >> .anoti/trust
-sort -u .anoti/trust -o .anoti/trust
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
+mkdir -p "$AD"
+shasum -a 256 "$f" | cut -d' ' -f1 >> "$AD/trust"
+sort -u "$AD/trust" -o "$AD/trust"
 echo "trusted: $f"

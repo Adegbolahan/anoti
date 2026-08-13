@@ -50,3 +50,22 @@ assert_eq "$(yq -r '.records[] | select(.id=="D001") | .evidence[0].refs | lengt
 "$ROOT/scripts/append-evidence" s.yaml NOPE literature x r 2>/dev/null
 assert_eq "$?" "1" "unknown record id rejected"
 ); rm -rf "$tmp"
+
+# --- configurable state dir: ANOTI_DIR > .claude/anoti.local.md > default ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+ANOTI_DIR=".claude/anoti" "$ROOT/scripts/append-classification" cfg fast "override test"
+[ -f .claude/anoti/sessions/cfg.yaml ]; assert_ok $? "ANOTI_DIR override honored"
+[ ! -d .anoti ]; assert_ok $? "default dir untouched under override"
+mkdir -p .claude
+printf -- '---\nstate_dir: .claude/anoti2\n---\n' > .claude/anoti.local.md
+"$ROOT/scripts/append-classification" cfg2 fast "settings test"
+[ -f .claude/anoti2/sessions/cfg2.yaml ]; assert_ok $? "settings-file state_dir honored"
+rm .claude/anoti.local.md
+"$ROOT/scripts/append-classification" cfg3 fast "default test"
+[ -f .anoti/sessions/cfg3.yaml ]; assert_ok $? "default .anoti without any knob"
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+ANOTI_DIR=".claude/anoti" "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+out="$(printf '{"session_id":"cfg"}' | ANOTI_DIR=".claude/anoti" "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$out" | grep -q "2 records"; assert_ok $? "retrieve trust check honors ANOTI_DIR"
+); rm -rf "$tmp"

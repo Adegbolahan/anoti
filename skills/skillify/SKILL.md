@@ -1,0 +1,56 @@
+---
+name: skillify
+description: anoti workspace bootstrap and maintenance — scaffold the document system into a project, adopt brownfield docs, migrate schema versions. Invoke to set up or maintain an anoti workspace.
+---
+
+# Skillify
+
+The organ-maintenance function: creates and maintains the externalized
+workspace (GROUNDING.yaml, ROADMAP.md, HIGH-LEVEL-STORIES.md, TODOS.md,
+LESSONS-LEARNT.md, specs/, plans/).
+
+## Bootstrap contract
+
+- **Idempotent:** re-running creates only what is missing; it NEVER
+  overwrites an existing file. Safe to run twice by construction.
+- **Dry-run first when asked:** `--dry-run` prints the plan (what would be
+  created, what exists and is left alone) without touching anything.
+- Source of truth is `templates/` in the plugin; project root is the git
+  toplevel (or CWD with a warning if not a repo).
+- Git hygiene: append `templates/gitignore-fragment` (`.anoti/`) to the
+  project `.gitignore` if missing; workspace files themselves are
+  committed — shared ground truth deserves history.
+- After creating GROUNDING.yaml from the template: run
+  `scripts/validate-workspace`, `scripts/regen-index`, then
+  `scripts/trust` so retrieval loads it from the first session.
+
+## Brownfield adoption
+
+Existing docs map onto organs; only gaps are created; existing content is
+referenced in place, never rewritten. An existing CLAUDE.md is left as the
+instruction layer — retrieval belongs to the SessionStart hook, so skillify
+adds at most a short documentation note, never a retrieval pointer.
+
+## Migration
+
+The workspace records the plugin/schema version that scaffolded it. On
+mismatch: take a dated backup of each affected file, produce the migration
+as a proposed diff, and the human ratifies before anything is applied — no
+silent upgrades. Grandfathering rule for evidence-less `established`
+claims: demote to `probable` with a `{action: demoted, note: grandfathered;
+evidence pending}` event.
+
+## Maintenance map (which document updates on which event)
+
+- Design accepted → `specs/YYYY-MM-DD-<topic>-design.md`
+- Implementation planned → `plans/`
+- Direction changes → ROADMAP.md (draft-for-ratification; human merges)
+- Scope of "good" changes → HIGH-LEVEL-STORIES.md (same gate)
+- Work begun/finished → TODOS.md (checked items are history; never delete)
+- Process lesson learned → LESSONS-LEARNT.md
+- Discovery made → GROUNDING.yaml via the consolidate skill only
+
+## Uninstall
+
+The workspace is plain files and simply remains — designed degradation.
+Offer (never force) removal of `.anoti/` ephemera.

@@ -296,6 +296,18 @@ get a reviewer spawn's verdict. The attend stage is deliberately **not** an
 agent: attention needs the full conversation context, which subagents don't
 inherit.
 
+**Universal report contract.** Every statement in any agent report is
+exactly one of two things: a **cited claim** — carrying `{file, lines}`,
+`{url, anchor}`, or `{command, output}` — or a labeled **judgment**, which
+may inform human decisions but can never become a GROUNDING claim. An
+uncited factual claim gets one cite-or-retract bounce; a second violation
+fails the report. Every report ends with a **questions/doubts** section:
+the main session promotes surviving items to `open_questions` with
+`raised_by`, date, task context, and refs — agents never write the store,
+so attribution exists without write clashes (single-writer construction).
+Open-question entries carry `{id, date, question, raised_by, context,
+status, refs}`; resolution appends events and links the resolving record.
+
 ### The practitioner and role profiles
 
 One agent definition wears every hat in the software development process
@@ -331,8 +343,8 @@ maintenance action.
 
 ### The role library
 
-**Core v1 (9 roles, fully validated):** `architect`, `frontend`, `backend`,
-`database`, `qa`, `reviewer`, `security`, `project-manager`,
+**Core v1 (10 roles, fully validated):** `architect`, `frontend`, `backend`,
+`database`, `qa`, `reviewer`, `security`, `conductor`, `project-manager`,
 `technical-writer`.
 
 **v1.1 (ship after structural validation):** `visionary`, `product-manager`,
@@ -384,6 +396,39 @@ spawn wears one hat; builder work is judged by a separate reviewer spawn.
 attention frame; defaults: ≤ 3 concurrent subagents, ≤ 8 per session, raised
 only by explicit human instruction. A one-file fix never convenes a
 committee; deliberate states in one line why each spawn earns its cost.
+
+## The cascade (multi-agent deliberation protocol)
+
+Dual-process governs entry: routine work never sees the cascade; it engages
+only when attend flags slow-path work **and** deliberation judges it
+multi-step. The main session is the only dispatcher and only writer
+throughout — the conductor _thinks about_ the cascade; it never runs it.
+
+1. **Frame** — attend produces the attention frame.
+2. **Cascade plan** — a practitioner in the `conductor` role receives the
+   frame + workspace digest and returns: whether a roadmap is needed and
+   whether one exists; the agents required, in order, with what each
+   produces/consumes and which steps hit human gates; the unknowns, each
+   with an assigned research role; spawn count versus budget. Every factual
+   assertion in the plan is cited ("no roadmap exists" cites the check that
+   proved it).
+3. **Plan ratification** — the main session checks the plan against contract
+   and budget; it escalates to the human only when the plan touches
+   human-owned organs or exceeds the spawn budget.
+4. **Roadmap gate** — needed and missing → visionary or product-manager
+   drafts one via `draft-for-ratification` → **blocks for the human**.
+5. **Stories** — requirements-analyst decomposes the ratified roadmap phase
+   into HIGH-LEVEL-STORIES → **blocks for the human**.
+6. **Tasks** — project-manager (sequencing) or architect (technical
+   decomposition, as the cascade plan assigns) turns stories into
+   TODOS/plan entries — auto-proceeds, trail logged.
+7. **Research** — one dispatch per unknown, role assigned by the plan
+   (explorer for repo facts, skeptic for claim verification), parallel
+   within spawn caps; findings return cited; unknowns that survive research
+   are filed to `open_questions`.
+8. **Execution & synthesis** — builder roles per task via the existing
+   practitioner system; the main session synthesizes; discoveries enter the
+   consolidation episode machine.
 
 ## Human-absent operation
 

@@ -3,6 +3,19 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.0] — 2026-08-13
+
+- Global memory tier implemented per its adversarially reviewed spec:
+  opt-in store at ~/.claude/anoti/GROUNDING.yaml (0700/0600, umask-safe
+  creation ordering); trust adjacency with dual-realpath comparison, an
+  explicit --global gate on the machine-wide path, missing-file guard,
+  and atomic writes; retrieval digests the global store with [global]
+  labels on every sourced line and reports meta.scope/location drift;
+  validator warns on scope drift; consolidate skill carries the opt-in
+  flow, routing classes, and cross-tier precedence (scoped-exception
+  events); longitudinal protocol gains its dated seventh source
+  (cross-project citations). Auto-trust remains project-only by design.
+
 ## [0.4.0] — 2026-08-13
 
 - Adopted four workflow commands from the deprecated project-scaffolder,

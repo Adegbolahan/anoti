@@ -105,3 +105,40 @@ assert_ok $? "append-record works on the global store"
 "$ROOT/scripts/append-event" "$HOME/.claude/anoti/GROUNDING.yaml" G001 scoped-exception session "project overrides in-project" >/dev/null
 assert_ok $? "scoped-exception event appends on a global record (precedence mechanics)"
 ); rm -rf "$tmp"
+
+# --- field-report fixes (0.5.2) ---
+# #3: atomic writers preserve store mode (0600 global stores must stay 0600)
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml && chmod 600 s.yaml
+"$ROOT/scripts/append-event" s.yaml D001 test session "mode check" >/dev/null
+assert_eq "$(stat -f %Lp s.yaml 2>/dev/null || stat -c %a s.yaml)" "600" "append-event preserves 600"
+"$ROOT/scripts/regen-index" s.yaml
+assert_eq "$(stat -f %Lp s.yaml 2>/dev/null || stat -c %a s.yaml)" "600" "regen-index preserves 600"
+printf '%s' '{"id":"M001","date":"2026-08-13","type":"policy","topic":"t.m","statement":"Mode test","ratification":"approved","events":[{"date":"2026-08-13","action":"created","by":"session"}]}' | "$ROOT/scripts/append-record" s.yaml 2>/dev/null
+assert_eq "$(stat -f %Lp s.yaml 2>/dev/null || stat -c %a s.yaml)" "600" "append-record preserves 600"
+); rm -rf "$tmp"
+# #1/#2: session-append covers every list the skills instruct; frames are a list
+tmp="$(mktemp -d)"; ( cd "$tmp"
+printf '%s' '{"id":"F1","goal":"first workstream","status":"active"}' | "$ROOT/scripts/session-append" sa frames
+assert_ok $? "session-append frames works"
+printf '%s' '{"id":"F2","goal":"second workstream","status":"active"}' | "$ROOT/scripts/session-append" sa frames
+assert_eq "$(yq -r '.frames | length' .anoti/sessions/sa.yaml)" "2" "frames are a list — no clobber"
+printf '%s' '{"id":"H1","statement":"x","predicted":"y"}' | "$ROOT/scripts/session-append" sa hypotheses
+assert_ok $? "session-append hypotheses works"
+printf '%s' '{"type":"claim","statement":"z"}' | "$ROOT/scripts/session-append" sa candidates
+assert_eq "$(yq -r '.candidates | length' .anoti/sessions/sa.yaml)" "1" "candidates appended"
+printf '{}' | "$ROOT/scripts/session-append" sa bogus 2>/dev/null
+assert_eq "$?" "1" "unknown key rejected"
+printf 'not json' | "$ROOT/scripts/session-append" sa frames 2>/dev/null
+assert_eq "$?" "1" "garbage JSON rejected"
+); rm -rf "$tmp"
+# #8c: append-question — mechanical open_questions writes
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+printf '%s' '{"id":"Q100","date":"2026-08-13","question":"Does it work?","raised_by":"session","context":"test","status":"open","refs":[]}' | "$ROOT/scripts/append-question" s.yaml
+assert_ok $? "append-question works"
+assert_eq "$(yq -r '.open_questions[-1].id' s.yaml)" "Q100" "question appended"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1; assert_ok $? "store valid after question append"
+printf 'junk' | "$ROOT/scripts/append-question" s.yaml 2>/dev/null
+assert_eq "$?" "1" "garbage rejected, store untouched"
+); rm -rf "$tmp"

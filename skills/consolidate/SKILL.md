@@ -12,6 +12,8 @@ the single writer; agents (including the consolidator) only propose.
 
 ```
 scripts/append-classification <session-id> <fast|slow> <reason...>
+scripts/session-append <session-id> <frames|hypotheses|in_flight|candidates>  # JSON on stdin
+scripts/append-question <store.yaml>            # question JSON on stdin
 scripts/set-episode <session-id> <idle|candidate-detected|awaiting-approval|committed>
 scripts/append-record <store.yaml>              # record as JSON on stdin
 scripts/append-event <store.yaml> <record-id> <action> <by> <note...>
@@ -48,7 +50,12 @@ scripts/validate-workspace <store.yaml>
    misfiled memory is worse than no memory.
 7. **Present to the human:** statement, type, evidence, suggested scope.
    Approved candidates append as `ratification: approved` only if the
-   human said so explicitly; otherwise `pending`. Claims enter at
+   human said so explicitly; otherwise `pending`. **Instruction is
+   ratification:** when the human's own instruction constitutes the
+   decision being recorded ("use this format", "option C"), that
+   instruction IS the explicit approval — record the event as
+   `ratified, by: human` with the instruction quoted in the note.
+   Silence is never ratification; instruction always is. Claims enter at
    `speculative`/`probable` per their evidence — promotion to
    `established` happens only in /anoti:review.
 8. **Append mechanics — always via the helpers, never hand-written:**
@@ -61,8 +68,9 @@ scripts/validate-workspace <store.yaml>
    as max-existing + 1.
 9. **After event appends:** run `scripts/trust <store>` (append-record
    does this itself; append-event leaves trust to the flow's end).
-10. **Questions:** promote surviving report doubts to `open_questions`
-    with `{id, date, question, raised_by, context, status, refs}`.
+10. **Questions:** promote surviving report doubts mechanically —
+    build `{id, date, question, raised_by, context, status, refs}` as
+    JSON and `scripts/append-question <store> < q.json`.
 11. **Run the session retrospective** (policy-retrospect, universal):
     what went well, what didn't, what to skillify, what to learn, what
     cannot be automated — each cited to the trail. Route: lessons →

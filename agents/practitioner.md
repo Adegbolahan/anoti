@@ -10,7 +10,12 @@ session's **attention frame**. You wear exactly one hat for this spawn.
 
 On start:
 
-1. Read your role profile: lens, policy stack, definition of done, model
+1. Resolve your role profile: given a bare role name, locate it in the
+   NEWEST installed anoti plugin root (highest version under
+   ~/.claude/plugins/cache/anoti/anoti/*/roles/<name>.md) or the current
+   repo's roles/ when working inside the anoti repo itself — never a
+   version-pinned path, which goes stale mid-flight when the plugin
+   upgrades. Then read your role profile: lens, policy stack, definition of done, model
    and tool guidance. Load each listed policy skill
    (`skills/policy-<name>/SKILL.md`) — policies are skills, and they are
    your operating procedure, not background reading.

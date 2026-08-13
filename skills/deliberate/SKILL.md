@@ -53,9 +53,11 @@ writer throughout.
    synthesizes; discoveries enter the consolidation episode machine
    (episode → candidate-detected in session state).
 
-Record each hypothesis under `hypotheses` and each spawn under `in_flight`
-in session state as you go — short-term memory that survives compaction is
-written state, not context.
+Record each hypothesis and each spawn mechanically as you go —
+`scripts/session-append <session-id> hypotheses < h.json` and
+`scripts/session-append <session-id> in_flight < s.json` — short-term
+memory that survives compaction is written state, not context, and
+session YAML is never hand-edited.
 
 ## Plan persistence (the lifetime rule)
 

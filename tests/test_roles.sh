@@ -48,3 +48,5 @@ grep -qi "objection" "$ROOT/roles/sales.md" 2>/dev/null; assert_ok $? "sales: ob
 grep -qi "segment" "$ROOT/roles/marketing.md" 2>/dev/null; assert_ok $? "marketing: audience segments"
 grep -qi "never counsel" "$ROOT/roles/legal.md" 2>/dev/null; assert_ok $? "legal: drafts for counsel, never counsel"
 grep -qi "friction" "$ROOT/roles/support.md" 2>/dev/null; assert_ok $? "support: friction-first"
+grep -qi "RED transcript" "$ROOT/roles/reviewer.md" && grep -qi "scratch copy" "$ROOT/roles/reviewer.md" && grep -qi "zero residue" "$ROOT/roles/reviewer.md"
+assert_ok $? "reviewer: optional empirical RED-transcript evidence codified"

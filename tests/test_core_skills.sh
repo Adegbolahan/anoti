@@ -53,3 +53,7 @@ grep -qi "routing classes" "$ROOT/skills/consolidate/SKILL.md" && grep -qi "scop
 assert_ok $? "consolidate carries routing classes + cross-tier precedence"
 grep -q "/goal" "$ROOT/skills/attend/SKILL.md"
 assert_ok $? "attend mirrors an active /goal into the frame"
+grep -q "session-append" "$ROOT/skills/attend/SKILL.md" && grep -qi "extend" "$ROOT/skills/attend/SKILL.md"
+assert_ok $? "attend: frames via session-append + extension affordance"
+grep -qi "instruction.*ratif\|ratif.*instruction" "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "consolidate: instruction-is-ratification documented"

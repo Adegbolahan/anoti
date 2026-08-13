@@ -62,9 +62,15 @@ store_digest() { # $1=file $2=name $3=trustfile $4=line-label ("" or "[global] "
 g="$HOME/.claude/anoti/GROUNDING.yaml"
 [ -f "$g" ] && store_digest "$g" "global memory" "$HOME/.claude/anoti/trust" "[global] "
 [ -f GROUNDING.yaml ] && store_digest GROUNDING.yaml "project memory" "$AD/trust" ""
-[ -f TODOS.md ] && emit "- open todos: $(grep -c '^- \[ \]' TODOS.md 2>/dev/null || echo 0) (see TODOS.md)"
+if [ -f TODOS.md ]; then
+  tc="$(grep -c '^- \[ \]' TODOS.md 2>/dev/null)"; tc="${tc:-0}"
+  emit "- open todos: $tc (see TODOS.md)"
+fi
 HS=""; [ -f docs/HIGH-LEVEL-STORIES.md ] && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && [ -f HIGH-LEVEL-STORIES.md ] && HS=HIGH-LEVEL-STORIES.md
-[ -n "$HS" ] && emit "- value standard: $HS ($(grep -cE '^(\| US-[0-9]|- As )' "$HS" 2>/dev/null || echo 0) stories) — attend traces goals to it"
+if [ -n "$HS" ]; then
+  sc2="$(grep -cE '^(\| US-[0-9]|- As )' "$HS" 2>/dev/null)"; sc2="${sc2:-0}"
+  emit "- value standard: $HS ($sc2 stories) — attend traces goals to it"
+fi
 RM=""; [ -f docs/ROADMAP.md ] && RM=docs/ROADMAP.md; [ -z "$RM" ] && [ -f ROADMAP.md ] && RM=ROADMAP.md
 if [ -n "$RM" ]; then
   ph="$(grep -m1 -i '^## .*current' "$RM" 2>/dev/null | sed 's/^## //')"

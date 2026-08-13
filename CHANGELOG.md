@@ -3,6 +3,22 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.2] — 2026-08-13
+
+- Field-report fixes from the first second-project session (livingsyncs):
+  atomic store writers now preserve file mode (0600 global stores stayed
+  0600 — regen-index/append-record/event/evidence/question); new
+  `session-append` helper covers every session-state list the skills
+  instruct (frames/hypotheses/in_flight/candidates) and frames became a
+  LIST — interleaved workstreams no longer clobber; new `append-question`
+  helper for the open_questions promotion consolidate mandates; digest
+  zero-count newline bug fixed (the "0 / 0" double-print); attend gains
+  the extend-frame affordance (amends: <id> instead of full re-attend);
+  consolidate documents instruction-is-ratification; practitioner
+  resolves bare role names from the newest plugin root (version-pinned
+  paths went stale mid-upgrade); reviewer role codifies the optional
+  empirical RED-transcript-via-scratch-copy evidence.
+
 ## [0.5.1] — 2026-08-13
 
 - Feedback loop: the retrospective now routes anoti-caused friction to

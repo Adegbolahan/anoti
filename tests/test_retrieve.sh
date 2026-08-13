@@ -129,3 +129,12 @@ sed 's/scope: project/scope: global/' "$ROOT/tests/fixtures/store_valid.yaml" > 
 out="$(printf '{"session_id":"g"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
 printf '%s' "$out" | grep -qi "scope mismatch"; assert_ok $? "scope/location drift reported"
 ); rm -rf "$tmp"
+
+# #8a: zero counts render on one line (grep -c exit-1 newline bug)
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+printf '# T\n\n- [x] done\n' > TODOS.md
+out="$(printf '{"session_id":"z"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s\n' "$out" | grep -q "open todos: 0 (see TODOS.md)"; assert_ok $? "zero todos renders on one line"
+! printf '%s\n' "$out" | grep -qE '^0 \(see'; assert_ok $? "no orphaned count line"
+); rm -rf "$tmp"

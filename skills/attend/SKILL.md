@@ -29,8 +29,14 @@ produce an **attention frame** before any work begins.
 4. **Open-question check:** does this task touch an existing
    `open_questions` entry? If work already planned can cheaply generate
    evidence for one, say so — opportunistic experimentation.
-5. **Write the frame** with exactly these fields, and hand it to the main
-   session to store in session state:
+5. **Write the frame mechanically** — build it as JSON with exactly the
+   fields below plus an `id` and `status: active`, and append it via
+   `scripts/session-append <session-id> frames < frame.json`. Frames are
+   a LIST: interleaved workstreams each get their own entry and never
+   clobber one another. **Extending a frame** (same goal, scope grew):
+   append an amended copy carrying `amends: <frame-id>` instead of a
+   full second attend cycle — re-attend only when the goal itself
+   changes. Fields:
 
 ```yaml
 attention_frame:

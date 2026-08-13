@@ -1,0 +1,25 @@
+#!/bin/bash
+# session-append <session-id> <frames|hypotheses|in_flight|candidates>
+#   (JSON item on stdin)
+# Mechanical, quoting-safe append to any session-state list the skills
+# instruct. Frames are a LIST (keyed by your own id field) — multiple
+# workstreams never clobber each other. Never hand-edit session YAML.
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir")"
+sid="${1:?usage: session-append <session-id> <frames|hypotheses|in_flight|candidates> < item.json}"
+key="${2:?list key required}"
+case "$key" in frames|hypotheses|in_flight|candidates) ;;
+  *) echo "session-append: key must be frames|hypotheses|in_flight|candidates" >&2; exit 1 ;; esac
+json="$(cat)"
+printf '%s' "$json" | jq -e '.' >/dev/null 2>&1 || { echo "session-append: stdin is not valid JSON" >&2; exit 1; }
+d="$AD/sessions"; mkdir -p "$d"
+[ -f "$d/.gitignore" ] || [ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore"
+sf="$d/$sid.yaml"
+if [ ! -f "$sf" ]; then
+  printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"
+fi
+K="$key" REC="$json" yq '.[strenv(K)] += [strenv(REC) | fromjson]' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
+yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; echo "session-append: refusing to write unparseable state" >&2; exit 1; }
+mv "$sf.tmp" "$sf"
+exit 0

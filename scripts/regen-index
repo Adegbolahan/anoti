@@ -4,4 +4,7 @@ set -u
 f="${1:?usage: regen-index <store.yaml>}"
 "$(dirname "$0")/validate-workspace" "$f" >/dev/null 2>&1 || { echo "regen-index: store invalid; not touching it" >&2; exit 1; }
 tmp="${f}.tmp"
-yq '.index = [.records[] | {"ref": .id, "type": .type, "topic": (.topic // ""), "statement": .statement}]' "$f" > "$tmp" && mv "$tmp" "$f"
+yq '.index = [.records[] | {"ref": .id, "type": .type, "topic": (.topic // ""), "statement": .statement}]' "$f" > "$tmp" || { rm -f "$tmp"; exit 1; }
+pm="$(stat -f %Lp "$f" 2>/dev/null || stat -c %a "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$tmp" 2>/dev/null
+mv "$tmp" "$f"

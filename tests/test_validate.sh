@@ -44,3 +44,12 @@ assert_eq "$?" "1" "split-scalar corruption fails validation"
 "$v" "$tmpm/mangled.yaml" 2>&1 >/dev/null | grep -q "unexpected key"
 assert_ok $? "corruption reported as unexpected key"
 rm -rf "$tmpm"
+
+# meta.scope location mismatch warns without failing (spec: global tier)
+tmpg="$(mktemp -d)"; ( cd "$tmpg"
+HOME="$tmpg/home"; export HOME; mkdir -p "$HOME"
+sed 's/scope: project/scope: global/' "$ROOT/tests/fixtures/store_valid.yaml" > s.yaml
+err="$("$v" s.yaml 2>&1 >/dev/null)"; rc=$?
+assert_eq "$rc" "0" "scope mismatch alone does not fail validation"
+printf '%s' "$err" | grep -qi "warning: meta.scope"; assert_ok $? "scope mismatch warned on stderr"
+); rm -rf "$tmpg"

@@ -33,4 +33,12 @@ while [ "$i" -lt "$n" ]; do
 done
 dups="$(yq -r '.records[].id' "$f" 2>/dev/null | sort | uniq -d)"
 [ -z "$dups" ] || fail "duplicate ids: $(printf '%s' "$dups" | tr '\n' ' ')"
+sc="$(yq -r '.meta.scope // ""' "$f" 2>/dev/null)"
+if [ -n "$sc" ]; then
+  loc=project
+  case "$(cd "$(dirname "$f")" 2>/dev/null && pwd -P)/" in
+    "$(cd "$HOME" 2>/dev/null && pwd -P)/.claude/anoti/"*) loc=global ;;
+  esac
+  [ "$sc" != "$loc" ] && echo "warning: meta.scope=$sc disagrees with location ($loc)" >&2
+fi
 exit "$err"

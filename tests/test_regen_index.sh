@@ -1,0 +1,12 @@
+tmp="$(mktemp -d)"; cp "$ROOT/tests/fixtures/store_valid.yaml" "$tmp/s.yaml"
+"$ROOT/scripts/regen-index" "$tmp/s.yaml"
+assert_ok $? "regen-index exits 0 on valid store"
+assert_eq "$(yq -r '.index | length' "$tmp/s.yaml")" "2" "index has one row per record"
+assert_eq "$(yq -r '.index[0].ref' "$tmp/s.yaml")" "D001" "index row uses ref (not id)"
+assert_eq "$(yq -r '.index[1].statement' "$tmp/s.yaml")" "Prefer reversible deployments." "index carries statement"
+cp "$ROOT/tests/fixtures/store_invalid.yaml" "$tmp/bad.yaml"
+before="$(cat "$tmp/bad.yaml")"
+"$ROOT/scripts/regen-index" "$tmp/bad.yaml" 2>/dev/null
+assert_eq "$?" "1" "regen-index refuses invalid store"
+assert_eq "$(cat "$tmp/bad.yaml")" "$before" "invalid store left untouched"
+rm -rf "$tmp"

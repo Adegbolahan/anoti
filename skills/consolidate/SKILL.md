@@ -84,3 +84,35 @@ double-quoted — unquoted, YAML silently splits it into spurious keys and
 the corruption looks valid. Prefer block style for long notes. The
 validator rejects unknown keys in `source`/`events`/`evidence`, which
 catches this class after the fact; quoting prevents it.
+
+## Global tier (opt-in, routing, precedence)
+
+**Opt-in creation (one question, exact order — load-bearing):** when
+scope routing proposes the first global candidate and
+`~/.claude/anoti/GROUNDING.yaml` does not exist, ask exactly once:
+create the global store? On yes, in this order:
+`mkdir -m 700 ~/.claude/anoti` → `(umask 077; cp <template> <store>)`
+(the file must never exist at default permissions, even briefly) → set
+`meta.scope: global` → `scripts/validate-workspace` →
+`scripts/regen-index` → `scripts/trust --global <store>` (writes the
+adjacent `~/.claude/anoti/trust`; the `--global` flag is deliberate
+friction on the machine-wide path). On no: the candidate is appended to
+the project store as a normal record, then
+`scripts/append-event <project-store> <id> scope-deferred session
+"global routing declined by human"` — record-then-event, because
+append-event refuses unknown ids. Do not re-ask until the next global
+candidate.
+
+**Routing classes (human confirms every routing):** `preference` records
+about the user; `policy`/`claim` records about agent craft with
+cross-project reach. Nothing else routes global by default.
+Never-store applies hardest here: credentials/secrets always rejected;
+health, legal, financial by default; project-identifying facts stay
+project-local.
+
+**Cross-tier precedence:** when a project record conflicts with a global
+record, the project record governs in-project. Record it once:
+`scripts/append-event <global-store> <id> scoped-exception session
+"project <name> overrides in-project: <project-record-id>"` — check the
+global record's existing events first so the exception is appended only
+once per project. Global records remain context, never content.

@@ -43,3 +43,11 @@ grep -q "As a" "$f" && grep -qi "draft-for-ratification" "$f"; assert_ok $? "dir
 grep -qi "visionary\|product-manager" "$f"; assert_ok $? "direction names its managing roles"
 grep -q "direction skill" "$ROOT/roles/visionary.md" && grep -q "direction skill" "$ROOT/roles/product-manager.md" && grep -q "direction skill" "$ROOT/roles/requirements-analyst.md"
 assert_ok $? "all three managing roles reference the direction skill"
+grep -q "mkdir -m 700" "$ROOT/skills/consolidate/SKILL.md" && \
+  grep -q "umask 077" "$ROOT/skills/consolidate/SKILL.md" && \
+  awk '/mkdir -m 700/{a=NR} /umask 077/{if(!b)b=NR} /trust --global/{if(!c)c=NR} END{exit !(a && b && c && a<=b && b<=c)}' "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "consolidate creation flow in load-bearing order (mkdir -> umask cp -> trust --global)"
+awk '/project store as a normal record/{a=NR} /scope-deferred/{if(!b)b=NR} END{exit !(a && b && a<b)}' "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "deferral is record-then-event, in that order"
+grep -qi "routing classes" "$ROOT/skills/consolidate/SKILL.md" && grep -qi "scoped-exception" "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "consolidate carries routing classes + cross-tier precedence"

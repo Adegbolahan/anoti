@@ -13,3 +13,5 @@ done
 grep -q "Cross-project citations" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md" && \
   grep -qE "2026-08-13 — amended" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
 assert_ok $? "longitudinal spec carries the dated seventh-source amendment"
+grep -qE "2026-08-13 — recall metric" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "#4a longitudinal metric clarified by dated amendment"

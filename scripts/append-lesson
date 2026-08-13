@@ -1,0 +1,7 @@
+#!/bin/bash
+# append-lesson <LESSONS-LEARNT.md> <text...> — dated lesson entry, mechanical.
+set -u
+f="${1:?usage: append-lesson <LESSONS-LEARNT.md> <text>}"; shift
+t="${*:?text required}"
+[ -f "$f" ] || { echo "append-lesson: no such file: $f" >&2; exit 1; }
+printf -- '\n- %s — %s\n' "$(date -u +%Y-%m-%d)" "$t" >> "$f"

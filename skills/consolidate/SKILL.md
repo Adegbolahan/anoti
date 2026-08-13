@@ -14,6 +14,8 @@ the single writer; agents (including the consolidator) only propose.
 scripts/append-classification <session-id> <fast|slow> <reason...>
 scripts/session-append <session-id> <frames|hypotheses|in_flight|candidates>  # JSON on stdin
 scripts/append-question <store.yaml>            # question JSON on stdin
+scripts/append-todo <TODOS.md> <text...>        # dated unchecked item
+scripts/append-lesson <LESSONS-LEARNT.md> <text...>  # dated lesson entry
 scripts/set-episode <session-id> <idle|candidate-detected|awaiting-approval|committed>
 scripts/append-record <store.yaml>              # record as JSON on stdin
 scripts/append-event <store.yaml> <record-id> <action> <by> <note...>

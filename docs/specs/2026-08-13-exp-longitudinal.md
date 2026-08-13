@@ -60,6 +60,12 @@ spot-audit.
 
 ## Changelog
 
+- 2026-08-13 — recall metric clarified (ruling: option a,
+  citation-discipline): recall successes count textual record-ID
+  citations in artifacts; an artifact that implements a record without
+  naming it is a citation-discipline gap to FIX in the artifact (per
+  policy-epistemic), not a recall success to award. The incentive is now
+  chosen, not accidental.
 - 2026-08-13 — amended per the ratified global-tier spec: seventh source
   added (cross-project global-record citations); counts zero until a
   second governed project exists.

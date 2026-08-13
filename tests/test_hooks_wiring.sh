@@ -3,7 +3,7 @@ h="$ROOT/hooks/hooks.json"
 jq -e '.hooks | has("SessionStart") and has("UserPromptSubmit") and has("PreToolUse") and has("PreCompact") and has("Stop") and has("SessionEnd")' "$h" >/dev/null 2>&1
 assert_ok $? "all six events wired"
 assert_eq "$(jq -r '.hooks.SessionStart[0].hooks[0].timeout' "$h")" "10" "retrieve timeout 10s"
-assert_eq "$(jq -r '.hooks.PreToolUse[0].matcher' "$h")" "Bash|Write|Edit" "inhibition matcher scoped"
+assert_eq "$(jq -r '.hooks.PreToolUse[0].matcher' "$h")" "Bash|Write|Edit|NotebookEdit" "inhibition matcher scoped"
 # every referenced script exists and is executable (resolve ${CLAUDE_PLUGIN_ROOT} to repo root)
 for cmd in $(jq -r '.. | .command? // empty' "$h"); do
   real="${cmd/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}"

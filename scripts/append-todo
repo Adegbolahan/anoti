@@ -1,0 +1,7 @@
+#!/bin/bash
+# append-todo <TODOS.md> <text...> — dated unchecked item, mechanical.
+set -u
+f="${1:?usage: append-todo <TODOS.md> <text>}"; shift
+t="${*:?text required}"
+[ -f "$f" ] || { echo "append-todo: no such file: $f" >&2; exit 1; }
+printf -- '- [ ] %s (raised %s)\n' "$t" "$(date -u +%Y-%m-%d)" >> "$f"

@@ -15,6 +15,12 @@ memory, because the longitudinal protocol literally reads it as memory.
   `plugin-substrate`, `global-memory-tier`). One branch, one deliverable.
 - Branch from the freshest base; a branch that outlives its deliverable
   is drift — finish it or say why it stays.
+- **Mechanically enforced** (per D020): the inhibition hook denies
+  Edit/Write/NotebookEdit actions on tracked files while HEAD is on the
+  default branch (main/master or origin/HEAD). Gitignored paths (the
+  state dir) and episode-gated organ writes pass through; the human's
+  consent escape is `touch <state-dir>/allow-default-branch` — durable,
+  per checkout, and as gitignored as the rest of the state dir.
 
 ## Worktrees
 

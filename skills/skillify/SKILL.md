@@ -34,9 +34,12 @@ adds at most a short documentation note, never a retrieval pointer.
 ## Migration
 
 The workspace records the plugin/schema version that scaffolded it. On
-mismatch: take a dated backup of each affected file, produce the migration
-as a proposed diff, and the human ratifies before anything is applied — no
-silent upgrades. Grandfathering rule for evidence-less `established`
+mismatch: take a dated backup of each affected file into
+`<state-dir>/backups/` (gitignored with the state dir; copy one out and
+commit it if the project wants it tracked — opt-in, never default),
+produce the migration as a proposed diff, and the human ratifies before
+anything is applied — no silent upgrades. The update report states the
+backup location. Grandfathering rule for evidence-less `established`
 claims: demote to `probable` with a `{action: demoted, note: grandfathered;
 evidence pending}` event.
 

@@ -3,6 +3,27 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.4] — 2026-08-13
+
+- Default-branch edit protection (D020, human directive): the inhibition
+  hook now denies Edit/Write/NotebookEdit on tracked files while HEAD is
+  on main/master — implementation happens on a feature branch or
+  worktree. Gitignored paths and episode-gated organ writes pass;
+  override is `touch <state-dir>/allow-default-branch`. Matcher widened
+  to NotebookEdit.
+- Second field-report batch (issues #1–#6): telemetry now logs episode
+  transitions and inhibit denials (#1); the organ-write denial names the
+  unblock path (#1); audit says organ writes — store, TODOS,
+  LESSONS-LEARNT — go through the consolidate flow, with the two new
+  mechanical one-liners `append-todo` and `append-lesson` (#2, #5);
+  audit resolves its spec from the newest plugin root in governed
+  projects and surfaces the frozen cadence (#3); recall metric ruled
+  citation-discipline — policy-epistemic gains "artifacts cite what they
+  implement, by ID" and the longitudinal spec a dated clarification
+  (D019, #4a); `session-append` validates `amends:` targets and fails
+  loudly on typos (#5); skillify names `<state-dir>/backups/` as the
+  migration-backup home (#6).
+
 ## [0.5.3] — 2026-08-13
 
 - Git craft skill: branches (never on main without consent), worktrees

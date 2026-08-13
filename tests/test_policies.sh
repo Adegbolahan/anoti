@@ -15,3 +15,5 @@ grep -qi "went well" "$ROOT/skills/policy-retrospect/SKILL.md" 2>/dev/null && gr
 assert_ok $? "retrospect covers went-well/skillify/cannot-be-automated"
 grep -qi "issue" "$ROOT/skills/policy-retrospect/SKILL.md" && grep -qi "outward-facing" "$ROOT/skills/policy-retrospect/SKILL.md"
 assert_ok $? "retrospect routes anoti friction to human-gated issues"
+grep -qi "cite it by ID" "$ROOT/skills/policy-epistemic/SKILL.md"
+assert_ok $? "#4a epistemic: implementing artifacts cite record IDs"

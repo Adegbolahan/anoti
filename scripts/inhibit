@@ -9,13 +9,14 @@ tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)" || exit
 [ -n "$tool" ] || exit 0
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
 decide() {
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${sid:-?}" "inhibit" "$1" "$2" >> "$AD/telemetry.log" 2>/dev/null || true
   jq -n --arg d "$1" --arg r "$2" \
     '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:$d,permissionDecisionReason:$r}}'
   exit 0
 }
 case "$tool" in
-  Write|Edit)
-    p="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)"
+  Write|Edit|NotebookEdit)
+    p="$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' 2>/dev/null)"
     case "$p" in
       *GROUNDING.yaml|*ROADMAP.md|*HIGH-LEVEL-STORIES.md|*TODOS.md|*LESSONS-LEARNT.md)
         ep="idle"
@@ -28,9 +29,22 @@ case "$tool" in
         fi
         case "$ep" in
           awaiting-approval|committed) exit 0 ;;
-          *) decide deny "memory-organ write outside an active consolidation flow (episode=$ep); use /anoti:consolidate" ;;
+          *) decide deny "memory-organ write outside an active consolidation flow (episode=$ep). Unblock: scripts/set-episode $sid awaiting-approval, write via the helpers, then scripts/set-episode $sid committed — or run /anoti:consolidate" ;;
         esac ;;
-    esac ;;
+    esac
+    # branch protection: edit actions never land on the default branch —
+    # feature branch or worktree (git skill). Organ writes exit above:
+    # the episode gate alone governs them. Fail-open on any git error.
+    [ -n "$p" ] || exit 0
+    [ -f "$AD/allow-default-branch" ] && exit 0
+    d="$(dirname "$p")"; [ -d "$d" ] || d="."
+    br="$(git -C "$d" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    [ -n "$br" ] || exit 0
+    git -C "$d" check-ignore -q "$p" 2>/dev/null && exit 0
+    db="$(git -C "$d" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"; db="${db#origin/}"
+    if [ "$br" = "${db:-main}" ] || [ "$br" = "main" ] || [ "$br" = "master" ]; then
+      decide deny "edit action on the default branch ($br) — implement on a feature branch or worktree (git skill). Human-gated override: touch $AD/allow-default-branch"
+    fi ;;
   Bash)
     c="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
     # deny row 1: recursive delete of /, ~, or repo root

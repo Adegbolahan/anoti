@@ -142,3 +142,67 @@ assert_eq "$(yq -r '.open_questions[-1].id' s.yaml)" "Q100" "question appended"
 printf 'junk' | "$ROOT/scripts/append-question" s.yaml 2>/dev/null
 assert_eq "$?" "1" "garbage rejected, store untouched"
 ); rm -rf "$tmp"
+
+# --- issue batch 0.5.4 ---
+# #1: set-episode + inhibit write telemetry lines
+tmp="$(mktemp -d)"; ( cd "$tmp"
+"$ROOT/scripts/append-classification" t1 fast "seed" >/dev/null 2>&1
+printf '{"session_id":"t1","tool_name":"Write","tool_input":{"file_path":"GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit" >/dev/null
+grep -q "inhibit	deny" .anoti/telemetry.log
+assert_ok $? "inhibit denial logs a telemetry line (episode idle)"
+"$ROOT/scripts/set-episode" t1 awaiting-approval
+grep -q "episode	awaiting-approval" .anoti/telemetry.log
+assert_ok $? "set-episode logs a telemetry line"
+); rm -rf "$tmp"
+# #2: denial message names the unblock commands with the session id
+tmp="$(mktemp -d)"; ( cd "$tmp"
+out="$(printf '{"session_id":"sX","tool_name":"Write","tool_input":{"file_path":"TODOS.md"}}' | "$ROOT/scripts/inhibit" | jq -r '.hookSpecificOutput.permissionDecisionReason')"
+printf '%s' "$out" | grep -q "set-episode sX awaiting-approval"; assert_ok $? "denial prints exact unblock command"
+); rm -rf "$tmp"
+# #2: append-todo / append-lesson complete the organ-helper set
+tmp="$(mktemp -d)"; ( cd "$tmp"
+printf '# Todos\n\n- [ ] existing\n' > TODOS.md
+"$ROOT/scripts/append-todo" TODOS.md "new item from audit"
+grep -q "^- \[ \] new item from audit (raised " TODOS.md; assert_ok $? "append-todo appends dated item"
+printf '# Lessons Learnt\n' > LESSONS-LEARNT.md
+"$ROOT/scripts/append-lesson" LESSONS-LEARNT.md "a lesson. Why: x. Apply by: y."
+grep -q "^- .* — a lesson" LESSONS-LEARNT.md; assert_ok $? "append-lesson appends dated entry"
+); rm -rf "$tmp"
+# #5: amends chain validated
+tmp="$(mktemp -d)"; ( cd "$tmp"
+printf '%s' '{"id":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/session-append" am frames
+printf '%s' '{"id":"F1b","amends":"F1","goal":"g+","status":"active"}' | "$ROOT/scripts/session-append" am frames
+assert_ok $? "valid amends target accepted"
+printf '%s' '{"id":"F2","amends":"NOPE","goal":"g","status":"active"}' | "$ROOT/scripts/session-append" am frames 2>/dev/null
+assert_eq "$?" "1" "typo'd amends target fails loudly"
+); rm -rf "$tmp"
+
+# --- inhibit branch protection: no edit actions on the default branch ---
+tmp="$(mktemp -d)"; (
+cd "$tmp"
+git init -q -b main repo && cd repo
+git -c user.email=t@t.t -c user.name=t commit --allow-empty -m init -q
+out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_path":"README.md"}}' | "$ROOT/scripts/inhibit")"
+printf '%s' "$out" | grep -q '"permissionDecision": *"deny"'
+assert_ok $? "edit on default branch (main) is denied"
+printf '%s' "$out" | grep -q "feature branch or worktree"
+assert_ok $? "branch denial names the remedy"
+git switch -q -c feature-x
+out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_path":"README.md"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "edit on a feature branch is allowed"
+git switch -q main
+mkdir -p .anoti; printf '*\n' > .anoti/.gitignore
+out="$(printf '%s' '{"session_id":"bp","tool_name":"Write","tool_input":{"file_path":".anoti/scratch.md"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "gitignored state-dir write allowed on main"
+touch .anoti/allow-default-branch
+out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_path":"README.md"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "human override file allows edits on main"
+rm .anoti/allow-default-branch
+"$ROOT/scripts/append-classification" bp fast "seed" >/dev/null 2>&1
+"$ROOT/scripts/set-episode" bp awaiting-approval >/dev/null 2>&1
+out="$(printf '%s' '{"session_id":"bp","tool_name":"Write","tool_input":{"file_path":"GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "organ write with open episode allowed on main (episode gate governs)"
+cd "$tmp"; mkdir plain && cd plain
+out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_path":"note.md"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "non-git directory is fail-open allowed"
+); rm -rf "$tmp"

@@ -21,7 +21,12 @@ description: Universal anoti operating policy — hypothesis before test, every 
 3. A significant claim — one another task will build on, or one proposed
    for memory — goes to the skeptic agent for attempted refutation before
    you assert it as more than speculative.
-4. End every report with a **questions/doubts** section. Doubts you don't
+4. **Artifacts cite what they implement**: a file, command, or document
+   that implements a ratified record names it — cite it by ID in-text
+   (e.g. "# per D007") — because implementing without naming is
+   invisible to recall audits and to every future reader tracing why
+   the artifact is shaped the way it is.
+5. End every report with a **questions/doubts** section. Doubts you don't
    surface are doubts the system inherits silently.
 
 **Binds:** the skeptic agent (refutation), the GROUNDING evidence model

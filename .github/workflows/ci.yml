@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The release job pushes a tag.
+permissions:
+  contents: write
+
+jobs:
+  tests:
+    name: Test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yq and jq
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      - name: Run suite
+        run: bash tests/run.sh
+
+  lint:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint scripts
+        shell: bash
+        run: |
+          mapfile -t files < <(git ls-files 'scripts/*' 'benchmark/run-arm' 'benchmark/build-arm-c' 'tests/run.sh')
+          printf 'linting %d file(s)\n' "${#files[@]}"
+          shellcheck -S warning "${files[@]}"
+
+  hook-schema:
+    name: Hook & skill schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: hooks.json is valid JSON
+        run: jq empty hooks/hooks.json
+      - name: Every hook declares a timeout
+        run: |
+          missing=$(jq -r '.hooks[][]?.hooks[]? | select(has("timeout") | not) | .command' hooks/hooks.json)
+          if [ -n "$missing" ]; then echo "Hook without timeout:"; echo "$missing"; exit 1; fi
+      - name: Hook commands are single-line
+        run: |
+          bad=$(jq -r '.hooks[][]?.hooks[]?.command | select(test("\n"))' hooks/hooks.json)
+          if [ -n "$bad" ]; then echo "Multi-line hook command:"; echo "$bad"; exit 1; fi
+      - name: Every registered hook script exists and is executable
+        run: |
+          fail=0
+          for s in $(jq -r '.hooks[][]?.hooks[]?.command' hooks/hooks.json \
+                     | grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/[^ ]+'); do
+            path="${s#\$\{CLAUDE_PLUGIN_ROOT\}/}"
+            [ -x "$path" ] || { echo "missing/non-executable: $path"; fail=1; }
+          done
+          exit $fail
+      - name: Skill frontmatter is valid
+        run: |
+          fail=0
+          for f in skills/*/SKILL.md; do
+            folder=$(basename "$(dirname "$f")")
+            name=$(awk -F': *' '/^name:/ {print $2; exit}' "$f")
+            [ "$name" = "$folder" ] || { echo "FAIL: $f declares '$name', lives in '$folder'"; fail=1; }
+            printf '%s' "$name" | grep -qE '^[a-z0-9-]+$' || { echo "FAIL: $f name not lowercase-hyphen"; fail=1; }
+            fm=$(awk 'NR==1 && /^---$/ {inside=1; next} inside && /^---$/ {exit} inside' "$f")
+            printf '%s\n' "$fm" | grep -qE '^description:' || { echo "FAIL: $f has no description"; fail=1; }
+            printf '%s\n' "$fm" | grep -qE '^version:' && { echo "FAIL: $f top-level version:"; fail=1; }
+          done
+          exit $fail
+
+  versions:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: plugin.json, marketplace.json, CHANGELOG agree
+        run: |
+          plugin=$(jq -r '.version' .claude-plugin/plugin.json)
+          market=$(jq -r '.plugins[] | select(.name=="anoti") | .version' .claude-plugin/marketplace.json)
+          echo "plugin.json      : $plugin"
+          echo "marketplace.json : $market"
+          fail=0
+          [ "$plugin" = "$market" ] || { echo "FAIL: marketplace.json disagrees"; fail=1; }
+          grep -q "^## \[$plugin\]" CHANGELOG.md || { echo "FAIL: no CHANGELOG [$plugin] entry"; fail=1; }
+          exit $fail
+      - name: CHANGELOG entry is not empty
+        run: |
+          V=$(jq -r '.version' .claude-plugin/plugin.json)
+          body=$(awk -v tag="## [$V]" \
+                   'index($0,tag)==1 {p=1; next} p && /^## \[/ {exit} p {print}' \
+                   CHANGELOG.md | tr -d '[:space:]')
+          [ -n "$body" ] || { echo "CHANGELOG [$V] heading has no content"; exit 1; }
+      - name: Advertised commands exist
+        run: |
+          desc=$(jq -r '.plugins[] | select(.name=="anoti") | .description' .claude-plugin/marketplace.json)
+          fail=0
+          for c in $(printf '%s' "$desc" | grep -oE '/[a-z-]+' | sort -u); do
+            name="${c#/}"
+            [ -f "commands/${name}.md" ] || { echo "FAIL: advertises $c, commands/${name}.md missing"; fail=1; }
+          done
+          exit $fail
+
+  release:
+    name: Tag release
+    needs: [tests, lint, hook-schema, versions]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Tag if this version is not yet released
+        run: |
+          V=$(jq -r '.version' .claude-plugin/plugin.json)
+          if git rev-parse "v$V" >/dev/null 2>&1; then
+            echo "v$V already tagged."; exit 0
+          fi
+          awk -v tag="## [$V]" \
+            'index($0,tag)==1 {p=1; next} p && /^## \[/ {exit} p {print}' \
+            CHANGELOG.md > /tmp/release-notes.md
+          [ -s /tmp/release-notes.md ] || { echo "No CHANGELOG section for $V"; exit 1; }
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$V" -F /tmp/release-notes.md
+          git push origin "v$V"
+          echo "Tagged v$V"

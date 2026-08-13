@@ -5,10 +5,17 @@ description: anoti spec standard — the required shape for design specs and exp
 
 # Spec
 
-Where: `docs/specs/YYYY-MM-DD-<topic>-design.md` (designs) or
-`docs/specs/YYYY-MM-DD-exp-<topic>.md` (experiments). One dated file per
-spec; amendments after acceptance get dated changelog entries, not silent
-edits.
+Where — two naming families, one rule:
+
+- **Standalone documents** (project designs, experiments): date-first —
+  `docs/specs/YYYY-MM-DD-<topic>-design.md` /
+  `docs/specs/YYYY-MM-DD-exp-<topic>.md` — a chronological register.
+- **Story-scoped specs**: story-first — `docs/specs/us-XXX-<name>.md` —
+  the US-id is the stable key so a story's spec, plan, and reviews sort
+  together; the date lives inside the document and in git.
+
+One file per spec; amendments after acceptance get dated changelog
+entries, not silent edits.
 
 ## Design spec — required sections
 

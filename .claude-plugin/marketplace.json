@@ -1,11 +1,30 @@
 {
-  "name": "anoti-dev",
-  "owner": { "name": "tabayomi" },
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "anoti",
+  "version": "0.4.0",
+  "description": "anoti — a human-shaped cognitive work cycle for AI agents over governed, evidence-bearing, human-ratified memory.",
+  "owner": {
+    "name": "Adegbolahan",
+    "url": "https://github.com/Adegbolahan/getting-started-claude"
+  },
   "plugins": [
     {
       "name": "anoti",
+      "description": "Governed agent memory and workflow: retrieval with a trust boundary, attention framing, a conductor-led cascade, inhibition gates, and human-ratified consolidation. Provides /new, /implement, /review-work, /update, /review, /recall and /consolidate.",
+      "version": "0.4.0",
+      "author": {
+        "name": "Adegbolahan"
+      },
       "source": "./",
-      "description": "Human-shaped cognitive work cycle for AI agents: governed, evidence-bearing, human-ratified memory."
+      "category": "development",
+      "keywords": [
+        "memory",
+        "workflow",
+        "governance",
+        "epistemics",
+        "agents",
+        "hooks"
+      ]
     }
   ]
 }

@@ -1,9 +1,8 @@
 # Global Memory Tier — Design Spec
 
 **Date:** 2026-08-13
-**Status:** REVIEWED — round 1 (1 Critical, 7 Important, 3 Minor)
-fixed; scoped re-review verdict READY with 2 residual minors applied;
-pending human ratification
+**Status:** RATIFIED 2026-08-13 ("plan it") — review round 1 fixed,
+re-review READY, residual minors applied
 **Parent:** docs/specs/2026-08-12-anoti-plugin-design.md (§Memory
 hierarchy, §Trust boundary); roadmap Phase 4; stories US-006, US-003.
 
@@ -151,8 +150,12 @@ under fake `$HOME`). Nothing else changes.
 ## Testing
 
 - Helper parity: append-record/append-event/append-evidence against a
-  global-store fixture under fake `$HOME` — identical behavior, adjacent
-  trust written. Observable: fixture assertions in tests/test_helpers.sh.
+  global-store fixture under fake `$HOME` — identical append behavior.
+  **Auto-trust is project-only by design** (defense-in-depth: the
+  machine-wide trust write is always the explicit `trust --global` step
+  in the consolidate flow, never a side effect); append-record on a
+  global store appends and re-indexes but leaves trusting to the flow.
+  Observable: fixture assertions in tests/test_helpers.sh.
 - Retrieval: trusted global + project stores → both digested, global
   lines labeled `[global]`, budget respected; untrusted global → refusal
   line. Observable: tests/test_retrieve.sh.
@@ -187,3 +190,11 @@ under fake `$HOME`). Nothing else changes.
    review ritual's viewing rights are the inspection mechanism — no new
    scanner is assumed; if audits demand automation, that is its own
    future spec).
+
+## Changelog
+
+- 2026-08-13 — Testing §helper-parity clarified after plan review:
+  append-record's auto-trust is project-only by design; global trust is
+  always the explicit `--global` step (defense-in-depth consistent with
+  the write-path blast-radius argument). No behavior change to
+  append-record required.

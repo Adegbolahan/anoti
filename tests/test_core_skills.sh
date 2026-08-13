@@ -41,5 +41,5 @@ assert_eq "$(sed -n 's/^name: //p' "$f" | head -1)" "direction" "direction skill
 grep -q "ROADMAP.md" "$f" && grep -q "HIGH-LEVEL-STORIES.md" "$f"; assert_ok $? "direction covers both organs"
 grep -q "As a" "$f" && grep -qi "draft-for-ratification" "$f"; assert_ok $? "direction carries story shape + ratification rule"
 grep -qi "visionary\|product-manager" "$f"; assert_ok $? "direction names its managing roles"
-grep -q "direction skill" "$ROOT/roles/visionary.md" && grep -q "direction skill" "$ROOT/roles/product-manager.md"
-assert_ok $? "managing roles reference the direction skill"
+grep -q "direction skill" "$ROOT/roles/visionary.md" && grep -q "direction skill" "$ROOT/roles/product-manager.md" && grep -q "direction skill" "$ROOT/roles/requirements-analyst.md"
+assert_ok $? "all three managing roles reference the direction skill"

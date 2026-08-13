@@ -145,13 +145,13 @@ The plugin scaffolds and maintains a document system in every project. Each
 file is an externalized cognitive organ of the human+AI pair; the human owns
 direction.
 
-| Artifact                | Cognitive organ                                | Owned by | Touched by                                            |
-| ----------------------- | ---------------------------------------------- | -------- | ----------------------------------------------------- |
-| `GROUNDING.yaml`        | Semantic memory — records per the model above  | shared   | retrieve (read), consolidate (write), review          |
+| Artifact                     | Cognitive organ                                | Owned by | Touched by                                            |
+| ---------------------------- | ---------------------------------------------- | -------- | ----------------------------------------------------- |
+| `GROUNDING.yaml`             | Semantic memory — records per the model above  | shared   | retrieve (read), consolidate (write), review          |
 | `docs/ROADMAP.md`            | Goal hierarchy — where we are going            | human    | attend traces work to it; human edits direction       |
 | `docs/HIGH-LEVEL-STORIES.md` | Values/perspective — what "good" means         | human    | attend + inhibit reference it as the value standard   |
-| `TODOS.md`              | Prospective memory — open intentions           | shared   | retrieve (surface), deliberate + consolidate (update) |
-| `LESSONS-LEARNT.md`     | Procedural memory — how we work                | shared   | consolidate writes process lessons here               |
+| `TODOS.md`                   | Prospective memory — open intentions           | shared   | retrieve (surface), deliberate + consolidate (update) |
+| `LESSONS-LEARNT.md`          | Procedural memory — how we work                | shared   | consolidate writes process lessons here               |
 | `docs/specs/`                | Deliberation artifacts — designs as hypotheses | shared   | deliberate writes; one dated file per design          |
 | `docs/plans/`                | Deliberation artifacts — protocols             | shared   | deliberate writes; one plan per implementation        |
 
@@ -457,20 +457,26 @@ anoti/                              # plugin root
 ├── .claude-plugin/plugin.json      # manifest: name, description, version
 ├── hooks/hooks.json                # wires the six lifecycle hooks to scripts
 ├── scripts/                        # executable layer (POSIX sh + yq/jq; no network)
-│   ├── retrieve                    #   SessionStart digest builder
-│   ├── inhibit                     #   PreToolUse decision table
+│   ├── retrieve                    #   SessionStart digest builder (trust boundary, budget)
+│   ├── classify                    #   UserPromptSubmit attention-tax injection
+│   ├── inhibit                     #   PreToolUse decision table (segment-scoped deny rules)
 │   ├── persist-session             #   PreCompact state flush
 │   ├── consolidation-gate          #   Stop episode-state check
 │   ├── cleanup-session             #   SessionEnd scratch lifecycle
+│   ├── anoti-dir                   #   state-dir resolution (D016)
+│   ├── append-classification  set-episode  append-event  append-record  append-evidence
+│   │                               #   mechanical write helpers — the model never hand-serializes YAML
+│   ├── trust                       #   provenance hash approval
 │   ├── regen-index                 #   rebuild store indexes from records
-│   └── validate-workspace          #   schema validation; used by skillify + tests
+│   └── validate-workspace          #   schema validation incl. split-scalar detection
 ├── skills/
-│   ├── attend/SKILL.md             # slow-path attention → attention frame (writes session state)
-│   ├── deliberate/SKILL.md         # WM discipline, hypotheses, hat assignment, spawn budget
-│   ├── consolidate/SKILL.md        # record typing, dedupe, scope routing, event-append mechanics
+│   ├── attend/SKILL.md             # slow-path attention → attention frame (story_ref + roadmap_ref)
+│   ├── deliberate/SKILL.md         # WM discipline, cascade, hat assignment, lifetime rule, D011 fix rounds
+│   ├── consolidate/SKILL.md        # record typing, scope routing, helpers-only writes, retrospective
 │   ├── skillify/SKILL.md           # workspace bootstrap + maintenance contract
+│   ├── spec/  plan/  direction/    # document-format standards (specs, plans, direction organs)
 │   │                               # …and policies ARE skills — invocable via the Skill tool:
-│   ├── policy-epistemic/  policy-trace-to-frame/  policy-escalate-destructive/   (universal)
+│   ├── policy-epistemic/  policy-trace-to-frame/  policy-escalate-destructive/  policy-retrospect/  (universal)
 │   ├── policy-parallel-breadth/  policy-adversarial-handoff/  policy-test-driven/
 │   └── policy-visual-verify/  policy-reversible-change/  policy-draft-for-ratification/  policy-reader-run/
 ├── agents/
@@ -478,13 +484,18 @@ anoti/                              # plugin root
 │   ├── explorer.md                 # haiku; tools: Read, Grep, Glob
 │   ├── skeptic.md                  # inherit; tools: Read, Grep, Glob, Bash (see enforcement gap)
 │   └── practitioner.md             # model/tools per role profile
-├── roles/                          # one file per role; core-v1 set validated first
+├── roles/                          # one file per role; 23-role library (conductor-led)
 ├── commands/
 │   ├── review.md                   # /anoti:review — ratification + promotion/demotion with evidence
 │   ├── recall.md                   # /anoti:recall <topic> — on-demand retrieval
-│   └── consolidate.md              # /anoti:consolidate — manual consolidation fallback
+│   ├── consolidate.md              # /anoti:consolidate — manual consolidation fallback
+│   ├── new.md                      # /anoti:new — workspace bootstrap wizard (skillify)
+│   ├── implement.md                # /anoti:implement — feature workflow with mandatory spec gate
+│   ├── review-work.md              # /anoti:review-work — pre-ship review (evidence contract, cycle cap)
+│   └── update.md                   # /anoti:update — migration by ratified diff
+├── benchmark/                      # H1-H3 harness + Q001 materials (see experiment specs)
 └── templates/                      # GROUNDING.yaml (v3 record model), ROADMAP.md, HIGH-LEVEL-STORIES.md,
-                                    # TODOS.md, LESSONS-LEARNT.md, specs/, plans/, .gitignore fragment
+                                    # TODOS.md, LESSONS-LEARNT.md, gitignore fragment
 ```
 
 ### Hook specifications
@@ -600,3 +611,4 @@ enforcement layer.
   .claude/anoti.local.md state_dir > default .anoti), always
   project-relative; global tier unaffected. Frame gains story_ref; the
   retrieval digest surfaces HIGH-LEVEL-STORIES as the value standard.
+- 2026-08-13 — Component tree refreshed to 0.4.0 reality (15 scripts incl. mechanical helpers, document-format skills, retrospect policy, seven commands, benchmark dir); requirements-analyst wired to the direction skill.

@@ -24,6 +24,10 @@ the human before any build begins.
 **Boundaries:** advisory — stories and requirements documents to `specs/`
 or `docs/`, never code edits, never acceptance authority.
 
+**Format:** story decomposition follows the direction skill
+(`skills/direction/SKILL.md`); outputs targeting human-owned organs are
+drafts only.
+
 **Definition of done:** a story set where every story has criteria a test
 could verify, edge cases enumerated, open ambiguities listed as questions
 for the human, and no story depends on an unstated decision.

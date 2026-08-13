@@ -1,24 +1,46 @@
 #!/bin/bash
 # SessionStart hook: small digest inside an untrusted-data envelope. Fail-open.
+# Spec (Retrieval): fixed digest, budget <= ~1k tokens. Core lines always emit;
+# enrichments (index, question text) emit only while they fit the budget.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 cat >/dev/null 2>&1 || true # consume stdin; digest does not depend on it
+BUDGET=4000 # chars of digest content, ~1k tokens
 lines=""
 emit() { lines="${lines}${1}
 "; }
+try_emit() { [ $(( ${#lines} + ${#1} )) -le "$BUDGET" ] && emit "$1"; }
 hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
 is_trusted() { [ -f .anoti/trust ] && grep -qs "$(hash_of "$1")" .anoti/trust; }
+cutoff="$(date -v-14d +%F 2>/dev/null || date -d '14 days ago' +%F 2>/dev/null || echo "")"
 store_digest() { # $1=file $2=label
   if ! "$SELF/validate-workspace" "$1" >/dev/null 2>&1; then
     emit "- $2: present but fails validation; not loaded (run scripts/validate-workspace '$1')"
   elif ! is_trusted "$1"; then
     emit "- $2: present but not yet trusted; not loaded (approve with scripts/trust '$1')"
   else
-    local n p
+    local n p pr oldest idx q qid qtext
     n="$(yq -r '.records | length' "$1" 2>/dev/null || echo 0)"
     p="$(yq -r '[.records[] | select(.ratification == "pending")] | length' "$1" 2>/dev/null || echo 0)"
     emit "- $2: $n records, $p awaiting ratification. Query on demand: yq '.index' '$1'"
-    [ "$p" -ge 5 ] && emit "  - review recommended: /anoti:review"
+    # review nudge: probable count >= 5, or oldest probable >= 14 days old
+    pr="$(yq -r '[.records[] | select(.epistemic_status == "probable")] | length' "$1" 2>/dev/null || echo 0)"
+    oldest="$(yq -r '[.records[] | select(.epistemic_status == "probable") | .date] | sort | .[0] // ""' "$1" 2>/dev/null || echo "")"
+    if [ "$pr" -ge 5 ] || { [ -n "$oldest" ] && [ -n "$cutoff" ] && ! [ "$cutoff" \< "$oldest" ]; }; then
+      emit "  - review recommended: $pr probable record(s), oldest $oldest (/anoti:review)"
+    fi
+    # index inlined only if small enough for the remaining budget (all rows or none)
+    idx="$(yq -r '.index // [] | .[] | "  - " + .ref + " [" + .type + "] " + .topic + ": " + .statement' "$1" 2>/dev/null | cut -c1-220)"
+    [ -n "$idx" ] && try_emit "$idx"
+    # open questions: count always; per-question text while it fits
+    q="$(yq -r '[.open_questions // [] | .[] | select(.status == "open")] | length' "$1" 2>/dev/null || echo 0)"
+    if [ "$q" -gt 0 ]; then
+      emit "- open questions ($2): $q"
+      for qid in $(yq -r '.open_questions // [] | .[] | select(.status == "open") | .id' "$1" 2>/dev/null); do
+        qtext="$(yq -r ".open_questions[] | select(.id == \"$qid\") | .question" "$1" 2>/dev/null | tr '\n' ' ' | cut -c1-220)"
+        try_emit "  - $qid: $qtext"
+      done
+    fi
   fi
 }
 g="$HOME/.claude/anoti/GROUNDING.yaml"

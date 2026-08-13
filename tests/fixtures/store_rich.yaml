@@ -1,0 +1,67 @@
+meta:
+  schema_version: 3
+  scope: project
+  policy:
+    {
+      entries_immutable: true,
+      events_append_only: true,
+      reverify_after_days: 180,
+    }
+index:
+  - ref: R001
+    type: claim
+    topic: rich.alpha
+    statement: An aged probable claim that should trigger the review nudge.
+  - ref: R002
+    type: claim
+    topic: rich.beta
+    statement: An established claim.
+  - ref: R003
+    type: policy
+    topic: rich.gamma
+    statement: A ratified policy.
+records:
+  - id: R001
+    date: 2020-01-01
+    type: claim
+    topic: rich.alpha
+    statement: An aged probable claim that should trigger the review nudge.
+    epistemic_status: probable
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events:
+      - { date: 2020-01-01, action: created, by: session }
+  - id: R002
+    date: 2026-08-12
+    type: claim
+    topic: rich.beta
+    statement: An established claim.
+    epistemic_status: established
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events:
+      - { date: 2026-08-12, action: created, by: session }
+  - id: R003
+    date: 2026-08-12
+    type: policy
+    topic: rich.gamma
+    statement: A ratified policy.
+    ratification: approved
+    events:
+      - { date: 2026-08-12, action: created, by: session }
+open_questions:
+  - id: Q001
+    date: 2026-08-12
+    question: >
+      Does the digest surface open questions within the retrieval budget?
+    raised_by: session
+    context: retrieval budget test
+    status: open
+  - id: Q002
+    date: 2026-08-12
+    question: A resolved question that must not appear.
+    raised_by: session
+    context: retrieval budget test
+    status: resolved

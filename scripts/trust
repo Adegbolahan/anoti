@@ -1,0 +1,8 @@
+#!/bin/bash
+# trust <store.yaml> — record this store's content hash as user-approved.
+set -u
+f="${1:?usage: trust <store.yaml>}"
+mkdir -p .anoti
+shasum -a 256 "$f" | cut -d' ' -f1 >> .anoti/trust
+sort -u .anoti/trust -o .anoti/trust
+echo "trusted: $f"

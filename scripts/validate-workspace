@@ -6,6 +6,7 @@ err=0
 fail() { echo "invalid: $1" >&2; err=1; }
 yq -e '.' "$f" >/dev/null 2>&1 || { echo "invalid: not parseable YAML" >&2; exit 1; }
 [ "$(yq -r '.meta.schema_version // ""' "$f")" = "3" ] || fail "meta.schema_version must be 3"
+[ "$(yq -r '.records | type' "$f" 2>/dev/null)" = "!!seq" ] || fail "records must be a list"
 n="$(yq -r '.records | length' "$f")"
 i=0
 while [ "$i" -lt "$n" ]; do

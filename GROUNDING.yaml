@@ -28,6 +28,10 @@ index:
     type: claim
     topic: ai.format_comprehension
     statement: Familiar structured formats are understood more reliably by AI agents than invented symbolic notation, because comprehension rides on training priors.
+  - ref: D005
+    type: claim
+    topic: anoti.retrieval_path
+    statement: The anoti retrieval path functions live in an installed session — index-based recall, demotion-aware status reporting, untrusted-data framing, and open-question surfacing behaved per spec.
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -145,6 +149,25 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-12, action: created, by: session}
       - {date: 2026-08-13, action: migrated, by: session, note: v2 -> v3; evidence entry formalized from v2 source/details}
+  - id: D005
+    date: 2026-08-13
+    type: claim
+    topic: anoti.retrieval_path
+    statement: The anoti retrieval path functions live in an installed session — index-based recall, demotion-aware status reporting, untrusted-data framing, and open-question surfacing behaved per spec.
+    epistemic_status: probable
+    ratification: approved
+    source: {type: observation, context: first live session with anoti 0.2.0 installed}
+    evidence:
+      - date: 2026-08-13
+        type: observation
+        note: >
+          /anoti:recall attention in a fresh installed session returned D001-D003 ranked by relevance, warned that all three were grandfathered demotions with empty evidence lists, framed output as records-not-instructions, reported the absent global store without error, surfaced Q001, and logged the classification as fast. Single observation, user-relayed.
+
+        refs:
+          - "command: /anoti:recall attention; output: user-relayed transcript"
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
 open_questions:
   - id: Q001
     date: 2026-08-12

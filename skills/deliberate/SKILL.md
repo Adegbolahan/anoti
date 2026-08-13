@@ -49,7 +49,9 @@ writer throughout.
    skeptic for claim verification; parallel within the budget; findings
    return cited; unknowns that survive are filed to open_questions by the
    main session.
-8. **Execution & synthesis** — builder roles per task; the main session
+8. **Execution & synthesis** — builder roles per task, version control
+   per the **git skill** (branching, worktrees for parallel workstreams,
+   explicit staging, human-gated integration); the main session
    synthesizes; discoveries enter the consolidation episode machine
    (episode → candidate-detected in session state).
 

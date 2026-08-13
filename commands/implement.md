@@ -66,7 +66,9 @@ per its cycle cap. Builder work does not count as done without it
 ## Phase 4: Close
 
 Update the plan status; update the story's register row (dated status +
-evidence ref) as a draft; conventional commit `feat: <desc> (US-XXX)`;
+evidence ref) as a draft; commit per the **git skill**
+(`skills/git/SKILL.md`) — conventional message `feat: <desc> (US-XXX)`,
+explicit staging, trailers preserved;
 let consolidation capture any discoveries (Stop gate or
 `/anoti:consolidate`). Report test count, files changed, follow-ups.
 

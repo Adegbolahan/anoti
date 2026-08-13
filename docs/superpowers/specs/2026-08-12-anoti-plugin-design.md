@@ -127,19 +127,62 @@ GROUNDING schema:
 
 Model policy: match the model to the cognitive demand of the stage; use
 aliases (`haiku`/`sonnet`/`inherit`) so the plugin tracks model evolution
-without edits. Every agent is read-only — subagents analyze and propose; only
-the main session mutates state. Each agent's definition states its expectation
-as an output contract, checked by the main session before use.
+without edits. Agents divide into two classes. **Memory-facing agents**
+(consolidator, explorer, skeptic) are strictly read-only — they analyze and
+propose; only the main session mutates state. **The work-facing agent**
+(practitioner) writes work products (code, configs, docs under construction)
+but never memory organs — GROUNDING, the workspace documents, and session
+state remain main-session-only for every agent, always. Each agent's
+definition states its expectation as an output contract, checked by the main
+session before use.
 
-| Agent          | Stage       | Model                     | Expectation (output contract)                                                                                                                  |
-| -------------- | ----------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consolidator` | Consolidate | `sonnet`                  | Falsifiable claims + evidence + suggested status + scope (project/global); deduped against both stores; contradictions flagged, never resolved |
-| `explorer`     | Deliberate  | `haiku`                   | Synthesized findings relevant to the attention frame, token-capped; conclusions with file references, never raw dumps                          |
-| `skeptic`      | Epistemic   | `inherit` (session model) | Attempts to refute a claim; verdict + evidence; defaults to "not established" when uncertain                                                   |
+| Agent          | Stage          | Model                     | Expectation (output contract)                                                                                                                  |
+| -------------- | -------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consolidator` | Consolidate    | `sonnet`                  | Falsifiable claims + evidence + suggested status + scope (project/global); deduped against both stores; contradictions flagged, never resolved |
+| `explorer`     | Deliberate     | `haiku`                   | Synthesized findings relevant to the attention frame, token-capped; conclusions with file references, never raw dumps                          |
+| `skeptic`      | Epistemic      | `inherit` (session model) | Attempts to refute a claim; verdict + evidence; defaults to "not established" when uncertain                                                   |
+| `practitioner` | Deliberate/Act | per role profile          | Work executed per the assigned role's approach and definition-of-done, verified before return; reviewer role returns findings only, no edits   |
 
 The attend stage is deliberately **not** an agent: attention needs the full
 conversation context, which subagents don't inherit. It stays a skill in the
 main loop.
+
+### The practitioner and role profiles
+
+One agent definition wears every engineering hat. The human analog is task-set
+switching: a person is one cognitive architecture that loads different
+professional schemas — the same mind thinks _as_ a reviewer differently than
+it thinks _as_ a builder. The AI-native mechanic is prompt composition: the
+deliberate stage decomposes work, picks a hat per subtask, and spawns the
+practitioner with the matching **role profile** injected alongside the
+attention frame.
+
+A role profile (one markdown file per role in `roles/`) defines four things:
+
+1. **Lens** — what this role attends to first (frontend: user-visible states;
+   database: data integrity; reviewer: what could break).
+2. **Execution approach** — how this role works, and these genuinely differ:
+   - _frontend_: story-down — start from the user-visible behavior; verify by
+     running the app and looking; loading/error/empty states are part of done.
+   - _backend_: contract-first — define the interface before implementing;
+     test-driven; error paths and idempotency are part of done.
+   - _database_: invariant-first — state data-integrity invariants before any
+     change; schema changes only as reversible migrations; destructive
+     operations always escalate (the inhibition hook applies inside subagents
+     too).
+   - _reviewer_: adversarial — try to break the work; report findings with
+     evidence; **never edits** (the hat that judges must not hold the pen).
+3. **Definition of done** — the role-specific verification standard the
+   practitioner must satisfy before returning.
+4. **Defaults** — suggested model/effort for the role (deliberate may override
+   per task complexity).
+
+Rules of the hat system: a hat changes the _approach_, never the _cycle_ —
+every role still states hypotheses before tests and traces work to the
+attention frame. One practitioner instance wears one hat; a subtask needing
+two hats is two spawns (builder's work can then be judged by a reviewer spawn
+with clean separation). Adding a role to the library is a `skillify`
+maintenance action — a new profile file, never a new agent.
 
 ## Components
 
@@ -149,13 +192,19 @@ anoti/                              # plugin root
 ├── hooks/hooks.json                # wires the five lifecycle hooks
 ├── skills/
 │   ├── attend/SKILL.md             # slow-path attention → attention frame
-│   ├── deliberate/SKILL.md         # WM discipline, hypothesis-before-test, parallelism
+│   ├── deliberate/SKILL.md         # WM discipline, hypothesis-before-test, parallelism, hat assignment
 │   ├── consolidate/SKILL.md        # memory-write protocol (claim shape, dedupe, scope routing, append mechanics)
 │   └── skillify/SKILL.md           # workspace bootstrap + maintenance rules
 ├── agents/
 │   ├── consolidator.md             # sonnet, read-only: session review → claims + evidence + scope
 │   ├── explorer.md                 # haiku, read-only: parallel breadth for deliberation
-│   └── skeptic.md                  # inherit, read-only: adversarial claim verification
+│   ├── skeptic.md                  # inherit, read-only: adversarial claim verification
+│   └── practitioner.md             # model per role: one worker, parameterized by role profile
+├── roles/                          # role profiles for the practitioner (lens, approach,
+│   ├── frontend.md                 # definition-of-done, defaults); extensible via skillify
+│   ├── backend.md
+│   ├── database.md
+│   └── reviewer.md
 ├── commands/review.md              # /anoti:review — promotion/demotion ritual with evidence displayed
 └── templates/                      # GROUNDING.yaml (schema v2 + evidence:), ROADMAP.md,
                                     # HIGH-LEVEL-STORIES.md, TODOS.md, LESSONS-LEARNT.md, specs/, plans/
@@ -225,7 +274,11 @@ anoti/                              # plugin root
   - compaction mid-task → attention frame and in-flight state survive via
     `.anoti/session.md`;
   - claim routed to global memory in one project → surfaces at SessionStart in
-    a different project.
+    a different project;
+  - practitioner in reviewer role → findings with evidence, zero file
+    modifications;
+  - practitioner in a builder role → work satisfies that role's
+    definition-of-done before returning.
 - **Epistemic:** Q001 (format-comprehension experiment) is the first
   registered experiment run under the methodology; behavioral test results are
   recorded in GROUNDING as evidence for claims about the plugin itself.
@@ -240,7 +293,7 @@ anoti/                              # plugin root
 
 ## Success criteria
 
-1. All eight behavioral tests pass.
+1. All ten behavioral tests pass.
 2. GROUNDING.yaml in a dogfooded project accumulates claims with evidence, and
    at least one claim traverses the full ladder (speculative → established) or
    is demoted by evidence during initial dogfooding on this project.

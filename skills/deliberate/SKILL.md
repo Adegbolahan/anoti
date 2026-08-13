@@ -56,3 +56,20 @@ writer throughout.
 Record each hypothesis under `hypotheses` and each spawn under `in_flight`
 in session state as you go — short-term memory that survives compaction is
 written state, not context.
+
+## Plan persistence (the lifetime rule)
+
+A plan's lifetime matches its artifacts' lifetime:
+
+- Work producing **durable artifacts** (anything committed to the repo):
+  persist the ratified cascade plan to
+  `plans/YYYY-MM-DD-<topic>-cascade.md` before dispatching. The
+  session-state copy is the working copy; the file is the record —
+  session state is deleted on clean exit, and a ratified plan must not
+  evaporate with it.
+- **Ephemeral work** (scratch dirs, throwaway demos): session-state-only
+  is sufficient; filing would be noise.
+
+The same rule governs minimal specs: a contract embedded in the artifact
+itself (module docstring, interface file) is an acceptable spec-of-record
+when the cascade plan cites it; anything larger files to `specs/`.

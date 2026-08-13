@@ -16,3 +16,5 @@ grep -q "regen-index" "$ROOT/skills/consolidate/SKILL.md" 2>/dev/null || ok=1
 assert_eq "$ok" "0" "consolidate covers all record types + regen-index"
 grep -qi "idempotent" "$ROOT/skills/skillify/SKILL.md" 2>/dev/null && grep -qi "dry-run" "$ROOT/skills/skillify/SKILL.md" 2>/dev/null
 assert_ok $? "skillify covers idempotent bootstrap + dry-run"
+grep -qi "lifetime" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -q "plans/" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
+assert_ok $? "deliberate carries the plan-persistence lifetime rule"

@@ -18,8 +18,8 @@ its worth by experiment, or records that it didn't.
 | ----- | ----------------------------- | ----------------------------- | ---------- |
 | 1     | Does the cycle function?      | ✅ Complete                   | 2026-08-13 |
 | 2     | Can the substrate be trusted? | ✅ Complete                   | 2026-08-13 |
-| 3     | Is it worth it?               | 🔄 In progress                | 2026-08-13 |
-| 4     | Is it shareable?              | 📝 Planned (gated on Phase 3) | —          |
+| 3     | Is it worth it?               | ✅ Complete                   | 2026-08-13 |
+| 4     | Is it shareable?              | 🔄 In progress                | 2026-08-13 |
 
 ## Phase 1: Does the cycle function? ✅
 
@@ -53,7 +53,7 @@ evidence.
 
 **Dependencies:** Phase 1.
 
-## Phase 3: Is it worth it? ← current
+## Phase 3: Is it worth it? ✅
 
 **Goal:** the falsifiable version of anoti's value.
 
@@ -68,12 +68,14 @@ evidence.
 - [x] Fast-path calibration (pre-fix) ✅ 2026-08-13 — D015
 - [x] Q001 format experiment ✅ 2026-08-13 — accuracy ceilinged, cost
       discriminated; closure proposed, human ruling pending
-- [ ] Sequence-2 decision (human): rerun above the ceiling, or accept
-      sequence-1 verdicts as standing
+- [x] Sequence-2 decision ✅ 2026-08-13 — ruled (D018): sequence 1
+      stands; the continuing test is the pre-registered longitudinal
+      protocol (docs/specs/2026-08-13-exp-longitudinal.md); Q001 closed
+      answered-with-qualification
 
-**Dependencies:** the sequence-2 decision is the phase's open gate.
+**Dependencies:** none remaining — closed by D018.
 
-## Phase 4: Is it shareable? 📝
+## Phase 4: Is it shareable? ← current
 
 **Goal:** anoti usable beyond this repo, honestly marketed by its
 evidence.
@@ -85,6 +87,8 @@ evidence.
       changelog-gated release tags, schema'd marketplace manifest
 - [ ] Global memory opt-in UX
 - [ ] v1.1 roles validated at working scale
+- [ ] Longitudinal audits (weekly from 2026-08-20) accumulating evidence
+      per the pre-registered protocol
 
 **Dependencies:** Phase 3's verdict.
 

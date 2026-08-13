@@ -11,9 +11,11 @@
 - [x] Plan 3: dogfood behavioral tests + H1–H3 comparative benchmark against
       vanilla Claude Code. (raised 2026-08-13; sequence 1 run + graded
       2026-08-13 — H1/H2 against-with-ambiguity, H3 untestable; see D014/D015)
-- [ ] Decide: benchmark sequence 2 (harder traps, executed interactive
-      points, skillify-bootstrapped arm B, post-0.3.1 classifier) — or
-      accept sequence 1 verdicts as the standing record. (raised 2026-08-13)
+- [x] Decide: benchmark sequence 2 — or accept sequence 1 as standing.
+      (raised 2026-08-13; ruled 2026-08-13 — D018: accept + longitudinal
+      protocol; Q001 closed answered-with-qualification)
+- [ ] Run the first longitudinal audit on or after 2026-08-20 per
+      docs/specs/2026-08-13-exp-longitudinal.md. (raised 2026-08-13)
 - [x] v1.1 role set (13 remaining roles) after core-10 prove out. (raised 2026-08-13;
       done 2026-08-13 — gate overridden by explicit human instruction; see D006/D007,
       Q002–Q004)

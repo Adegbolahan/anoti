@@ -90,6 +90,10 @@ index:
     type: "decision"
     topic: "anoti.repo_takeover"
     statement: "anoti replaced the getting-started-claude repository on the same remote, renamed to github.com/Adegbolahan/anoti: project-scaffolder deprecated with its four workflow commands adopted anoti-native (/new, /implement, /review-work, /update), its CI/CHANGELOG/marketplace discipline absorbed, old v3.x tags preserved for pinned installs, and the replacement executed as a no-force branch swap."
+  - ref: "D018"
+    type: "decision"
+    topic: "anoti.sequence2_ruling"
+    statement: "Benchmark sequence 2 is not run: sequence 1 verdicts stand as the standing synthetic result (D014), and the continuing test becomes a pre-registered longitudinal observational protocol over this repository real work — weekly trail audits counting contradiction incidents, bad-memory events, and recall successes."
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -430,6 +434,7 @@ records: # generated — do not edit by hand
   - {"id": "D015", "date": "2026-08-13", "type": "claim", "topic": "anoti.classifier_headless", "statement": "The UserPromptSubmit classifier under-triggered in headless mode before 0.3.1: zero slow verdicts across nine arm-B sessions including a nontrivial policy-trap prompt, while the model still caught the trap in-context.", "epistemic_status": "probable", "ratification": "approved", "source": {"type": "experiment", "context": "arm B telemetry, pilot sequence 1"}, "evidence": [{"date": "2026-08-13", "type": "observation", "note": "Telemetry confusion counts: nontrivial recall 0/5, trivial specificity 2/2; the S4 trap rationale read the prompt as routine. Fix shipped in 0.3.1 (concrete slow criteria; headless applies identically) - claim covers pre-0.3.1 behavior; post-fix behavior needs its own measurement.", "refs": ["docs/trials/2026-08-13-h1h3-armB/telemetry.log", "docs/trials/2026-08-13-h1h3-armB/GRADES.md"]}], "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix directive; defect fixed in 66e0a98"}]}
   - {"id": "D016", "date": "2026-08-13", "type": "decision", "topic": "anoti.state_dir", "statement": "The project state directory is configurable per project: resolution order ANOTI_DIR env var, then .claude/anoti.local.md frontmatter state_dir, then default .anoti — always project-relative; the global memory tier at ~/.claude/anoti resolves separately and the two are never conflated.", "ratification": "approved", "source": {"type": "conversation", "context": "user request relayed from live session; implemented same day"}, "rationale": "Single resolution point (scripts/anoti-dir) instead of eight hardcodes; gitignore follows the resolved dir; tier-collision concern answered by forbidding home-relative resolution.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "requested the capability; default unchanged"}]}
   - {"id": "D017", "date": "2026-08-13", "type": "decision", "topic": "anoti.repo_takeover", "statement": "anoti replaced the getting-started-claude repository on the same remote, renamed to github.com/Adegbolahan/anoti: project-scaffolder deprecated with its four workflow commands adopted anoti-native (/new, /implement, /review-work, /update), its CI/CHANGELOG/marketplace discipline absorbed, old v3.x tags preserved for pinned installs, and the replacement executed as a no-force branch swap.", "ratification": "approved", "source": {"type": "conversation", "context": "human directive: option C, deprecate, take the four commands if they integrate"}, "rationale": "Marketplace continuity on a known URL (GitHub redirects the old name); scaffolder users keep working tags; anoti gains battle-tested release infrastructure; no force-push needed, honoring the deny-list.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "option C chosen; rename to anoti requested"}]}
+  - {"id": "D018", "date": "2026-08-13", "type": "decision", "topic": "anoti.sequence2_ruling", "statement": "Benchmark sequence 2 is not run: sequence 1 verdicts stand as the standing synthetic result (D014), and the continuing test becomes a pre-registered longitudinal observational protocol over this repository real work — weekly trail audits counting contradiction incidents, bad-memory events, and recall successes.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling after decision-support presentation"}, "rationale": "Three experiments ceilinged identically: synthetic traps below strong-model native competence measure the model, not the methodology. Rebuilding above the ceiling is an arms race; real long-horizon work is above it by construction. Observational honesty over synthetic theater.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "accept + longitudinal protocol"}]}
 open_questions:
   - id: Q001
     date: 2026-08-12
@@ -438,9 +443,10 @@ open_questions:
 
     raised_by: session
     context: format-comprehension experiment (D004)
-    status: open
+    status: answered
     refs:
       - docs/specs/2026-08-12-anoti-plugin-design.md
+    resolution: '2026-08-13 — closed in review follow-up: answered-with-qualification per the frozen rule (YES via agent-Markdown on cost; accuracy ceilinged at small scale). The scale-dependent reliability question remains tracked in D004.verification; reopen on a scaled comprehension test.'
   - id: Q002
     date: 2026-08-13
     question: >

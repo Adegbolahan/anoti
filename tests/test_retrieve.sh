@@ -104,3 +104,28 @@ ctx="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpe
 printf '%s' "$ctx" | grep -q "value standard"; assert_ok $? "stories surfaced as value standard"
 printf '%s' "$ctx" | grep -q "2 stor"; assert_ok $? "story count included"
 ); rm -rf "$tmp"
+
+# --- global store digestion (spec: global-memory-tier) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"
+cp "$ROOT/tests/fixtures/store_valid.yaml" "$HOME/.claude/anoti/GROUNDING.yaml"
+out="$(printf '{"session_id":"g"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$out" | grep -q "not yet trusted"; assert_ok $? "untrusted global refused"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
+out="$(printf '{"session_id":"g"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+# NOTE (explicit coupling): the second [global] line comes deterministically
+# from the scope-drift emit — the fixture carries scope: project while
+# placed at the global path. If the fixture's scope field ever changes,
+# give this test its own fixture rather than weakening the assertion.
+n=$(printf '%s\n' "$out" | grep -c "\[global\]")
+[ "$n" -ge 2 ]; assert_ok $? "every global-sourced line labeled [global] (got $n)"
+printf '%s' "$out" | grep -q "2 records"; assert_ok $? "trusted global digested"
+); rm -rf "$tmp"
+# scope/location mismatch surfaces in the digest
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+sed 's/scope: project/scope: global/' "$ROOT/tests/fixtures/store_valid.yaml" > GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+out="$(printf '{"session_id":"g"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$out" | grep -qi "scope mismatch"; assert_ok $? "scope/location drift reported"
+); rm -rf "$tmp"

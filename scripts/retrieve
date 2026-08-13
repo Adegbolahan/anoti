@@ -2,6 +2,8 @@
 # SessionStart hook: small digest inside an untrusted-data envelope. Fail-open.
 # Spec (Retrieval): fixed digest, budget <= ~1k tokens. Core lines always emit;
 # enrichments (index, question text) emit only while they fit the budget.
+# Global tier: per-store trust files (adjacent), [global] labels on every
+# global-sourced line, scope/location drift reported.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
@@ -12,41 +14,54 @@ emit() { lines="${lines}${1}
 "; }
 try_emit() { [ $(( ${#lines} + ${#1} )) -le "$BUDGET" ] && emit "$1"; }
 hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
-is_trusted() { [ -f "$AD/trust" ] && grep -qs "$(hash_of "$1")" "$AD/trust"; }
+is_trusted() { [ -f "$2" ] && grep -qs "$(hash_of "$1")" "$2"; }
 cutoff="$(date -v-14d +%F 2>/dev/null || date -d '14 days ago' +%F 2>/dev/null || echo "")"
-store_digest() { # $1=file $2=label
+ghome="$(cd "$HOME" 2>/dev/null && pwd -P)"
+store_digest() { # $1=file $2=name $3=trustfile $4=line-label ("" or "[global] ")
+  local L="$4"
   if ! "$SELF/validate-workspace" "$1" >/dev/null 2>&1; then
-    emit "- $2: present but fails validation; not loaded (run scripts/validate-workspace '$1')"
-  elif ! is_trusted "$1"; then
-    emit "- $2: present but not yet trusted; not loaded (approve with scripts/trust '$1')"
+    emit "- ${L}$2: present but fails validation; not loaded (run scripts/validate-workspace '$1')"
+  elif ! is_trusted "$1" "$3"; then
+    emit "- ${L}$2: present but not yet trusted; not loaded (approve with scripts/trust '$1')"
   else
-    local n p pr oldest idx q qid qtext
+    local n p pr oldest idx q qid qtext sc loc
     n="$(yq -r '.records | length' "$1" 2>/dev/null || echo 0)"
     p="$(yq -r '[.records[] | select(.ratification == "pending")] | length' "$1" 2>/dev/null || echo 0)"
-    emit "- $2: $n records, $p awaiting ratification. Query on demand: yq '.index' '$1'"
+    emit "- ${L}$2: $n records, $p awaiting ratification. Query on demand: yq '.index' '$1'"
+    [ "$p" -ge 5 ] && emit "  - ${L}review recommended: /anoti:review"
     # review nudge: probable count >= 5, or oldest probable >= 14 days old
     pr="$(yq -r '[.records[] | select(.epistemic_status == "probable")] | length' "$1" 2>/dev/null || echo 0)"
     oldest="$(yq -r '[.records[] | select(.epistemic_status == "probable") | .date] | sort | .[0] // ""' "$1" 2>/dev/null || echo "")"
     if [ "$pr" -ge 5 ] || { [ -n "$oldest" ] && [ -n "$cutoff" ] && ! [ "$cutoff" \< "$oldest" ]; }; then
-      emit "  - review recommended: $pr probable record(s), oldest $oldest (/anoti:review)"
+      emit "  - ${L}review recommended: $pr probable record(s), oldest $oldest (/anoti:review)"
+    fi
+    # scope/location drift: location drives behavior; the field catches copies
+    sc="$(yq -r '.meta.scope // ""' "$1" 2>/dev/null)"
+    if [ -n "$sc" ]; then
+      loc=project
+      case "$(cd "$(dirname "$1")" 2>/dev/null && pwd -P)/" in
+        "$ghome/.claude/anoti/"*) loc=global ;;
+      esac
+      [ "$sc" != "$loc" ] && emit "  - ${L}scope mismatch: meta.scope=$sc but store is $loc — location drives behavior"
     fi
     # index inlined only if small enough for the remaining budget (all rows or none)
     idx="$(yq -r '.index // [] | .[] | "  - " + .ref + " [" + .type + "] " + .topic + ": " + .statement' "$1" 2>/dev/null | cut -c1-220)"
+    [ -n "$idx" ] && [ -n "$L" ] && idx="$(printf '%s\n' "$idx" | sed "s/^  - /  - ${L}/")"
     [ -n "$idx" ] && try_emit "$idx"
     # open questions: count always; per-question text while it fits
     q="$(yq -r '[.open_questions // [] | .[] | select(.status == "open")] | length' "$1" 2>/dev/null || echo 0)"
     if [ "$q" -gt 0 ]; then
-      emit "- open questions ($2): $q"
+      emit "- ${L}open questions ($2): $q"
       for qid in $(yq -r '.open_questions // [] | .[] | select(.status == "open") | .id' "$1" 2>/dev/null); do
         qtext="$(yq -r ".open_questions[] | select(.id == \"$qid\") | .question" "$1" 2>/dev/null | tr '\n' ' ' | cut -c1-220)"
-        try_emit "  - $qid: $qtext"
+        try_emit "  - ${L}$qid: $qtext"
       done
     fi
   fi
 }
 g="$HOME/.claude/anoti/GROUNDING.yaml"
-[ -f "$g" ] && store_digest "$g" "global memory"
-[ -f GROUNDING.yaml ] && store_digest GROUNDING.yaml "project memory"
+[ -f "$g" ] && store_digest "$g" "global memory" "$HOME/.claude/anoti/trust" "[global] "
+[ -f GROUNDING.yaml ] && store_digest GROUNDING.yaml "project memory" "$AD/trust" ""
 [ -f TODOS.md ] && emit "- open todos: $(grep -c '^- \[ \]' TODOS.md 2>/dev/null || echo 0) (see TODOS.md)"
 HS=""; [ -f docs/HIGH-LEVEL-STORIES.md ] && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && [ -f HIGH-LEVEL-STORIES.md ] && HS=HIGH-LEVEL-STORIES.md
 [ -n "$HS" ] && emit "- value standard: $HS ($(grep -cE '^(\| US-[0-9]|- As )' "$HS" 2>/dev/null || echo 0) stories) — attend traces goals to it"

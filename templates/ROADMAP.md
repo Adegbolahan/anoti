@@ -1,12 +1,40 @@
-# Roadmap
+# Project Roadmap
 
-<!-- Human-owned. Agents propose edits via draft-for-ratification; only you merge direction. -->
+## <project>
 
-## Phase 1 — <name the first outcome>
+<!-- Human-owned; format: the direction skill. Drafts only via
+     ratification; the human merges. -->
 
-- Goal:
-- Done when:
+## Vision
 
-## Later
+<one sentence: what the project achieves when complete>
 
--
+## Phases Overview
+
+| Phase | Name   | Status     | Verified |
+| ----- | ------ | ---------- | -------- |
+| 1     | <name> | 📝 Planned | —        |
+
+## Phase 1: <name> ← current
+
+**Goal:** <one line>
+
+**User Stories:** <US-ids>
+
+**Key Deliverables:**
+
+- [ ] <deliverable>
+
+**Dependencies:** <none | phase refs>
+
+## Success Criteria
+
+**Phase 1 complete when:** <observable>
+
+## Risks & Mitigations
+
+| Risk   | Likelihood | Impact | Mitigation |
+| ------ | ---------- | ------ | ---------- |
+| <risk> | <l>        | <i>    | <how>      |
+
+**Last Updated:** YYYY-MM-DD

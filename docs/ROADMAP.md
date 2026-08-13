@@ -1,52 +1,104 @@
-# anoti Roadmap
+# Project Roadmap
 
-<!-- Human-owned. Agents propose edits via draft-for-ratification; only the
-     human merges direction. Ratified 2026-08-13 ("proceed to phase three"). -->
+## anoti
 
-## Phase 1 — Does the cycle function? ✅ complete
+<!-- Human-owned; format: the direction skill (livingsyncs-derived
+     template + anoti anti-decay guardrails). Drafts only via
+     ratification; the human merges. Ratified 2026-08-13. -->
 
-Substrate (0.1.0), cognition layer (0.2.0), live dogfooding across four
-sessions. Done when: every mechanism observed working live.
-Evidence: D009 (established), D005/D008. Closed 2026-08-13.
+## Vision
 
-## Phase 2 — Can the substrate be trusted? ✅ complete 2026-08-13
+An AI-agent plugin that gives sessions a human-shaped cognitive work
+cycle over governed, evidence-bearing, human-ratified memory — and proves
+its worth by experiment, or records that it didn't.
 
-Goal: memory that cannot be quietly corrupted; claims that carry real
+## Phases Overview
+
+| Phase | Name                          | Status                        | Verified   |
+| ----- | ----------------------------- | ----------------------------- | ---------- |
+| 1     | Does the cycle function?      | ✅ Complete                   | 2026-08-13 |
+| 2     | Can the substrate be trusted? | ✅ Complete                   | 2026-08-13 |
+| 3     | Is it worth it?               | 🔄 In progress                | 2026-08-13 |
+| 4     | Is it shareable?              | 📝 Planned (gated on Phase 3) | —          |
+
+## Phase 1: Does the cycle function? ✅
+
+**Goal:** every mechanism observed working live.
+
+**User Stories:** US-001, US-002, US-004, US-005 (first live proof).
+
+**Key Deliverables:** runtime substrate (0.1.0); cognition layer (0.2.0);
+live dogfooding across four sessions.
+
+**Dependencies:** none.
+
+✅ 2026-08-13 — closed by D009 reaching `established` on two independent
+sessions (with D005/D008 supporting).
+
+## Phase 2: Can the substrate be trusted? ✅
+
+**Goal:** memory that cannot be quietly corrupted; claims that carry real
 evidence.
 
-- [x] Mechanical write helpers (0.3.0) — hand-serialized YAML eliminated
-- [x] Split-scalar corruption repaired; validator detects the class
-- [x] End-of-session retrospective policy (universal, session-level)
-- [x] Carry-over: evidence backfill for D001–D003 → re-promotion via /anoti:review
-      ✅ 2026-08-13 — D001/D002 promoted (verify-then-promote); D003 held by independence rule
-- [x] Carry-over: rulings on Q002 and Q003 ✅ 2026-08-13 — class-based rewording; tools/effort deferred (D013)
-- [x] Carry-over: unreadable-state stderr note ✅ 2026-08-13; helper adoption verified live this session
+**User Stories:** US-003, US-006, US-007.
 
-Done when: no open data-integrity TODOs; no grandfathered claim remains
-evidence-less.
+**Key Deliverables:**
 
-## Phase 3 — Is it worth it? ← current
+- [x] Mechanical write helpers (0.3.0) ✅ 2026-08-13 — hand-serialized YAML eliminated
+- [x] Split-scalar corruption repaired + validator detects the class ✅ 2026-08-13
+- [x] Session-level retrospective policy ✅ 2026-08-13
+- [x] Evidence backfill D001–D003 → D001/D002 promoted in review ✅ 2026-08-13
+- [x] Q002/Q003 rulings applied (class-based wording; D013 deferral) ✅ 2026-08-13
+- [x] Unreadable-state observability ✅ 2026-08-13
 
-Goal: the falsifiable version of anoti's value.
+**Dependencies:** Phase 1.
 
-- [x] Design and file the benchmark experiment spec ✅ 2026-08-13
-      (docs/specs/2026-08-13-exp-h1-h3-benchmark.md — pre-registered:
-      three arms incl. instructions-only for H2 isolation, planted answer
-      key, blinded grader with human spot-audit, decision rules fixed
-      before any run)
-- [x] Run the benchmark (sequence 1) ✅ 2026-08-13 — verdicts recorded
-      honestly: H1 against-with-ambiguity (ceiling effect; recall
-      unmeasurable), H2 against-with-ambiguity (arm B degraded), H3
-      untestable; defects found and fixed in 0.3.1 (D014/D015).
-      Sequence 2 pending human decision
-- [ ] Fast-path calibration from .anoti/telemetry.log (classifier
-      eagerness vs outcomes)
-- [x] Q001 format-comprehension experiment ✅ 2026-08-13 — all formats 10/10 (ceiling); cost discriminated (MD cheapest, v3 largest = governance payload); closure proposed, human ruling pending
+## Phase 3: Is it worth it? ← current
 
-Done when: H1–H3 each carry benchmark evidence and their claims have
-moved on the ladder accordingly.
+**Goal:** the falsifiable version of anoti's value.
 
-## Phase 4 — Is it shareable? (later; gated on Phase 3's verdict)
+**User Stories:** US-007, US-008 (evidence discipline under test).
 
-Global memory opt-in UX, v1.1 roles validated at working scale,
-marketplace publication.
+**Key Deliverables:**
+
+- [x] Pre-registered H1–H3 benchmark spec ✅ 2026-08-13 — docs/specs/2026-08-13-exp-h1-h3-benchmark.md
+- [x] Benchmark sequence 1 run + blinded grading ✅ 2026-08-13 — H1/H2
+      against-with-ambiguity (ceiling effect; arm B degraded), H3
+      untestable; defects fixed in 0.3.1 (D014/D015)
+- [x] Fast-path calibration (pre-fix) ✅ 2026-08-13 — D015
+- [x] Q001 format experiment ✅ 2026-08-13 — accuracy ceilinged, cost
+      discriminated; closure proposed, human ruling pending
+- [ ] Sequence-2 decision (human): rerun above the ceiling, or accept
+      sequence-1 verdicts as standing
+
+**Dependencies:** the sequence-2 decision is the phase's open gate.
+
+## Phase 4: Is it shareable? 📝
+
+**Goal:** anoti usable beyond this repo, honestly marketed by its
+evidence.
+
+**Key Deliverables:** global memory opt-in UX; v1.1 roles validated at
+working scale; marketplace publication.
+
+**Dependencies:** Phase 3's verdict.
+
+## Success Criteria
+
+**Phase 3 complete when:** H1–H3 each carry decisive benchmark evidence
+and their claims moved on the ladder accordingly — either direction
+honored.
+
+**Project complete when:** all eight high-level stories hold verified ✅
+status against live evidence, and the plugin's value claims are
+`established` or honestly retired.
+
+## Risks & Mitigations
+
+| Risk                                         | Likelihood | Impact | Mitigation                                                               |
+| -------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------ |
+| Ceiling effect: tasks below model competence | High       | High   | Design sequence 2 above the ceiling, or accept and record the conclusion |
+| Self-report bias in dogfood evidence         | Medium     | High   | Pre-registration, blinded graders, independence rule at promotion        |
+| Direction-doc status decay                   | Medium     | Medium | Dated statuses mandatory; audit sections supersede stale cells           |
+
+**Last Updated:** 2026-08-13

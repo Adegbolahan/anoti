@@ -10,27 +10,44 @@ every change is a draft via policy-draft-for-ratification, and the
 inhibition hook mechanically denies writes outside a consolidation flow.
 The human merges; ownership never transfers.
 
-## docs/ROADMAP.md — required shape
+## docs/ROADMAP.md — required shape (adopted 2026-08-13)
 
-- Phases as `## Phase N — <question or outcome>` headings; exactly one
-  carries the `← current` marker (the retrieval digest surfaces that one).
-- Each phase: a one-line **Goal**, checkbox items, and a **Done when**
-  that is observable. Closed items keep their date and evidence refs
-  (`✅ YYYY-MM-DD — <what settled it>`); checked items are history, never
-  deleted.
-- Phase transitions are roadmap events: proposed as drafts, ratified by
-  the human, and worth a decision record when they change strategy.
+Structure (from the livingsyncs template, with anoti guardrails):
 
-## docs/HIGH-LEVEL-STORIES.md — required shape
+1. `# Project Roadmap` + project name; format pointer comment.
+2. `## Vision` — one sentence: what the project achieves when complete.
+3. `## Phases Overview` — table: Phase | Name | Status | Verified date.
+   **Guardrail: a status without a verified date is invalid** — status is
+   only as authoritative as its date.
+4. One `## Phase N: <name>` section per phase, each with: **Goal** (one
+   line), **User Stories** (US-ids in scope), **Key Deliverables**,
+   **Dependencies**, and dated closures with evidence refs
+   (`✅ YYYY-MM-DD — <what settled it>`). Exactly one phase heading
+   carries the `← current` marker (the retrieval digest surfaces it).
+5. `## Success Criteria` — observable, per-phase and project-level.
+6. `## Risks & Mitigations` — table.
+7. `**Last Updated:** YYYY-MM-DD` — stale beyond a phase transition means
+   the document is due an audit, not silent trust.
 
-- One story per bullet, exactly this form:
-  `As a <who>, I need <what>, so that <why>. Done means: <observable>.`
-- Stories are testable value statements, never feature lists — "Done
-  means" must name something a session could check or a grader could
-  score.
-- A story that can no longer be checked, or that no work has served in
-  living memory, is a candidate for amendment — raised as a draft, not
-  silently pruned.
+Checked items keep their dates and evidence; history is never deleted.
+
+## docs/HIGH-LEVEL-STORIES.md — required shape (adopted 2026-08-13)
+
+A story register plus full statements:
+
+1. `## Overview` — status-count table (dated) and the audit rule below.
+2. `## Register` — table: ID (`US-nnn`) | Title | Priority | Status +
+   verified date | Evidence ref (a GROUNDING record, trial doc, or grade
+   file — the anoti replacement for spec links).
+3. `## Stories` — one entry per ID, exactly:
+   `As a <who>, I need <what>, so that <why>. Done means: <observable>.`
+   Testable value statements, never feature lists.
+
+**Anti-decay guardrails (learned from the sample this format came from,
+whose own header warns its status column went stale):** every status
+cell carries its verification date; a periodic dated audit section
+supersedes any older cells it contradicts; a story nothing has served in
+living memory is amended by draft, not silently pruned.
 
 ## Management (which hats, which policies)
 

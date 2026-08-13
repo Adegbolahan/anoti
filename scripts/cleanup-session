@@ -1,0 +1,14 @@
+#!/bin/bash
+# SessionEnd hook: remove finished session state; mark in-flight state abandoned. Fail-open.
+set -u
+input="$(cat 2>/dev/null || true)"
+sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
+[ -n "$sid" ] || exit 0
+sf=".anoti/sessions/$sid.yaml"
+[ -f "$sf" ] || exit 0
+ep="$(yq -r '.episode // "idle"' "$sf" 2>/dev/null || echo idle)"
+case "$ep" in
+  idle|committed) rm -f "$sf" ;;
+  *) mv "$sf" ".anoti/sessions/$sid.abandoned.yaml" ;;
+esac
+exit 0

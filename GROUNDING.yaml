@@ -32,6 +32,18 @@ index:
     type: claim
     topic: anoti.retrieval_path
     statement: The anoti retrieval path functions live in an installed session — index-based recall, demotion-aware status reporting, untrusted-data framing, and open-question surfacing behaved per spec.
+  - ref: D006
+    type: decision
+    topic: anoti.role_models
+    statement: >
+      v1.1 role model assignments follow core-10 analogy: inherit for open-ended strategic judgment (visionary, legal), sonnet for execution and structured analysis (mobile, ai-ml, devops, performance, product-manager, requirements-analyst, ux-researcher, ui-designer), haiku for ratification-gated writing roles (sales, marketing, support).
+
+  - ref: D007
+    type: decision
+    topic: anoti.role_classes
+    statement: >
+      The performance role is builder-class, not reviewer-class: the spec's own approach text ends "then optimize" (which entails editing code), the never-edits rule binds the reviewer role specifically, and the adversarial-handoff policy keeps its edits judged by a separate reviewer spawn.
+
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -168,6 +180,48 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
+  - id: D006
+    date: 2026-08-13
+    type: decision
+    topic: anoti.role_models
+    statement: >
+      v1.1 role model assignments follow core-10 analogy: inherit for open-ended strategic judgment (visionary, legal), sonnet for execution and structured analysis (mobile, ai-ml, devops, performance, product-manager, requirements-analyst, ux-researcher, ui-designer), haiku for ratification-gated writing roles (sales, marketing, support).
+
+    ratification: approved
+    source: {type: session, context: v1.1 role set build, 2026-08-13: ''}
+    evidence:
+      - date: 2026-08-13
+        type: review
+        note: >
+          Adversarial reviewer spawn judged the analogy mapping "precise" and the assignment call "defensible; do not escalate, do record". Soft spots it named: visionary=inherit vs product-manager=sonnet asymmetry, and haiku possibly under-serving support (filed as Q004).
+
+        refs:
+          - roles/
+          - docs/superpowers/plans/2026-08-13-anoti-cognition-content.md
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+  - id: D007
+    date: 2026-08-13
+    type: decision
+    topic: anoti.role_classes
+    statement: >
+      The performance role is builder-class, not reviewer-class: the spec's own approach text ends "then optimize" (which entails editing code), the never-edits rule binds the reviewer role specifically, and the adversarial-handoff policy keeps its edits judged by a separate reviewer spawn.
+
+    ratification: approved
+    source: {type: session, context: v1.1 role set build, 2026-08-13: ''}
+    evidence:
+      - date: 2026-08-13
+        type: review
+        note: >
+          Adversarial reviewer spawn verdict "correct call; do not escalate", citing the spec role table (reviewer's never-edits scoping, performance's optimize duty, builder-judged-by-reviewer rule).
+
+        refs:
+          - roles/performance.md
+          - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
 open_questions:
   - id: Q001
     date: 2026-08-12
@@ -179,3 +233,35 @@ open_questions:
     status: open
     refs:
       - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+  - id: Q002
+    date: 2026-08-13
+    question: >
+      Should the spec's advisory-phase list (Vision, Discovery, Delivery, Business) be amended to include Design, or reworded class-based? architect and ui-designer are Design-phase advisory profiles that contradict the current text. Spec amendment is human-owned.
+
+    raised_by: reviewer-spawn
+    context: v1.1 role set review, Issue 3
+    status: open
+    refs:
+      - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+      - roles/ui-designer.md
+  - id: Q003
+    date: 2026-08-13
+    question: >
+      Are per-role tools allowlists and effort defaults (spec profile contract) deferred deliberately or dropped? No profile in the 23-role library carries them, so the spec's "tools list matches the role class" validation criterion is unverifiable. Affects all 23 profiles.
+
+    raised_by: reviewer-spawn
+    context: v1.1 role set review, Issue 2
+    status: open
+    refs:
+      - docs/superpowers/specs/2026-08-12-anoti-plugin-design.md
+      - roles/
+  - id: Q004
+    date: 2026-08-13
+    question: >
+      Is haiku sufficient for the support role, whose duties include reproducing failures and translating them into requirements — investigation more than copywriting? A trial dispatch would settle it.
+
+    raised_by: reviewer-spawn
+    context: v1.1 role set review, questions item 3
+    status: open
+    refs:
+      - roles/support.md

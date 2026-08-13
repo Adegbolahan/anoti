@@ -10,3 +10,6 @@ for f in "$ROOT"/docs/plans/*.md; do
     [ -f "$ROOT/$ref" ]; assert_ok $? "declared spec exists: $(basename "$f") -> $ref"
   fi
 done
+grep -q "Cross-project citations" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md" && \
+  grep -qE "2026-08-13 — amended" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "longitudinal spec carries the dated seventh-source amendment"

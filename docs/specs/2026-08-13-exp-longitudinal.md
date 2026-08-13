@@ -32,6 +32,7 @@ absence of incidents is weak-but-accumulating signal.
 | Ratification integrity  | records whose status moved without a human event                | events audit            |
 | Guardrail activity      | inhibition denials/asks, gate blocks, with false-positive count | telemetry, trail        |
 | Store health            | validate-workspace clean; trust current; index = records        | scripts                 |
+| Cross-project citations | global records cited by work in a different project than their origin | trail refs + store events |
 
 ## Decision rules (frozen)
 
@@ -56,3 +57,9 @@ spot-audit.
 ## Results
 
 (accumulate under docs/trials/longitudinal-YYYY-MM-DD.md; none yet)
+
+## Changelog
+
+- 2026-08-13 — amended per the ratified global-tier spec: seventh source
+  added (cross-project global-record citations); counts zero until a
+  second governed project exists.

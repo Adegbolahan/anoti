@@ -31,3 +31,15 @@
   existing TODOS item: session-state writes need a mechanical helper, and
   a state file should be yq-validated after every hand edit.
   (2026-08-13, sample-app cascade)
+
+- 2026-08-13 — A plausible bug attribution survived until a test refuted
+  it: the store-scalar mangling was blamed on regen-index re-serialization,
+  but a byte-identical round-trip test proved the tool innocent — the
+  corruption entered at write time via unquoted model-written flow YAML.
+  Why: the visible symptom appeared after regen ran. Apply by: before
+  fixing a named culprit, write the test that would convict it.
+- 2026-08-13 — `git add -A` in a repo shared by concurrent sessions swept
+  another session's uncommitted review changes into an unrelated commit
+  (cf730d6). Why: bulk staging assumes a single writer. Apply by: stage
+  explicitly by path in multi-session repos; treat the index as shared
+  state.

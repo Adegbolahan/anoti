@@ -47,3 +47,11 @@ the single writer; agents (including the consolidator) only propose.
 
 In human-absent contexts: candidates queue in session state, everything
 that would need ratification waits, and nothing lands above `pending`.
+
+## Write discipline (YAML flow scalars)
+
+In flow-style maps, any scalar containing `", "` or `": "` MUST be
+double-quoted — unquoted, YAML silently splits it into spurious keys and
+the corruption looks valid. Prefer block style for long notes. The
+validator rejects unknown keys in `source`/`events`/`evidence`, which
+catches this class after the fact; quoting prevents it.

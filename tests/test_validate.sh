@@ -17,3 +17,30 @@ printf 'meta: { schema_version: 3 }\nrecords: null\n' > "$tmpv/nullrec.yaml"
 "$v" "$tmpv/nullrec.yaml" >/dev/null 2>&1
 assert_eq "$?" "1" "store with null records fails validation"
 rm -rf "$tmpv"
+
+# unknown keys in source/events/evidence = unquoted-scalar split; must fail
+tmpm="$(mktemp -d)"
+cat > "$tmpm/mangled.yaml" <<'YAML'
+meta:
+  schema_version: 3
+  scope: project
+  policy: {entries_immutable: true, events_append_only: true, reverify_after_days: 180}
+index: []
+records:
+  - id: M001
+    date: 2026-08-13
+    type: claim
+    topic: mangle.test
+    statement: A statement.
+    epistemic_status: probable
+    ratification: approved
+    source: {type: session, context: build, extra fragment: ''}
+    events:
+      - {date: 2026-08-13, action: created, by: session, note: part one, part two: ''}
+open_questions: []
+YAML
+"$v" "$tmpm/mangled.yaml" >/dev/null 2>&1
+assert_eq "$?" "1" "split-scalar corruption fails validation"
+"$v" "$tmpm/mangled.yaml" 2>&1 >/dev/null | grep -q "unexpected key"
+assert_ok $? "corruption reported as unexpected key"
+rm -rf "$tmpm"

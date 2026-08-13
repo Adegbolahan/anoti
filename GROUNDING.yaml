@@ -214,7 +214,7 @@ records: # generated — do not edit by hand
       v1.1 role model assignments follow core-10 analogy: inherit for open-ended strategic judgment (visionary, legal), sonnet for execution and structured analysis (mobile, ai-ml, devops, performance, product-manager, requirements-analyst, ux-researcher, ui-designer), haiku for ratification-gated writing roles (sales, marketing, support).
 
     ratification: approved
-    source: {type: session, context: v1.1 role set build, 2026-08-13: ''}
+    source: {type: session, context: "v1.1 role set build, 2026-08-13"}
     evidence:
       - date: 2026-08-13
         type: review
@@ -235,7 +235,7 @@ records: # generated — do not edit by hand
       The performance role is builder-class, not reviewer-class: the spec's own approach text ends "then optimize" (which entails editing code), the never-edits rule binds the reviewer role specifically, and the adversarial-handoff policy keeps its edits judged by a separate reviewer spawn.
 
     ratification: approved
-    source: {type: session, context: v1.1 role set build, 2026-08-13: ''}
+    source: {type: session, context: "v1.1 role set build, 2026-08-13"}
     evidence:
       - date: 2026-08-13
         type: review
@@ -255,7 +255,7 @@ records: # generated — do not edit by hand
     statement: The anoti slow path functions live in an installed session — the classifier routes ambiguous asks to attend, a spec-complete attention frame is produced and persisted, and subsequent work follows the frame's evidence plan (test-first, live-verified).
     epistemic_status: probable
     ratification: approved
-    source: {type: observation, context: live session, retrieval-budget task: ''}
+    source: {type: observation, context: "live session, retrieval-budget task"}
     evidence:
       - date: 2026-08-13
         type: observation
@@ -276,7 +276,7 @@ records: # generated — do not edit by hand
     statement: The complete anoti cycle functions live end-to-end in an installed session — slow-path classification, attention framing, deliberation with adversarial handoff, inhibition denials enforced against the agent, Stop-gate consolidation, and selective human ratification.
     epistemic_status: established
     ratification: approved
-    source: {type: observation, context: live session, v1.1 role-set task: ''}
+    source: {type: observation, context: "live session, v1.1 role-set task"}
     evidence:
       - date: 2026-08-13
         type: observation
@@ -300,8 +300,8 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
-      - {date: 2026-08-13, action: evidence-appended, by: session, note: second end-to-end run, sample-app cascade; approved in consolidation: ''}
-      - {date: 2026-08-13, action: promoted, by: human, note: 'probable -> established in /anoti:review — two independent sessions (v1.1 role-set run outside-relayed', sample-app cascade self-reported with inspectable artifacts): '', distinct task types: ''}
+      - {date: 2026-08-13, action: evidence-appended, by: session, note: "second end-to-end run, sample-app cascade; approved in consolidation"}
+      - {date: 2026-08-13, action: promoted, by: human, note: "probable -> established in /anoti:review — two independent sessions (v1.1 role-set run outside-relayed, sample-app cascade self-reported with inspectable artifacts), distinct task types"}
   - id: D010
     date: 2026-08-13
     type: claim
@@ -311,7 +311,7 @@ records: # generated — do not edit by hand
 
     epistemic_status: probable
     ratification: approved
-    source: {type: observation, context: sample-app cascade, Q004 opportunistic trial: ''}
+    source: {type: observation, context: "sample-app cascade, Q004 opportunistic trial"}
     evidence:
       - date: 2026-08-13
         type: observation
@@ -334,7 +334,7 @@ records: # generated — do not edit by hand
       Fix rounds continue the original builder agent (message-resume) rather than spawning a fresh builder: the builder's own context yields a more coherent fix, and the continuation costs zero spawn budget.
 
     ratification: approved
-    source: {type: session, context: sample-app cascade, conductor plan step 4: ''}
+    source: {type: session, context: "sample-app cascade, conductor plan step 4"}
     evidence:
       - date: 2026-08-13
         type: observation

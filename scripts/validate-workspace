@@ -21,6 +21,14 @@ while [ "$i" -lt "$n" ]; do
     e="$(yq -r ".records[$i].epistemic_status // \"\"" "$f")"
     case "$e" in speculative|probable|established) ;; *) fail "records[$i]: claim missing/bad epistemic_status" ;; esac
   fi
+  # unknown keys in source/events/evidence usually mean an unquoted flow
+  # scalar containing ", " or ": " split into spurious keys at write time
+  bad="$(yq -r ".records[$i].source // {} | keys | .[]" "$f" 2>/dev/null | grep -vE '^(type|context|participants)$' | head -3 | tr '\n' ' ')"
+  [ -z "$bad" ] || fail "records[$i]: source has unexpected key(s): $bad(unquoted scalar split?)"
+  bad="$(yq -r ".records[$i].events // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(date|action|by|note)$' | sort -u | head -3 | tr '\n' ' ')"
+  [ -z "$bad" ] || fail "records[$i]: event has unexpected key(s): $bad(unquoted scalar split?)"
+  bad="$(yq -r ".records[$i].evidence // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(date|type|note|refs)$' | sort -u | head -3 | tr '\n' ' ')"
+  [ -z "$bad" ] || fail "records[$i]: evidence has unexpected key(s): $bad(unquoted scalar split?)"
   i=$((i+1))
 done
 dups="$(yq -r '.records[].id' "$f" 2>/dev/null | sort | uniq -d)"

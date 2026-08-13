@@ -44,6 +44,14 @@ index:
     statement: >
       The performance role is builder-class, not reviewer-class: the spec's own approach text ends "then optimize" (which entails editing code), the never-edits rule binds the reviewer role specifically, and the adversarial-handoff policy keeps its edits judged by a separate reviewer spawn.
 
+  - ref: D008
+    type: claim
+    topic: anoti.slow_path
+    statement: The anoti slow path functions live in an installed session — the classifier routes ambiguous asks to attend, a spec-complete attention frame is produced and persisted, and subsequent work follows the frame's evidence plan (test-first, live-verified).
+  - ref: D009
+    type: claim
+    topic: anoti.full_cycle
+    statement: The complete anoti cycle functions live end-to-end in an installed session — slow-path classification, attention framing, deliberation with adversarial handoff, inhibition denials enforced against the agent, Stop-gate consolidation, and selective human ratification.
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -222,6 +230,50 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+  - id: D008
+    date: 2026-08-13
+    type: claim
+    topic: anoti.slow_path
+    statement: The anoti slow path functions live in an installed session — the classifier routes ambiguous asks to attend, a spec-complete attention frame is produced and persisted, and subsequent work follows the frame's evidence plan (test-first, live-verified).
+    epistemic_status: probable
+    ratification: approved
+    source: {type: observation, context: live session, retrieval-budget task: ''}
+    evidence:
+      - date: 2026-08-13
+        type: observation
+        note: >
+          User-relayed transcript: "improve the retrieval budget situation" classified slow with logged reason; attend produced an eight-field frame including roadmap_ref "none — roadmap judged not needed (trail logged)"; work followed the frame's evidence plan (RED tests before implementation, live verification). Caveat: the same observation surfaced the session-state classification-duplication bug, so the flow functions while one logging mechanism has a known defect.
+
+        refs:
+          - "commit c960039 (tests written RED-first per the frame's evidence plan)"
+    relationships:
+      - {type: refines, target: D005}
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
+  - id: D009
+    date: 2026-08-13
+    type: claim
+    topic: anoti.full_cycle
+    statement: The complete anoti cycle functions live end-to-end in an installed session — slow-path classification, attention framing, deliberation with adversarial handoff, inhibition denials enforced against the agent, Stop-gate consolidation, and selective human ratification.
+    epistemic_status: probable
+    ratification: approved
+    source: {type: observation, context: live session, v1.1 role-set task: ''}
+    evidence:
+      - date: 2026-08-13
+        type: observation
+        note: >
+          User-relayed transcript: inhibition hook denied TODOS.md writes twice outside the consolidation flow and permitted the same write inside it; Stop gate blocked once and routed to consolidation; adversarial reviewer spawn surfaced an Important vacuous-test defect (policy checks silently skipped for 18 of 23 roles); human ratified candidates selectively in-session (D006, D007, Q002-Q004). Different session and agent lineage from the implementing session — the independence class our evidence rules favor, though still observational, not a controlled comparison.
+
+        refs:
+          - "commits 0fdf2b6, bffc4c6 (artifacts of the observed session)"
+          - "records D006, D007 and questions Q002-Q004 (written under in-session ratification)"
+    relationships:
+      - {type: refines, target: D005}
+      - {type: refines, target: D008}
+    events:
+      - {date: 2026-08-13, action: created, by: session}
+      - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
 open_questions:
   - id: Q001
     date: 2026-08-12

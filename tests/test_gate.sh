@@ -13,3 +13,13 @@ assert_eq "$(printf '{"session_id":"s","stop_hook_active":true}' | "$g")" "" "st
 rm .anoti/sessions/s.yaml
 assert_eq "$(printf '{"session_id":"s","stop_hook_active":false}' | "$g")" "" "no state file -> silent"
 ); rm -rf "$tmp"
+
+# unreadable session state must be reported, not silently treated as idle
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti/sessions
+printf 'episode: [broken\n  yaml' > .anoti/sessions/bad.yaml
+err="$(printf '{"session_id":"bad","stop_hook_active":false}' | "$ROOT/scripts/consolidation-gate" 2>&1 >/dev/null)"
+printf '%s' "$err" | grep -qi "unreadable"; assert_ok $? "gate reports unreadable state on stderr"
+err="$(printf '{"session_id":"bad","tool_name":"Write","tool_input":{"file_path":"GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit" 2>&1 >/dev/null)"
+printf '%s' "$err" | grep -qi "unreadable"; assert_ok $? "inhibit reports unreadable state on stderr"
+); rm -rf "$tmp"

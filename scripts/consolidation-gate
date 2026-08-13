@@ -7,6 +7,10 @@ sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit
 [ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ] && exit 0
 sf=".anoti/sessions/$sid.yaml"
 [ -f "$sf" ] || exit 0
+if ! yq -e '.' "$sf" >/dev/null 2>&1; then
+  echo "anoti: session state unreadable ($sf) — failing open; repair or remove it" >&2
+  exit 0
+fi
 [ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" = "candidate-detected" ] || exit 0
 yq '.episode = "awaiting-approval"' "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
 jq -n '{decision:"block",reason:"anoti: memory candidates await consolidation. Review the candidates in the session state file and run /anoti:consolidate to propose them to the human, or set episode: idle to skip."}'

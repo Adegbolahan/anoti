@@ -17,8 +17,13 @@ case "$tool" in
     case "$p" in
       *GROUNDING.yaml|*ROADMAP.md|*HIGH-LEVEL-STORIES.md|*TODOS.md|*LESSONS-LEARNT.md)
         ep="idle"
-        [ -n "$sid" ] && [ -f ".anoti/sessions/$sid.yaml" ] &&
-          ep="$(yq -r '.episode // "idle"' ".anoti/sessions/$sid.yaml" 2>/dev/null || echo idle)"
+        if [ -n "$sid" ] && [ -f ".anoti/sessions/$sid.yaml" ]; then
+          if yq -e '.' ".anoti/sessions/$sid.yaml" >/dev/null 2>&1; then
+            ep="$(yq -r '.episode // "idle"' ".anoti/sessions/$sid.yaml" 2>/dev/null || echo idle)"
+          else
+            echo "anoti: session state unreadable (.anoti/sessions/$sid.yaml) — treating episode as idle; repair or remove it" >&2
+          fi
+        fi
         case "$ep" in
           awaiting-approval|committed) exit 0 ;;
           *) decide deny "memory-organ write outside an active consolidation flow (episode=$ep); use /anoti:consolidate" ;;

@@ -1,0 +1,21 @@
+meta:
+  schema_version: 3
+  scope: project
+index:
+  - { ref: F1, type: decision, topic: identifiers, statement: "Item IDs are ULIDs, never sequential integers" }
+  - { ref: F2, type: constraint, topic: limits, statement: "max_items_per_user is 100" }
+  - { ref: F3, type: decision, topic: storage, statement: "Storage backend is append-only JSONL" }
+  - { ref: F4, type: contract, topic: errors, statement: "API errors return typed codes E_VALIDATION, E_NOT_FOUND, E_LIMIT" }
+  - { ref: F5, type: constraint, topic: time, statement: "All timestamps are UTC ISO-8601 with a trailing Z" }
+  - { ref: F6, type: policy, topic: deletion, statement: "Records are never hard-deleted; deletion writes a tombstone record" }
+  - { ref: F7, type: constraint, topic: retention, statement: "The retention window is 30 days" }
+  - { ref: F8, type: decision, topic: api, statement: "The public API is versioned under /v1" }
+records:
+  - { id: F1, type: decision, statement: "Item IDs are ULIDs, never sequential integers", ratification: approved, events: [{ date: 2026-08-13, action: created }] }
+  - { id: F2, type: constraint, statement: "max_items_per_user is 100", ratification: approved, events: [{ date: 2026-08-13, action: created, note: "value 50" }, { date: 2026-08-13, action: revised, note: "50 -> 100" }] }
+  - { id: F3, type: decision, statement: "Storage backend is append-only JSONL", ratification: approved, events: [{ date: 2026-08-13, action: created }] }
+  - { id: F4, type: contract, statement: "API errors return typed codes E_VALIDATION, E_NOT_FOUND, E_LIMIT", ratification: approved, events: [{ date: 2026-08-13, action: created }] }
+  - { id: F5, type: constraint, statement: "All timestamps are UTC ISO-8601 with a trailing Z", ratification: approved, events: [{ date: 2026-08-13, action: created }] }
+  - { id: F6, type: policy, statement: "Records are never hard-deleted; deletion writes a tombstone record", ratification: approved, events: [{ date: 2026-08-13, action: created }] }
+  - { id: F7, type: constraint, statement: "The retention window is 30 days", ratification: approved, events: [{ date: 2026-08-13, action: created, note: "value 90 days" }, { date: 2026-08-13, action: revised, note: "90 -> 30 days" }] }
+  - { id: F8, type: decision, statement: "The public API is versioned under /v1", ratification: approved, events: [{ date: 2026-08-13, action: created }] }

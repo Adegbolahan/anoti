@@ -1,0 +1,46 @@
+meta:
+  project: item-tracker
+  updated: 2026-08-13
+discoveries:
+  - id: F1
+    date: 2026-08-13
+    topic: identifiers
+    status: established
+    summary: Item IDs are ULIDs, never sequential integers.
+  - id: F2
+    date: 2026-08-13
+    topic: limits
+    status: established
+    summary: max_items_per_user is 100.
+    note: Originally 50; raised to 100 on 2026-08-13.
+  - id: F3
+    date: 2026-08-13
+    topic: storage
+    status: established
+    summary: Storage backend is append-only JSONL.
+  - id: F4
+    date: 2026-08-13
+    topic: errors
+    status: established
+    summary: API errors return typed codes E_VALIDATION, E_NOT_FOUND, E_LIMIT.
+  - id: F5
+    date: 2026-08-13
+    topic: time
+    status: established
+    summary: All timestamps are UTC ISO-8601 with a trailing Z.
+  - id: F6
+    date: 2026-08-13
+    topic: deletion
+    status: established
+    summary: Records are never hard-deleted; deletion writes a tombstone record.
+  - id: F7
+    date: 2026-08-13
+    topic: retention
+    status: established
+    summary: The retention window is 30 days.
+    note: Originally 90 days; reduced to 30 on 2026-08-13.
+  - id: F8
+    date: 2026-08-13
+    topic: api
+    status: established
+    summary: The public API is versioned under /v1.

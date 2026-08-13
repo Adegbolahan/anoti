@@ -1,0 +1,21 @@
+⟦GROUNDING/agent⟧ v1 ⋄ item-tracker ⋄ readers=AI
+⟦DECODE⟧ ◆ fact ∷ claim ⏱ date ✓ ratified ▸ detail ⚠ revision
+⟦IDX⟧
+F1 identifiers ∷ ULIDs only
+F2 limits ∷ max_items_per_user=100
+F3 storage ∷ append-only JSONL
+F4 errors ∷ typed codes
+F5 time ∷ UTC ISO-8601 Z
+F6 deletion ∷ tombstones only
+F7 retention ∷ 30d
+F8 api ∷ /v1
+⟦FACTS⟧
+◆F1 ⏱2026-08-13 ✓ ∷ item IDs are ULIDs, never sequential integers
+◆F2 ⏱2026-08-13 ✓ ∷ max_items_per_user=100 ⚠ was 50, raised→100 2026-08-13
+◆F3 ⏱2026-08-13 ✓ ∷ storage backend=append-only JSONL
+◆F4 ⏱2026-08-13 ✓ ∷ api errors→typed codes {E_VALIDATION,E_NOT_FOUND,E_LIMIT}
+◆F5 ⏱2026-08-13 ✓ ∷ timestamps=UTC ISO-8601, trailing Z
+◆F6 ⏱2026-08-13 ✓ ∷ records never hard-deleted ▸ deletion writes tombstone
+◆F7 ⏱2026-08-13 ✓ ∷ retention=30d ⚠ was 90d, reduced→30 2026-08-13
+◆F8 ⏱2026-08-13 ✓ ∷ public api versioned under /v1
+⟦EOF⟧

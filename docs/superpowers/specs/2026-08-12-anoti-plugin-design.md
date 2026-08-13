@@ -311,9 +311,12 @@ artifacts), **defaults** (model/effort; deliberate may override), and
 
 ### The policy library
 
-Policies are modes of operating procedure — reusable, one file each in
-`policies/`; roles compose them instead of duplicating prose. Policies bind
-existing machinery (skills, agents, hooks), never invent new machinery.
+Policies are modes of operating procedure — and **policies are skills**: each
+one is a plugin skill (`skills/policy-<name>/SKILL.md`), invocable via the
+Skill tool, so a practitioner _loads_ its policies at spawn rather than
+receiving them as pasted prose. Roles compose policies instead of duplicating
+procedure text. Policies bind existing machinery (skills, agents, hooks),
+never invent new machinery.
 
 Universal (attached to every role): `epistemic` (hypothesis before test;
 claims carry evidence; significant claims to the skeptic before asserting),
@@ -414,15 +417,16 @@ anoti/                              # plugin root
 │   ├── attend/SKILL.md             # slow-path attention → attention frame (writes session state)
 │   ├── deliberate/SKILL.md         # WM discipline, hypotheses, hat assignment, spawn budget
 │   ├── consolidate/SKILL.md        # record typing, dedupe, scope routing, event-append mechanics
-│   └── skillify/SKILL.md           # workspace bootstrap + maintenance contract
+│   ├── skillify/SKILL.md           # workspace bootstrap + maintenance contract
+│   │                               # …and policies ARE skills — invocable via the Skill tool:
+│   ├── policy-epistemic/  policy-trace-to-frame/  policy-escalate-destructive/   (universal)
+│   ├── policy-parallel-breadth/  policy-adversarial-handoff/  policy-test-driven/
+│   └── policy-visual-verify/  policy-reversible-change/  policy-draft-for-ratification/  policy-reader-run/
 ├── agents/
 │   ├── consolidator.md             # sonnet; tools: Read, Grep, Glob
 │   ├── explorer.md                 # haiku; tools: Read, Grep, Glob
 │   ├── skeptic.md                  # inherit; tools: Read, Grep, Glob, Bash (see enforcement gap)
 │   └── practitioner.md             # model/tools per role profile
-├── policies/                       # epistemic, trace-to-frame, escalate-destructive (universal);
-│                                   # parallel-breadth, adversarial-handoff, test-driven,
-│                                   # visual-verify, reversible-change, draft-for-ratification, reader-run
 ├── roles/                          # one file per role; core-v1 set validated first
 ├── commands/
 │   ├── review.md                   # /anoti:review — ratification + promotion/demotion with evidence

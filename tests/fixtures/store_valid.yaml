@@ -1,0 +1,31 @@
+meta:
+  schema_version: 3
+  scope: project
+  policy:
+    {
+      entries_immutable: true,
+      events_append_only: true,
+      reverify_after_days: 180,
+    }
+index: []
+records:
+  - id: D001
+    date: 2026-08-12
+    type: claim
+    topic: test.topic
+    statement: A falsifiable statement.
+    epistemic_status: probable
+    ratification: pending
+    source: { type: conversation }
+    evidence: []
+    events:
+      - { date: 2026-08-12, action: created, by: session }
+  - id: D002
+    date: 2026-08-12
+    type: policy
+    topic: test.rule
+    statement: Prefer reversible deployments.
+    ratification: approved
+    events:
+      - { date: 2026-08-12, action: created, by: session }
+open_questions: []

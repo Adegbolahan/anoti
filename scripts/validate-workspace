@@ -1,0 +1,27 @@
+#!/bin/bash
+# validate-workspace <store.yaml> — exit 0 valid; exit 1 with "invalid: ..." lines on stderr.
+set -u
+f="${1:?usage: validate-workspace <store.yaml>}"
+err=0
+fail() { echo "invalid: $1" >&2; err=1; }
+yq -e '.' "$f" >/dev/null 2>&1 || { echo "invalid: not parseable YAML" >&2; exit 1; }
+[ "$(yq -r '.meta.schema_version // ""' "$f")" = "3" ] || fail "meta.schema_version must be 3"
+n="$(yq -r '.records | length' "$f")"
+i=0
+while [ "$i" -lt "$n" ]; do
+  id="$(yq -r ".records[$i].id // \"\"" "$f")"
+  [ -n "$id" ] || fail "records[$i]: missing id"
+  t="$(yq -r ".records[$i].type // \"\"" "$f")"
+  case "$t" in claim|preference|decision|goal|policy) ;; *) fail "records[$i]: bad type '$t'" ;; esac
+  [ -n "$(yq -r ".records[$i].statement // \"\"" "$f")" ] || fail "records[$i]: missing statement"
+  r="$(yq -r ".records[$i].ratification // \"\"" "$f")"
+  case "$r" in pending|approved|rejected) ;; *) fail "records[$i]: bad ratification '$r'" ;; esac
+  if [ "$t" = "claim" ]; then
+    e="$(yq -r ".records[$i].epistemic_status // \"\"" "$f")"
+    case "$e" in speculative|probable|established) ;; *) fail "records[$i]: claim missing/bad epistemic_status" ;; esac
+  fi
+  i=$((i+1))
+done
+dups="$(yq -r '.records[].id' "$f" 2>/dev/null | sort | uniq -d)"
+[ -z "$dups" ] || fail "duplicate ids: $(printf '%s' "$dups" | tr '\n' ' ')"
+exit "$err"

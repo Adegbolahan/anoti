@@ -1,0 +1,160 @@
+# GROUNDING document — a living record of discoveries. Schema v2.
+# Convention: append new entries; never rewrite the content of prior discoveries.
+# Readers: scan `index` first; load full entries from `discoveries` only as needed.
+# Every entry must stand alone — understandable without any other entry loaded.
+
+meta:
+  schema_version: 2
+  project: anoti
+  purpose: >
+    Shared grounding for our work. Captures what we have learned and agreed on,
+    so every future conversation starts from the same facts instead of
+    re-deriving them.
+  created: 2026-08-12
+  last_updated: 2026-08-12
+  changelog:
+    - date: 2026-08-12
+      note: >
+        Migrated schema v1 -> v2. Discovery content preserved verbatim where
+        possible. Added: index, provenance, typed relationships, verification
+        rules, open-question lifecycle. Information architecture adopted from
+        the GROUNDING.agent experiment (see D004); its sigil syntax was not.
+    - date: 2026-08-12
+      note: >
+        Index rows renamed id -> ref so that `id:` appears exactly once per
+        discovery, making text-level retrieval by ID unambiguous.
+  policy:
+    append_only: true
+    entries_must_stand_alone: true
+    reverify_after_days: 180  # default for time-sensitive claims; entries may override under `verification`
+
+index:
+  - ref: D001
+    topic: human.information_processing
+    summary: Human information processing is a staged, attention-bottlenecked pipeline shaped by top-down feedback.
+  - ref: D002
+    topic: ai.information_processing
+    summary: LLMs process information as a parallel token-prediction loop; weights are frozen, the context window acts as working memory.
+  - ref: D003
+    topic: comparison.human_vs_ai
+    summary: The two pipelines rhyme in outline but diverge on attention, memory, and learning-from-use.
+  - ref: D004
+    topic: ai.format_comprehension
+    summary: Familiar structured formats are understood more reliably by AI agents than invented symbolic notation.
+
+discoveries:
+  - id: D001
+    date: 2026-08-12
+    topic: human.information_processing
+    status: established
+    summary: >
+      Humans process information through a sequential pipeline with a hard
+      attention bottleneck, ending in action that feeds back into new input.
+    source:
+      type: conversation
+    sequence:
+      - Sensory input — stimuli are converted into neural signals by the sense organs.
+      - Sensory memory — raw input held very briefly (<1s visual, a few seconds auditory).
+      - Attention & selection — most input is discarded; the main filter/bottleneck.
+      - Perception & encoding — input is interpreted against existing knowledge and patterns.
+      - Working memory — active manipulation, ~4-7 chunks, seconds to a minute; conscious thinking.
+      - Long-term storage — consolidation via rehearsal, elaboration, association; effectively unlimited.
+      - Retrieval & response — stored knowledge recalled to decide/act, generating feedback that restarts the cycle.
+    caveats:
+      - Stages are described sequentially but the brain runs many in parallel.
+      - Top-down feedback — expectations from long-term memory constantly shape earlier stages such as perception.
+
+  - id: D002
+    date: 2026-08-12
+    topic: ai.information_processing
+    status: established
+    summary: >
+      LLMs process information as a token-prediction pipeline, repeated one
+      token at a time until the response completes.
+    source:
+      type: conversation
+    sequence:
+      - Input — raw data arrives (text, image, audio) as the prompt.
+      - Tokenization — input broken into tokens (word pieces, image patches).
+      - Embedding — each token becomes a vector capturing meaning; similar meanings sit numerically close.
+      - Attention — the model weighs which parts of the input matter for each token, all-to-all and in parallel.
+      - Layered processing — stacked layers refine representations from surface features to abstract meaning.
+      - Prediction — final layer yields a probability distribution over next tokens; one is selected.
+      - Generation loop — the chosen token is appended and the process repeats until a stop condition.
+    caveats:
+      - Weights are frozen at training time; no learning occurs during inference.
+      - The context window acts like working memory and is cleared between sessions.
+
+  - id: D003
+    date: 2026-08-12
+    topic: comparison.human_vs_ai
+    status: established
+    summary: >
+      Human and AI processing pipelines look similar in outline but differ
+      fundamentally in attention, working memory, long-term memory, and
+      learning from interaction.
+    source:
+      type: conversation
+    relationships:
+      - type: compares
+        target: D001
+      - type: compares
+        target: D002
+    contrasts:
+      - dimension: attention
+        human: Serial bottleneck — most input discarded before deeper processing.
+        ai: Parallel — attends over the entire input at once.
+      - dimension: working_memory
+        human: ~4-7 chunks, seconds to a minute.
+        ai: Context window — large but fixed, cleared between sessions.
+      - dimension: long_term_memory
+        human: Continuously consolidated from experience.
+        ai: Frozen in weights; updated only by retraining.
+      - dimension: learning_from_interaction
+        human: Constant — every exchange can reshape memory and expectations.
+        ai: None by default — no weight changes during use.
+
+  - id: D004
+    date: 2026-08-12
+    topic: ai.format_comprehension
+    status: probable
+    summary: >
+      Familiar structured formats (YAML, Markdown) are understood more reliably
+      by AI agents than invented symbolic notation, because comprehension rides
+      on training priors; novel grammar must be re-learned in context on every
+      read, adding misinterpretation risk.
+    source:
+      type: comparative_agent_observation
+      participants:
+        - Claude (authored both formats, conceded the verdict)
+        - Codex (read both formats cold, chose YAML as "easier to understand accurately")
+    relationships:
+      - type: refines
+        target: D002
+      - type: compares
+        target: D001  # AI priors modulate parsing the way human top-down expectations modulate perception
+    details:
+      - Standard formats benefit from extensive representation in training data; a bespoke grammar has effectively one example in existence.
+      - Custom notation introduces an additional in-context interpretation step, which costs attention and invites misreads.
+      - Visual compactness does not necessarily imply lower tokenizer cost — rare Unicode sigils often encode as multiple tokens each.
+      - What survives from the bespoke-format experiment is its information architecture (scan index, claim-first entries, provenance, freshness rules, append-only convention), not its syntax.
+    caveats:
+      - Based on two agent judgments, not a controlled evaluation.
+      - Token-efficiency comparisons depend on the specific tokenizer used.
+    verification:
+      method: >
+        Controlled comparison across formats (v1 YAML, v2 YAML, agent-oriented
+        Markdown, sigil notation): same facts, measure comprehension accuracy
+        via question-answering plus actual token counts per tokenizer.
+      reverify_after_days: 180
+
+open_questions:
+  - id: Q001
+    date: 2026-08-12
+    status: open
+    question: >
+      Does familiar syntax carrying agent-oriented content design (this v2
+      schema, or an equivalent Markdown form) beat both the v1 YAML and the
+      sigil notation on comprehension accuracy AND token cost? Requires the
+      controlled comparison described in D004.verification.
+    # lifecycle: when resolved, set status: resolved and add resolved_by: <discovery id>; never delete the entry.

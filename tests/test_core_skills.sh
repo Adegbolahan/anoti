@@ -35,3 +35,11 @@ grep -q "plan skill" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
 assert_ok $? "deliberate references the plan skill"
 grep -q "story_ref" "$ROOT/skills/attend/SKILL.md" 2>/dev/null && grep -qi "HIGH-LEVEL-STORIES" "$ROOT/skills/attend/SKILL.md" 2>/dev/null
 assert_ok $? "attend frames carry story_ref against the value standard"
+f="$ROOT/skills/direction/SKILL.md"
+[ -s "$f" ]; assert_ok $? "direction skill exists"
+assert_eq "$(sed -n 's/^name: //p' "$f" | head -1)" "direction" "direction skill name matches"
+grep -q "ROADMAP.md" "$f" && grep -q "HIGH-LEVEL-STORIES.md" "$f"; assert_ok $? "direction covers both organs"
+grep -q "As a" "$f" && grep -qi "draft-for-ratification" "$f"; assert_ok $? "direction carries story shape + ratification rule"
+grep -qi "visionary\|product-manager" "$f"; assert_ok $? "direction names its managing roles"
+grep -q "direction skill" "$ROOT/roles/visionary.md" && grep -q "direction skill" "$ROOT/roles/product-manager.md"
+assert_ok $? "managing roles reference the direction skill"

@@ -44,8 +44,8 @@ evidence pending}` event.
 
 - Design accepted → `docs/specs/YYYY-MM-DD-<topic>-design.md` (format: the spec skill)
 - Implementation planned → `docs/plans/` (format: the plan skill)
-- Direction changes → ROADMAP.md (draft-for-ratification; human merges)
-- Scope of "good" changes → HIGH-LEVEL-STORIES.md (same gate)
+- Direction changes → ROADMAP.md (format: the direction skill; draft-for-ratification; human merges)
+- Scope of "good" changes → HIGH-LEVEL-STORIES.md (format: the direction skill; same gate)
 - Work begun/finished → TODOS.md (checked items are history; never delete)
 - Process lesson learned → LESSONS-LEARNT.md
 - Discovery made → GROUNDING.yaml via the consolidate skill only

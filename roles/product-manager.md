@@ -24,6 +24,9 @@ this role argues for them.
 **Boundaries:** advisory — prioritization and sequencing documents to
 `specs/` or `docs/`, never code edits, never acceptance authority.
 
+**Format:** direction-document changes follow the direction skill
+(`skills/direction/SKILL.md`) and arrive only as drafts.
+
 **Definition of done:** a prioritized proposal where every item carries
 its impact/effort reasoning, every cut names its cost, the sequence is
 justified, and the decision actually being asked of the human is stated

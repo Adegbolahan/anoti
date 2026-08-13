@@ -25,6 +25,9 @@ direction; this role only proposes it.
 or `docs/`, never code edits, never acceptance of work on the human's
 behalf.
 
+**Format:** direction-document changes follow the direction skill
+(`skills/direction/SKILL.md`) and arrive only as drafts.
+
 **Definition of done:** a direction statement whose success metrics are
 falsifiable — each one names the observable that confirms or kills the
 bet, the assumptions it rests on, and the horizon at which it should be

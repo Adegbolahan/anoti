@@ -57,11 +57,17 @@ while [ "$i" -lt "$n" ]; do
     elif [ "$inter" = "true" ]; then
       echo ""
       echo "=== INTERACTIVE POINT ($pid) — human required ==="
-      echo "Open a session in $w and run this prompt yourself, following"
-      echo "the response script in benchmark/response-script.md:"
-      echo "  $txt"
-      printf "Press enter when the interactive session is complete... "
-      read -r _
+      echo "1. Open a NEW terminal, cd $w, start claude interactively."
+      echo "2. Run exactly this prompt:  $txt"
+      echo "3. Follow the response script below, then exit that session."
+      echo "--- response script ---"
+      cat "$SELF/response-script.md"
+      echo "-----------------------"
+      ans=""
+      while [ "$ans" != "done" ]; do
+        printf "Type 'done' when the interactive session is complete: "
+        read -r ans
+      done
     else
       start="$(date +%s)"
       ( cd "$w" && claude -p "$txt" --output-format json --dangerously-skip-permissions ) > "$trials/$pid.json" 2> "$trials/$pid.err"

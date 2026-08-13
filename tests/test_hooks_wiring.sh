@@ -11,3 +11,7 @@ for cmd in $(jq -r '.. | .command? // empty' "$h"); do
 done
 n="$("$ROOT/scripts/classify" </dev/null | jq -r '.hookSpecificOutput.additionalContext' | wc -l | tr -d ' ')"
 [ "$n" -le 10 ]; assert_ok $? "classifier injection is <= 10 lines (attention tax)"
+"$ROOT/scripts/classify" </dev/null | jq -r '.hookSpecificOutput.additionalContext' | grep -q "SLOW if"
+assert_ok $? "classifier carries concrete slow criteria"
+"$ROOT/scripts/classify" </dev/null | jq -r '.hookSpecificOutput.additionalContext' | grep -qi "decisions"
+assert_ok $? "classifier names decision-setting as slow"

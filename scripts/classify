@@ -7,7 +7,7 @@ sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
 [ -n "$sid" ] || sid="<session-id>"
 SELF="$(cd "$(dirname "$0")" && pwd)"
 ctx="<anoti-attend>
-Before answering, classify this prompt. Routine (small, unambiguous, low-consequence): proceed normally, ignore this note. Novel, ambiguous, or consequential: invoke the anoti attend skill first to build an attention frame. Either way, log the verdict mechanically — never hand-edit session YAML:
+Classify this prompt BEFORE exploring or answering. SLOW if any apply: it establishes or changes project decisions/conventions; it touches a stated ground rule or multiple files; its goal is ambiguous; it is destructive or outward-facing. Otherwise FAST (small, unambiguous, low-consequence). Slow-path: invoke the anoti attend skill first and build a frame. Headless sessions classify identically — slow still frames; escalations queue per human-absent rules. Log the verdict mechanically — never hand-edit session YAML:
 $SELF/append-classification $sid fast|slow \"one-line reason\"
 </anoti-attend>"
 jq -n --arg c "$ctx" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$c}}'

@@ -82,3 +82,16 @@ ctx="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpe
 printf '%s' "$ctx" | grep -q "Phase 2"; assert_ok $? "digest shows the current phase"
 ! printf '%s' "$ctx" | grep -q "roadmap phase: Phase 1"; assert_ok $? "not the first heading"
 ); rm -rf "$tmp"
+
+# empty git project must receive a bootstrap offer; non-git stays silent
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+git init -q .
+out="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext' 2>/dev/null)"
+printf '%s' "$out" | grep -qi "skillify"; assert_ok $? "bare git repo gets skillify bootstrap offer"
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+out="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve")"
+assert_eq "$out" "" "bare non-git dir stays silent"
+); rm -rf "$tmp"

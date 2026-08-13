@@ -10,6 +10,11 @@ the single writer; agents (including the consolidator) only propose.
 
 ## Procedure
 
+0. **No store? Bootstrap first.** If GROUNDING.yaml does not exist,
+   create it from the plugin template (copy, then validate-workspace,
+   regen-index, trust) before any candidate work — never substitute an
+   ad-hoc memory file; ungoverned memory is the failure mode this skill
+   exists to prevent (pilot finding, arm B).
 1. **Collect candidates** from session state (`candidates:`) — or dispatch
    the consolidator agent to review the session and propose them.
 2. **Type every candidate** — exactly one of: `claim` (falsifiable,

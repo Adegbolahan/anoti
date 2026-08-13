@@ -71,27 +71,104 @@ GROUNDING.yaml (schema v2, extended) operates as a scientific process:
 - **Hypothesis before test.** In deliberation, predictions are stated before
   experiments run — for debugging, design choices, and benchmarks alike.
 
+## The externalized workspace
+
+The plugin scaffolds and maintains a document system in every project it is
+installed into. These files are not paperwork: each one is an externalized
+cognitive organ of the human+AI pair — durable where both human working memory
+and agent context windows are volatile. The plugin's hooks and skills read and
+write them; the human owns their direction.
+
+| Artifact                | Cognitive organ                                | Owned by | Touched by                                            |
+| ----------------------- | ---------------------------------------------- | -------- | ----------------------------------------------------- |
+| `GROUNDING.yaml`        | Semantic memory — what is true                 | shared   | retrieve (read), consolidate (write), review          |
+| `ROADMAP.md`            | Goal hierarchy — where we are going            | human    | attend traces work to it; human edits direction       |
+| `HIGH-LEVEL-STORIES.md` | Values/perspective — what "good" means         | human    | attend + inhibit reference it as the value standard   |
+| `TODOS.md`              | Prospective memory — open intentions           | shared   | retrieve (surface), deliberate + consolidate (update) |
+| `LESSONS-LEARNT.md`     | Procedural memory — how we work                | shared   | consolidate writes process lessons here               |
+| `specs/`                | Deliberation artifacts — designs as hypotheses | shared   | deliberate writes; one dated file per design          |
+| `plans/`                | Deliberation artifacts — protocols             | shared   | deliberate writes; one plan per implementation        |
+
+Division of memory: GROUNDING holds falsifiable claims about the world
+(semantic); LESSONS-LEARNT holds process lessons about how to work
+(procedural). A lesson that becomes falsifiable and gathers evidence graduates
+into a GROUNDING claim.
+
+The **`skillify` skill** is the organ-maintenance function: invoked to
+bootstrap the workspace in a fresh project (create all artifacts from
+templates, wire CLAUDE.md) and to maintain it afterward — which document
+updates on which event, keeping TODOS consistent with ROADMAP, dating and
+filing specs/plans, and pruning staleness.
+
+## Memory hierarchy
+
+Three tiers, mirroring human memory scopes; all long-term stores share the
+GROUNDING schema:
+
+| Tier                 | Human analog                        | Store                                                                                                                       | Lifetime        |
+| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Short-term (session) | Working memory                      | Context window + `.anoti/session.md` (attention frame, active hypotheses, in-flight state)                                  | One session     |
+| Project long-term    | Domain knowledge                    | Project workspace: `GROUNDING.yaml` + the document system above                                                             | Life of project |
+| Global long-term     | General knowledge of self and world | `~/.claude/anoti/GROUNDING.yaml`: claims about the user, their preferences, and cross-project lessons about how agents work | Spans projects  |
+
+- **Retrieval order** (SessionStart): global first (who am I working with),
+  then project (what do we know here), then session scratch on resume (what
+  was I doing). Inject digests — indexes, established claims, open questions,
+  open todos — never full files.
+- **Scope routing** (consolidation): each approved claim is routed by scope —
+  about-this-project → project store; about-the-user or about-how-agents-work
+  → global store. The human confirms routing; misfiled memory is worse than no
+  memory.
+- **Compaction survival:** a PreCompact hook persists the session's short-term
+  state to `.anoti/session.md` so context compaction cannot lobotomize an
+  in-flight task; SessionStart re-injects it on resume.
+
+## Agent roster
+
+Model policy: match the model to the cognitive demand of the stage; use
+aliases (`haiku`/`sonnet`/`inherit`) so the plugin tracks model evolution
+without edits. Every agent is read-only — subagents analyze and propose; only
+the main session mutates state. Each agent's definition states its expectation
+as an output contract, checked by the main session before use.
+
+| Agent          | Stage       | Model                     | Expectation (output contract)                                                                                                                  |
+| -------------- | ----------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consolidator` | Consolidate | `sonnet`                  | Falsifiable claims + evidence + suggested status + scope (project/global); deduped against both stores; contradictions flagged, never resolved |
+| `explorer`     | Deliberate  | `haiku`                   | Synthesized findings relevant to the attention frame, token-capped; conclusions with file references, never raw dumps                          |
+| `skeptic`      | Epistemic   | `inherit` (session model) | Attempts to refute a claim; verdict + evidence; defaults to "not established" when uncertain                                                   |
+
+The attend stage is deliberately **not** an agent: attention needs the full
+conversation context, which subagents don't inherit. It stays a skill in the
+main loop.
+
 ## Components
 
 ```
 anoti/                              # plugin root
 ├── .claude-plugin/plugin.json      # manifest: name, description, version
-├── hooks/hooks.json                # wires the four lifecycle hooks
+├── hooks/hooks.json                # wires the five lifecycle hooks
 ├── skills/
 │   ├── attend/SKILL.md             # slow-path attention → attention frame
 │   ├── deliberate/SKILL.md         # WM discipline, hypothesis-before-test, parallelism
-│   └── consolidate/SKILL.md        # memory-write protocol (claim shape, dedupe, append mechanics)
-├── agents/consolidator.md          # read-only session reviewer; proposes claims + evidence + status
+│   ├── consolidate/SKILL.md        # memory-write protocol (claim shape, dedupe, scope routing, append mechanics)
+│   └── skillify/SKILL.md           # workspace bootstrap + maintenance rules
+├── agents/
+│   ├── consolidator.md             # sonnet, read-only: session review → claims + evidence + scope
+│   ├── explorer.md                 # haiku, read-only: parallel breadth for deliberation
+│   └── skeptic.md                  # inherit, read-only: adversarial claim verification
 ├── commands/review.md              # /anoti:review — promotion/demotion ritual with evidence displayed
-└── templates/GROUNDING.yaml        # schema-v2 template (with evidence: field) for bootstrapping
+└── templates/                      # GROUNDING.yaml (schema v2 + evidence:), ROADMAP.md,
+                                    # HIGH-LEVEL-STORIES.md, TODOS.md, LESSONS-LEARNT.md, specs/, plans/
 ```
 
 ### Hook specifications
 
-1. **SessionStart (Retrieve).** Reads project `GROUNDING.yaml`; injects index,
-   established claims, and open questions as context. Missing file → inject a
-   one-line offer to bootstrap from template. Malformed YAML → report and skip;
-   never crash. Replaces the manual CLAUDE.md pointer convention.
+1. **SessionStart (Retrieve).** Reads the memory tiers in order — global
+   grounding, project grounding, open TODOS, current ROADMAP phase, and (on
+   resume) `.anoti/session.md` — and injects digests as context. Missing
+   workspace → inject a one-line offer to bootstrap via `skillify`. Malformed
+   YAML → report and skip; never crash. Replaces the manual CLAUDE.md pointer
+   convention.
 2. **UserPromptSubmit (Attend classifier).** Injects a small instruction (a few
    lines; it runs on every prompt so its token cost is the permanent
    "attention tax"): classify the prompt — routine → proceed; novel, ambiguous,
@@ -101,12 +178,18 @@ anoti/                              # plugin root
    to `GROUNDING.yaml`. Injects a trace-to-frame check and escalates to the
    human when uncertain. Warns rather than blocks, except catastrophic
    patterns (`rm -rf /`-class), which hard-block.
-4. **Stop (Consolidation gate).** Asks once per session (stop-loop guarded):
+4. **PreCompact (Working-memory persistence).** Before context compaction,
+   persists the session's short-term state — attention frame, active
+   hypotheses, in-flight work — to `.anoti/session.md` so compaction cannot
+   lobotomize the task. SessionStart re-injects it on resume.
+5. **Stop (Consolidation gate).** Asks once per session (stop-loop guarded):
    any unrecorded discoveries? No → silent pass. Yes → run the consolidator,
-   present its proposals to the human; candidates the human okays are appended
-   by the main session as `probable`. Status stays `probable` regardless —
-   promotion to `established` happens only later, in `/anoti:review`, with
-   evidence displayed.
+   present its proposals (with scope routing: project vs global) to the human;
+   candidates the human okays are appended by the main session as `probable`.
+   Consolidation also updates TODOS (done/new items) and LESSONS-LEARNT
+   (process lessons). Status stays `probable` regardless — promotion to
+   `established` happens only later, in `/anoti:review`, with evidence
+   displayed.
 
 ### Component boundaries
 
@@ -136,7 +219,13 @@ anoti/                              # plugin root
   - ambiguous prompt → attend engages, attention frame produced;
   - matched destructive command → inhibition fires exactly once;
   - session with a genuine discovery → consolidation proposal appears;
-  - session without discoveries → silent close.
+  - session without discoveries → silent close;
+  - `skillify` bootstraps a fresh project → full workspace passes structural
+    validation;
+  - compaction mid-task → attention frame and in-flight state survive via
+    `.anoti/session.md`;
+  - claim routed to global memory in one project → surfaces at SessionStart in
+    a different project.
 - **Epistemic:** Q001 (format-comprehension experiment) is the first
   registered experiment run under the methodology; behavioral test results are
   recorded in GROUNDING as evidence for claims about the plugin itself.
@@ -146,12 +235,12 @@ anoti/                              # plugin root
 - Cross-agent portability (Codex etc.) — Claude Code only, per deliverable
   decision.
 - Automatic memory decay/archival beyond the existing `reverify_after_days`.
-- Multi-project shared grounding; each project has its own GROUNDING.yaml.
+- Team-shared or synced memory (multi-user); global memory is per-user.
 - Any UI beyond Claude Code's own surfaces.
 
 ## Success criteria
 
-1. All five behavioral tests pass.
+1. All eight behavioral tests pass.
 2. GROUNDING.yaml in a dogfooded project accumulates claims with evidence, and
    at least one claim traverses the full ladder (speculative → established) or
    is demoted by evidence during initial dogfooding on this project.

@@ -76,7 +76,7 @@ records: # generated — do not edit by hand
     type: claim
     topic: human.information_processing
     statement: Human information processing is a staged, attention-bottlenecked pipeline shaped by top-down feedback.
-    epistemic_status: probable
+    epistemic_status: established
     ratification: approved
     source: {type: conversation}
     evidence:
@@ -84,6 +84,10 @@ records: # generated — do not edit by hand
         type: literature
         note: 'Canonical cognitive-science literature supports each pipeline stage and both caveats. Citations drawn from model knowledge of the canonical works; verification path before any promotion: fetch and check each source.'
         refs: ["Sperling (1960), Psychological Monographs — iconic (visual sensory) memory, sub-second persistence", "Darwin, Turvey & Crowder (1972) — echoic memory, a few seconds", "Broadbent (1958), Perception and Communication — filter theory of selective attention (the bottleneck)", "Atkinson & Shiffrin (1968) — multi-store model: sensory, short-term, long-term", "Miller (1956), Psych Review — span of ~7±2 chunks", "Cowan (2001), BBS — working-memory capacity nearer ~4 chunks", "Baddeley & Hitch (1974) — working memory as active manipulation", "McGaugh (2000), Science — memory consolidation", "Clark (2013), BBS — predictive processing: top-down expectation shapes perception (caveat 2)"]
+      - date: "2026-08-13"
+        type: verification
+        note: 'Web verification of load-bearing citations (sampled: Sperling duration ~250ms confirmed; Cowan ~4 chunks vs Miller 7±2 confirmed; remainder canonical). External sources — independent of both the founding conversation and the backfill session''s model knowledge.'
+        refs: ["https://www.ebsco.com/research-starters/psychology/sensory-memory", "https://philpapers.org/rec/COWTMN", "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/44023F1147D4A1D44BDC0AD226838496/S0140525X01003922a.pdf/the-magical-number-4-in-short-term-memory-a-reconsideration-of-mental-storage-capacity.pdf"]
     sequence:
       - Sensory input — stimuli are converted into neural signals by the sense organs.
       - Sensory memory — raw input held very briefly (<1s visual, a few seconds auditory).
@@ -103,12 +107,16 @@ records: # generated — do not edit by hand
         action: evidence-appended
         by: session
         note: literature backfill per Phase 2 carry-over; method independent of founding conversation
+      - date: "2026-08-13"
+        action: promoted
+        by: human
+        note: probable -> established in /anoti:review — verify-then-promote ruling; literature evidence (different method) plus sampled external-source verification
   - id: D002
     date: 2026-08-12
     type: claim
     topic: ai.information_processing
     statement: LLMs process information as a parallel token-prediction loop; weights are frozen at training time and the context window acts as working memory.
-    epistemic_status: probable
+    epistemic_status: established
     ratification: approved
     source: {type: conversation}
     evidence:
@@ -116,6 +124,10 @@ records: # generated — do not edit by hand
         type: literature
         note: Transformer-architecture literature supports each stage of the described loop and both caveats. Citations from model knowledge of canonical works; verify sources before any promotion.
         refs: ["Vaswani et al. (2017), Attention Is All You Need — all-to-all self-attention computed in parallel; stacked layers; softmax distribution over vocabulary", "Radford et al. (2019), GPT-2 — autoregressive next-token generation loop", "Brown et al. (2020), GPT-3 — in-context learning with frozen weights; no updates at inference (caveats 1-2)"]
+      - date: "2026-08-13"
+        type: verification
+        note: 'Web verification: Vaswani et al. 2017 attention-only parallelizable architecture confirmed; Brown et al. 2020 ''without any gradient updates or fine-tuning'' confirmed verbatim (frozen-weights caveat).'
+        refs: ["https://papers.neurips.cc/paper/7181-attention-is-all-you-need.pdf", "https://arxiv.org/abs/2005.14165"]
     sequence:
       - Input — raw data arrives (text, image, audio) as the prompt.
       - Tokenization — input broken into tokens (word pieces, image patches).
@@ -135,6 +147,10 @@ records: # generated — do not edit by hand
         action: evidence-appended
         by: session
         note: literature backfill per Phase 2 carry-over; method independent of founding conversation
+      - date: "2026-08-13"
+        action: promoted
+        by: human
+        note: probable -> established in /anoti:review — verify-then-promote ruling; literature evidence (different method) plus external-source verification incl. verbatim frozen-weights confirmation
   - id: D003
     date: 2026-08-12
     type: claim

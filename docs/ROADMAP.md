@@ -85,7 +85,11 @@ evidence.
 - [x] Marketplace publication ✅ 2026-08-13 — repo takeover complete
       (github.com/Adegbolahan/anoti, D017): storefront README, CI with
       changelog-gated release tags, schema'd marketplace manifest
-- [ ] Global memory opt-in UX
+- [x] Global memory tier ✅ 2026-08-13 — implemented per the
+      adversarially reviewed spec (v0.5.0): opt-in flow, dual-realpath
+      trust adjacency with --global gate, [global] digest labels,
+      cross-tier precedence; live opt-in dialog awaits the first real
+      global candidate (second project)
 - [ ] v1.1 roles validated at working scale
 - [ ] Longitudinal audits (weekly from 2026-08-20) accumulating evidence
       per the pre-registered protocol

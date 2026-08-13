@@ -17,3 +17,10 @@ mkdir -p .anoti/sessions; printf 'episode: awaiting-approval\n' > .anoti/session
 assert_eq "$(d '{"session_id":"s","tool_name":"Write","tool_input":{"file_path":"GROUNDING.yaml"}}')" "allow" "memory-organ write allowed during consolidation"
 printf 'garbage' | "$inh" >/dev/null 2>&1; assert_ok $? "fails open on garbage input"
 ); rm -rf "$tmp"
+
+# deny row 2 must not fire across command boundaries (gh api -f false positive)
+tmp="$(mktemp -d)"; ( cd "$tmp"
+assert_eq "$(d '{"session_id":"s","tool_name":"Bash","tool_input":{"command":"git push origin --delete main && gh api -X POST repos/o/r/branches/b/rename -f new_name=main"}}')" "ask" "branch-delete + gh api -f asks, not denies"
+assert_eq "$(d '{"session_id":"s","tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}')" "deny" "real force-push still denied"
+assert_eq "$(d '{"session_id":"s","tool_name":"Bash","tool_input":{"command":"git push -f origin main"}}')" "deny" "short-flag force-push still denied"
+); rm -rf "$tmp"

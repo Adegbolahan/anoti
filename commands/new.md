@@ -31,6 +31,8 @@ and helpers ship in the plugin and upgrade with it.
 5. **Report** what was created, what was skipped (merge mode), and:
    **restart Claude Code** — hooks load at session start, so the
    retrieval digest and gates are not active in this session.
+   After the restart, point the session at the **demo skill** for
+   orientation — the workflows, when to use what, and a runnable tour.
 
 ## Safety
 

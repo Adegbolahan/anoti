@@ -9,7 +9,7 @@
 
 | Root                               | Fires              | Leads to                                                          |
 | ---------------------------------- | ------------------ | ----------------------------------------------------------------- |
-| SessionStart hook (`retrieve`)     | every session      | memory digest; skillify offer (bare repos); `/anoti:review` nudge |
+| SessionStart hook (`retrieve`)     | every session      | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge |
 | UserPromptSubmit hook (`classify`) | every prompt       | fast path (silence) or **attend**                                 |
 | PreToolUse hook (`inhibit`)        | matched tools      | allow / ask / deny; deny message routes to `/anoti:consolidate`   |
 | Stop hook (`consolidation-gate`)   | candidate episodes | `/anoti:consolidate`                                              |
@@ -39,6 +39,7 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | plan        | deliberate lifetime rule; conductor role; skillify maintenance map                                              |
 | direction   | visionary, product-manager, requirements-analyst roles; skillify                                                |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)            |
+| demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents  |
 
 ## Policies — inbound paths (role stacks use bare names)
 

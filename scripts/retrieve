@@ -77,6 +77,9 @@ if [ -n "$RM" ]; then
   [ -z "$ph" ] && ph="$(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -n "$ph" ] && emit "- roadmap phase: $ph (see $RM)"
 fi
+# orientation line only where a workspace already speaks — never
+# manufacture a digest for an ungoverned directory
+[ -n "$lines" ] && try_emit "- orientation: the demo skill teaches the workflows — when to use what, why, and a safe hands-on tour"
 [ -f "$AD/pending.md" ] && emit "- pending human-absent escalations: $AD/pending.md"
 ab="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
 [ -n "$ab" ] && emit "- abandoned session state found: $ab (surfaced, not auto-loaded)"

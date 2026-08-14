@@ -3,6 +3,23 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.7] — 2026-08-13
+
+- Demo skill: one-read orientation for agents and new sessions — the
+  cycle with who-fires-what, a when-to-use-what routing table (one-line
+  pointers, never copied procedure), the three governing whys, and a
+  5-minute hands-on tour that runs the whole lifecycle (classify →
+  frame → candidate → episode → consume) against ANOTI_DIR scratch
+  state so it can never touch a real store — with a mandatory anoti-dir
+  sandbox check before any write. The SessionStart digest now carries a
+  one-line orientation pointer to it (governed workspaces only — bare
+  dirs stay silent). Referenced from /anoti:new post-scaffold; SKILL-MAP
+  rows added. Adversarial review corrected the draft: review-work is a
+  drift check not an adversarial control, the direction skill joined
+  the routing table, inhibit gates matched tools not every tool, and
+  the tour's closing claim now states honestly that it exercises the
+  session-state half of the lifecycle only.
+
 ## [0.5.6] — 2026-08-13
 
 - Third field-report batch (issues #7–#9, livingsyncs):

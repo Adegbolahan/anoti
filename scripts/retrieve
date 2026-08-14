@@ -15,6 +15,10 @@ emit() { lines="${lines}${1}
 try_emit() { [ $(( ${#lines} + ${#1} )) -le "$BUDGET" ] && emit "$1"; }
 hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
 is_trusted() { [ -f "$2" ] && grep -qs "$(hash_of "$1")" "$2"; }
+# case-exact existence: -f is true for roadmap.md when only ROADMAP.md is
+# asked about on case-insensitive filesystems (issue #11); the directory
+# listing shows real dirent names on every filesystem
+fx() { [ -f "$1" ] && command ls -1 "$(dirname "$1")" 2>/dev/null | grep -qxF "$(basename "$1")"; }
 cutoff="$(date -v-14d +%F 2>/dev/null || date -d '14 days ago' +%F 2>/dev/null || echo "")"
 ghome="$(cd "$HOME" 2>/dev/null && pwd -P)"
 store_digest() { # $1=file $2=name $3=trustfile $4=line-label ("" or "[global] ")
@@ -61,17 +65,17 @@ store_digest() { # $1=file $2=name $3=trustfile $4=line-label ("" or "[global] "
 }
 g="$HOME/.claude/anoti/GROUNDING.yaml"
 [ -f "$g" ] && store_digest "$g" "global memory" "$HOME/.claude/anoti/trust" "[global] "
-[ -f GROUNDING.yaml ] && store_digest GROUNDING.yaml "project memory" "$AD/trust" ""
-if [ -f TODOS.md ]; then
+fx GROUNDING.yaml && store_digest GROUNDING.yaml "project memory" "$AD/trust" ""
+if fx TODOS.md; then
   tc="$(grep -c '^- \[ \]' TODOS.md 2>/dev/null)"; tc="${tc:-0}"
   emit "- open todos: $tc (see TODOS.md)"
 fi
-HS=""; [ -f docs/HIGH-LEVEL-STORIES.md ] && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && [ -f HIGH-LEVEL-STORIES.md ] && HS=HIGH-LEVEL-STORIES.md
+HS=""; fx docs/HIGH-LEVEL-STORIES.md && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && fx HIGH-LEVEL-STORIES.md && HS=HIGH-LEVEL-STORIES.md
 if [ -n "$HS" ]; then
   sc2="$(grep -cE '^(\| US-[0-9]|- As )' "$HS" 2>/dev/null)"; sc2="${sc2:-0}"
   emit "- value standard: $HS ($sc2 stories) — attend traces goals to it"
 fi
-RM=""; [ -f docs/ROADMAP.md ] && RM=docs/ROADMAP.md; [ -z "$RM" ] && [ -f ROADMAP.md ] && RM=ROADMAP.md
+RM=""; fx docs/ROADMAP.md && RM=docs/ROADMAP.md; [ -z "$RM" ] && fx ROADMAP.md && RM=ROADMAP.md
 if [ -n "$RM" ]; then
   ph="$(grep -m1 -i '^## .*current' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -z "$ph" ] && ph="$(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //')"
@@ -84,7 +88,7 @@ fi
 ab="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
 [ -n "$ab" ] && emit "- abandoned session state found: $ab (surfaced, not auto-loaded)"
 if [ -z "$lines" ]; then
-  if [ -d .git ] && [ ! -f GROUNDING.yaml ]; then
+  if [ -d .git ] && ! fx GROUNDING.yaml; then
     ctx="<anoti-memory-digest>
 No anoti workspace exists in this project. To enable governed memory, run the skillify skill — it bootstraps GROUNDING.yaml and the document system from templates (create-only, idempotent).
 </anoti-memory-digest>"

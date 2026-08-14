@@ -33,6 +33,15 @@ adds at most a short documentation note, never a retrieval pointer.
 
 ## Migration
 
+**Case-insensitive collision check (issue #11):** before creating any
+organ file, list the target directory and compare names exactly. If an
+existing file matches an organ name only case-insensitively (a project's
+own `roadmap.md` vs the `ROADMAP.md` organ), STOP — on a
+case-insensitive filesystem the template write would silently target the
+project's file. Report the collision and let the human rule: adopt the
+existing file as the organ (brownfield), rename one, or skip that organ.
+Adoption is always explicit, never accidental.
+
 The workspace records the plugin/schema version that scaffolded it. On
 mismatch: take a dated backup of each affected file into
 `<state-dir>/backups/` (gitignored with the state dir; copy one out and

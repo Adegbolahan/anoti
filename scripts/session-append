@@ -21,8 +21,12 @@ if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"
 fi
 if [ -n "$am" ] && [ "$key" = "frames" ]; then
-  AM="$am" yq -e '.frames // [] | .[] | select(.id == strenv(AM))' "$sf" >/dev/null 2>&1 \
-    || { echo "session-append: amends target '$am' not found in frames" >&2; exit 1; }
+  # exact comparison in shell — yq's == pattern-matches wildcards
+  found=""
+  while IFS= read -r cur; do
+    [ "$cur" = "$am" ] && found=1
+  done <<< "$(yq -r '.frames // [] | .[] | .id // ""' "$sf" 2>/dev/null)"
+  [ -n "$found" ] || { echo "session-append: amends target '$am' not found in frames" >&2; exit 1; }
 fi
 K="$key" REC="$json" yq '.[strenv(K)] += [strenv(REC) | fromjson]' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
 yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; echo "session-append: refusing to write unparseable state" >&2; exit 1; }

@@ -259,3 +259,44 @@ out="$(printf '%s' '{"session_id":"cx","prompt":"why does my log show [SYSTEM NO
 printf '%s' "$out" | grep -q "anoti-attend"
 assert_ok $? "a prompt merely quoting the marker is still classified (prefix match only)"
 ); rm -rf "$tmp"
+
+# --- #10 set-ratification / set-status: the ritual can effect decisions ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+"$ROOT/scripts/set-ratification" s.yaml D001 approved "two sessions, distinct tasks"
+assert_ok $? "set-ratification exits 0"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .ratification' s.yaml)" "approved" "ratification field actually changes"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .events[-1].by' s.yaml)" "human" "audit event appended, by human"
+grep -q "distinct tasks" s.yaml; assert_ok $? "decision note lands in the event"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1; assert_ok $? "store valid after ratification write"
+grep -qs "$(shasum -a 256 s.yaml | cut -d' ' -f1)" .anoti/trust; assert_ok $? "store re-trusted after ratification"
+"$ROOT/scripts/set-ratification" s.yaml D001 bogus "x" 2>/dev/null
+assert_eq "$?" "1" "invalid ratification value rejected"
+"$ROOT/scripts/set-ratification" s.yaml NOPE approved "x" 2>/dev/null
+assert_eq "$?" "1" "unknown record id rejected (ratification)"
+"$ROOT/scripts/set-status" s.yaml D001 established "independent evidence: second session"
+assert_ok $? "set-status exits 0"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .epistemic_status' s.yaml)" "established" "epistemic_status field actually changes"
+"$ROOT/scripts/set-status" s.yaml D001 bogus "x" 2>/dev/null
+assert_eq "$?" "1" "invalid status value rejected"
+"$ROOT/scripts/set-status" s.yaml D002 established "x" 2>/dev/null
+assert_eq "$?" "1" "epistemic moves are claims-only: non-claim record rejected"
+yq -i '.index = []' s.yaml
+"$ROOT/scripts/set-ratification" s.yaml D001 pending "reopen to test index regen"
+assert_eq "$(yq -r '.index | length' s.yaml)" "$(yq -r '.records | length' s.yaml)" "set-ratification regenerates the index (mutation-proof)"
+grep -q "trust --global" "$ROOT/scripts/set-ratification" && grep -q "trust --global" "$ROOT/scripts/set-status"
+assert_ok $? "set-* helpers warn loudly when global trust needs explicit consent"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1; assert_ok $? "store valid after status write"
+); rm -rf "$tmp"
+
+# --- wildcard-equality audit closure: ids meet yq only after exact resolution ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+"$ROOT/scripts/append-event" s.yaml 'D*' promoted human "wildcard must not match D001" 2>/dev/null
+assert_eq "$?" "1" "append-event rejects a wildcard-shaped id with no literal match"
+printf '%s' '{"type":"observation","note":"x"}' | "$ROOT/scripts/append-evidence" s.yaml 'D0*' 2>/dev/null
+assert_eq "$?" "1" "append-evidence rejects a wildcard-shaped id with no literal match"
+printf '%s' '{"id":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/session-append" wc frames
+printf '%s' '{"id":"F2","amends":"F*","goal":"g2","status":"active"}' | "$ROOT/scripts/session-append" wc frames 2>/dev/null
+assert_eq "$?" "1" "amends target must match literally, never as a pattern"
+); rm -rf "$tmp"

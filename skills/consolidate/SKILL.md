@@ -21,6 +21,8 @@ scripts/append-record <store.yaml>              # record as JSON on stdin
 scripts/append-event <store.yaml> <record-id> <action> <by> <note...>
 scripts/append-evidence <store.yaml> <record-id> <type> <note> [refs...]
 scripts/append-evidence <store.yaml> <record-id>     # or evidence JSON on stdin: {type, note, date?, refs?}
+scripts/set-ratification <store.yaml> <record-id> <approved|rejected|pending> <note...>  # field + audit event
+scripts/set-status <store.yaml> <record-id> <speculative|probable|established> <note...> # claims only
 scripts/session-consume <session-id> candidates [--ids id1,id2]  # mark candidates consumed after their writes land
 scripts/trust <store.yaml>                      # provenance approval
 scripts/regen-index <store.yaml>
@@ -70,7 +72,12 @@ scripts/validate-workspace <store.yaml>
    records are immutable; every change is an appended `events:` entry.
    New records: build the record as JSON and pipe to
    `scripts/append-record <store>` (validates, runs regen-index and
-   trust automatically). Status/ratification changes:
+   trust automatically). Ratification decisions:
+   `scripts/set-ratification <store> <id> <approved|rejected|pending>
+   "<note>"`; claim-ladder moves: `scripts/set-status <store> <id>
+   <speculative|probable|established> "<note>"` — each writes the field
+   AND its audit event atomically (append-event alone never moved a
+   field: issue #10). Other trail entries:
    `scripts/append-event <store> <id> <action> <by> "<note>"`. Episode
    transitions: `scripts/set-episode <session-id> <state>`. IDs allocate
    as max-existing + 1.

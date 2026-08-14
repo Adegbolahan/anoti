@@ -1,0 +1,18 @@
+#!/bin/bash
+# record-index <store.yaml> <record-id>
+# Resolve a record id to its list index by EXACT comparison — yq's
+# string == does wildcard matching, so freeform ids must never meet a
+# yq compare (lesson 2026-08-13). Prints the index of the last exact
+# match; exits 1 if none.
+set -u
+f="${1:?usage: record-index <store> <record-id>}"
+rid="${2:?record id required}"
+idx=""
+i=0
+while IFS= read -r cur; do
+  [ "$cur" = "$rid" ] && idx="$i"
+  i=$((i+1))
+done <<< "$(yq -r '.records[] | .id // ""' "$f" 2>/dev/null)"
+[ -n "$idx" ] || exit 1
+printf '%s\n' "$idx"
+exit 0

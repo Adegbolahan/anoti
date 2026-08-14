@@ -44,4 +44,4 @@
       consolidation write with a misleading reason. Consider the helper
       validating the whole file after each write. Observed live 2026-08-13.
       (raised 2026-08-13)
-- [ ] Audit every helper's yq id comparison for wildcard-equality (yq string == pattern-matches '*'): session-append amends check, append-evidence/append-event record-id checks — port the exact-match index pattern from session-consume (found 2026-08-13 fixing #9) (raised 2026-08-13)
+- [x] Audit every helper's yq id comparison for wildcard-equality (yq string == pattern-matches '*'): session-append amends check, append-evidence/append-event record-id checks — port the exact-match index pattern from session-consume (found 2026-08-13 fixing #9) (raised 2026-08-13; done 2026-08-13 in the #10/#11 batch — shared record-index helper, test-pinned)

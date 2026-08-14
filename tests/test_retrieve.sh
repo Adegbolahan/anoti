@@ -138,3 +138,20 @@ out="$(printf '{"session_id":"z"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpec
 printf '%s\n' "$out" | grep -q "open todos: 0 (see TODOS.md)"; assert_ok $? "zero todos renders on one line"
 ! printf '%s\n' "$out" | grep -qE '^0 \(see'; assert_ok $? "no orphaned count line"
 ); rm -rf "$tmp"
+
+# --- #11 case-exact organ resolution ---
+grep -q "grep -qxF" "$ROOT/scripts/retrieve"
+assert_ok $? "#11 retrieve resolves organs by exact-case directory listing"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+touch .probe-AB
+if [ -e .probe-ab ]; then
+  git init -q -b main .
+  printf '## Overview\nunrelated project planning doc\n' > roadmap.md
+  printf 'schema_version: 3\n' > /dev/null
+  out="$(printf '{"session_id":"cs"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null)"
+  printf '%s' "$out" | grep -qi "roadmap phase"
+  assert_eq "$?" "1" "#11 lowercase roadmap.md is not adopted as the ROADMAP organ (case-insensitive fs)"
+else
+  echo "  (skip: case-sensitive filesystem — #11 scenario cannot reproduce here)"
+fi
+); rm -rf "$tmp"

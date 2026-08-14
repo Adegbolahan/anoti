@@ -31,3 +31,7 @@ grep -qi "reverify_after_days" "$f"; assert_ok $? "audit checks record reverify 
 grep -qi "organ writes" "$ROOT/commands/audit.md"; assert_ok $? "#2 audit says organ writes"
 grep -qi "plugin root\|plugin's copy" "$ROOT/commands/audit.md" && grep -qi "cadence" "$ROOT/commands/audit.md"
 assert_ok $? "#3 audit resolves spec via plugin + surfaces cadence"
+grep -q "set-ratification" "$ROOT/commands/review.md"
+assert_ok $? "#10 review ritual applies ratification via set-ratification"
+grep -q "set-status" "$ROOT/commands/review.md"
+assert_ok $? "#10 review ritual applies promotions via set-status"

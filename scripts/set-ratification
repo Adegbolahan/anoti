@@ -1,0 +1,32 @@
+#!/bin/bash
+# set-ratification <store.yaml> <record-id> <approved|rejected|pending> <note...>
+# The review ritual's mechanical apply (issue #10): writes the
+# ratification field AND its audit event atomically — append-event alone
+# never touched the field, so decisions silently did nothing. Validates,
+# preserves mode, regenerates the index, re-trusts (append-record's
+# contract). Ratification moves only by human decision; the note should
+# say what the human ruled.
+set -u
+f="${1:?usage: set-ratification <store> <record-id> <approved|rejected|pending> <note...>}"
+rid="${2:?record id required}"
+val="${3:?ratification value required}"
+shift 3
+note="${*:?note required}"
+case "$val" in approved|rejected|pending) ;;
+  *) echo "set-ratification: value must be approved|rejected|pending" >&2; exit 1 ;; esac
+SELF="$(cd "$(dirname "$0")" && pwd)"
+idx="$("$SELF/record-index" "$f" "$rid")" \
+  || { echo "set-ratification: no record '$rid' in $f" >&2; exit 1; }
+case "$val" in approved) act="ratified" ;; rejected) act="rejected" ;; pending) act="reopened" ;; esac
+cp "$f" "$f.tmp"
+TS="$(date -u +%Y-%m-%d)" V="$val" N="$note" A="$act" \
+  yq -i ".records[$idx].ratification = strenv(V) | .records[$idx].events += [{\"date\": strenv(TS), \"action\": strenv(A), \"by\": \"human\", \"note\": strenv(N)}]" "$f.tmp" \
+  || { rm -f "$f.tmp"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "set-ratification: result failed validation; store untouched" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
+mv "$f.tmp" "$f"
+"$SELF/regen-index" "$f"
+"$SELF/trust" "$f" >/dev/null 2>&1 \
+  || echo "set-ratification: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+exit 0

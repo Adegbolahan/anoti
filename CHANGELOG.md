@@ -3,6 +3,23 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.8] — 2026-08-13
+
+- Fourth field-report batch (issues #10-#11, ecounterlist):
+  `set-ratification` and `set-status` make the review ritual able to
+  actually effect decisions — each writes its field AND the audit event
+  atomically with append-record's full contract (validate, mode-preserve,
+  regen-index, re-trust); append-event alone never moved a field, so
+  ratifications silently did nothing (#10). `retrieve` resolves organs
+  (GROUNDING, ROADMAP, HIGH-LEVEL-STORIES, TODOS) by exact-case
+  directory listing so case-insensitive filesystems stop adopting a
+  project's own `roadmap.md` as the organ, and skillify now detects
+  case-insensitive collisions before any template write (#11).
+- Wildcard-equality audit closed (TODO from the #9 batch): new shared
+  `record-index` resolver — exact comparison in shell, ids never meet a
+  yq `==` — now backs append-event, append-evidence, set-ratification,
+  set-status; session-append validates `amends:` targets literally.
+
 ## [0.5.7] — 2026-08-13
 
 - Demo skill: one-read orientation for agents and new sessions — the

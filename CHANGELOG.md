@@ -3,6 +3,18 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.9] — 2026-08-14
+
+- Lessons surfacing: LESSONS-LEARNT.md was the one write-only organ —
+  collected, never pushed, never pulled. The SessionStart digest now
+  carries a budget-gated lessons line (count + truncated latest;
+  enrichment by design — it carries content, so it yields under budget
+  pressure), resolved case-exactly, and attend's topical-retrieval step
+  mandates grepping the lessons organ alongside the index query:
+  lessons are memory that has not yet graduated into records, so they
+  surface at attention time or nowhere. Design-spec digest enumeration
+  amended (dated); case-exactness mutation-guarded in tests.
+
 ## [0.5.8] — 2026-08-13
 
 - Fourth field-report batch (issues #10-#11, ecounterlist):

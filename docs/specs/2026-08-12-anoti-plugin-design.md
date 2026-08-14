@@ -199,7 +199,10 @@ relevance. Retrieval therefore splits:
 1. **SessionStart — small fixed digest** (budget ≤ ~1k tokens): store
    summaries (record counts, index only if small), open questions, open
    todos, roadmap phase, pending queue, review nudge (probable count ≥ 5 or
-   oldest ≥ 14 days), abandoned-session notices.
+   oldest ≥ 14 days), abandoned-session notices, and — budget-gated —
+   a lessons line (count + truncated latest entry), because lessons are
+   memory that has not yet graduated into records and otherwise
+   surfaced nowhere (amended 2026-08-14).
 2. **Attend — topical retrieval:** when the slow path engages, the attend
    skill queries the stores for records relevant to the task (the files stay
    yq/grep-queryable precisely for this) and pulls full entries into the

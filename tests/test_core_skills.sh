@@ -122,3 +122,5 @@ grep -q "set-ratification" "$ROOT/skills/consolidate/SKILL.md" && grep -q "set-s
 assert_ok $? "#10 consolidate quick-reference carries the field-writing helpers"
 ! grep -q 'Status/ratification changes:.*append-event' "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "#10 no doc still routes field changes through append-event"
+grep -q "LESSONS-LEARNT" "$ROOT/skills/attend/SKILL.md"
+assert_ok $? "attend topical retrieval greps the lessons organ"

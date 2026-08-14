@@ -70,6 +70,16 @@ if fx TODOS.md; then
   tc="$(grep -c '^- \[ \]' TODOS.md 2>/dev/null)"; tc="${tc:-0}"
   emit "- open todos: $tc (see TODOS.md)"
 fi
+# lessons is deliberately an enrichment (try_emit): unlike the count-only
+# core lines it carries content (the truncated latest entry), so it yields
+# under budget pressure rather than crowding the always-emit lines
+if fx LESSONS-LEARNT.md; then
+  lc="$(grep -c '^- ' LESSONS-LEARNT.md 2>/dev/null)"; lc="${lc:-0}"
+  if [ "$lc" -gt 0 ]; then
+    ll="$(grep '^- ' LESSONS-LEARNT.md | tail -1 | sed 's/^- //' | cut -c1-100)"
+    try_emit "- lessons: $lc (latest: $ll) — grep LESSONS-LEARNT.md for your topic at attend time"
+  fi
+fi
 HS=""; fx docs/HIGH-LEVEL-STORIES.md && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && fx HIGH-LEVEL-STORIES.md && HS=HIGH-LEVEL-STORIES.md
 if [ -n "$HS" ]; then
   sc2="$(grep -cE '^(\| US-[0-9]|- As )' "$HS" 2>/dev/null)"; sc2="${sc2:-0}"

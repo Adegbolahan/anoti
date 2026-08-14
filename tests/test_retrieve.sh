@@ -155,3 +155,36 @@ else
   echo "  (skip: case-sensitive filesystem — #11 scenario cannot reproduce here)"
 fi
 ); rm -rf "$tmp"
+
+# --- lessons surfacing: the write-only organ gets a digest line ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+git init -q -b main .
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+printf -- '- 2026-08-12 — first lesson: assert on replace\n- 2026-08-13 — yq string == does wildcard matching; resolve ids to indices first\n' > LESSONS-LEARNT.md
+out="$(printf '{"session_id":"lx"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "lessons: 2"
+assert_ok $? "digest carries the lessons count"
+printf '%s' "$out" | grep -q "wildcard"
+assert_ok $? "digest shows the latest lesson (truncated)"
+rm LESSONS-LEARNT.md
+out="$(printf '{"session_id":"lx"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -qi "lessons:"
+assert_eq "$?" "1" "no lessons organ -> no lessons line"
+); rm -rf "$tmp"
+grep -q "fx LESSONS-LEARNT.md" "$ROOT/scripts/retrieve"
+assert_ok $? "lessons organ resolved case-exactly (mechanism pin)"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+touch .probe-AB
+if [ -e .probe-ab ]; then
+  git init -q -b main .
+  cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+  mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+  printf -- '- 2026-08-13 — lowercase impostor lesson\n' > lessons-learnt.md
+  out="$(printf '{"session_id":"lc"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+  printf '%s' "$out" | grep -qi "lessons:"
+  assert_eq "$?" "1" "lowercase lessons-learnt.md is not adopted as the organ (case-insensitive fs)"
+else
+  echo "  (skip: case-sensitive filesystem — lessons case scenario cannot reproduce here)"
+fi
+); rm -rf "$tmp"

@@ -11,7 +11,13 @@ lock_store() {
   _tries=0
   until mkdir "$_lf" 2>/dev/null; do
     _now="$(date +%s)"
-    _mt="$(stat -c %Y "$_lf" 2>/dev/null || stat -f %m "$_lf" 2>/dev/null || echo "$_now")"
+    # GNU stat -f is FILESYSTEM mode: when stat -c races a vanishing
+    # lock dir, the -f fallback can print a multi-line report that a
+    # command substitution still captures (|| chains on exit code, not
+    # output) — and non-numeric text is fatal inside arithmetic under
+    # set -u. Numeric-guard both reads; garbage means "treat as fresh".
+    _mt="$(stat -c %Y "$_lf" 2>/dev/null || stat -f %m "$_lf" 2>/dev/null || true)"
+    case "$_mt" in ''|*[!0-9]*) _mt="$_now" ;; esac
     if [ $(( _now - _mt )) -gt 30 ]; then
       # stealing is itself serialized (mkdir steal-lock) and staleness
       # re-verified while holding it: a live lock can never be removed,
@@ -20,7 +26,8 @@ lock_store() {
       # stat-then-mv both let two processes win (skeptic-reproduced).
       if mkdir "$_lf.steal" 2>/dev/null; then
         _now2="$(date +%s)"
-        _mt2="$(stat -c %Y "$_lf" 2>/dev/null || stat -f %m "$_lf" 2>/dev/null || echo 0)"
+        _mt2="$(stat -c %Y "$_lf" 2>/dev/null || stat -f %m "$_lf" 2>/dev/null || true)"
+        case "$_mt2" in ''|*[!0-9]*) _mt2=0 ;; esac
         if [ "$_mt2" != "0" ] && [ $(( _now2 - _mt2 )) -gt 30 ]; then
           rm -rf "$_lf" 2>/dev/null
         fi

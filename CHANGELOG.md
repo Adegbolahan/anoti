@@ -23,6 +23,12 @@ their message (CI enforces the section exists and is non-empty).
   ubuntu runner — loud timeout, but the test rightly counts it as a
   loss), and `anoti help` writes once, EPIPE-quiet (help | grep -q
   sprayed write-error noise across CI logs).
+- Second CI hotfix: the lock's mtime reads are numeric-guarded — when
+  GNU stat -c races a vanishing lock dir, the BSD-fallback stat -f
+  (FILESYSTEM mode on GNU) printed a multi-line report the command
+  substitution still captured, detonating in arithmetic under set -u
+  and killing the writer (the two "lost" CI writes were these loud
+  deaths). Full suite verified on real ubuntu in docker before push.
 - Spec routing paths (field relay): roles/ and SKILL-MAP live in the
   plugin root, not governed projects — the skill now says to resolve
   them from the newest installed plugin root, or a project's own agent

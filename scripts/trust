@@ -18,7 +18,11 @@ case "$real" in
     [ "$GLOBAL" = "1" ] || { echo "trust: store is under $gdir — machine-wide scope requires --global" >&2; exit 1; }
     tdir="$gdir" ;;
   *)
-    AD="$("$SELF/anoti-dir")"
+    # #13: anchor at the STORE's own directory — the store is
+    # definitionally its workspace's marker; a bare yaml in an
+    # unanchored dir refuses rather than minting a stray state dir
+    AD="$(cd "$(dirname "$f")" && "$SELF/anoti-dir" --require)" \
+      || { echo "trust: '$f' is not inside an anoti workspace (no marker found walking up) — set ANOTI_DIR or trust a real store" >&2; exit 1; }
     tdir="$AD"
     mkdir -p "$tdir"
     [ -f "$tdir/.gitignore" ] || printf '*\n' > "$tdir/.gitignore" ;;

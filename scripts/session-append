@@ -6,7 +6,7 @@
 # workstreams never clobber each other. Never hand-edit session YAML.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
-AD="$("$SELF/anoti-dir")"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
 sid="${1:?usage: session-append <session-id> <frames|hypotheses|in_flight|candidates> < item.json}"
 key="${2:?list key required}"
 case "$key" in frames|hypotheses|in_flight|candidates) ;;

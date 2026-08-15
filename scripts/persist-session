@@ -2,7 +2,9 @@
 # PreCompact hook: ensure session state exists and stamp a flush time. Fail-open.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
-AD="$("$SELF/anoti-dir")"
+# #13: no anchor, nothing to persist — an ungoverned dir must never
+# gain a stray store from an automatic hook. Fail open.
+AD="$("$SELF/anoti-dir" --require 2>/dev/null)" || exit 0
 input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
 [ -n "$sid" ] || exit 0

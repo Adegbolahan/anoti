@@ -1,14 +1,37 @@
 #!/bin/bash
-# anoti-dir — resolve the project-local anoti state directory.
-# Order: $ANOTI_DIR (project-relative) > .claude/anoti.local.md frontmatter
-# `state_dir:` > default ".anoti". Always project-relative: the global
-# memory tier (~/.claude/anoti) is a different thing resolved separately —
-# never conflate the two (D016).
+# anoti-dir [--require] — resolve the state directory by walking up from
+# cwd to the nearest project root (issue #13): a helper run from a
+# subdirectory must hit the project's store, never mint a stray one.
+# Markers, checked case-exactly per #11, nearest directory wins:
+#   .claude/anoti.local.md with state_dir:  ->  that dir/<state_dir>
+#   GROUNDING.yaml or .anoti/               ->  that dir/.anoti
+# ANOTI_DIR env overrides everything, verbatim. Unanchored: the
+# back-compat cwd-relative ".anoti" — unless --require, which fails
+# loudly instead. Writers pass --require so a wrong cwd is a loud error.
 set -u
+req=""
+[ "${1:-}" = "--require" ] && req=1
 if [ -n "${ANOTI_DIR:-}" ]; then printf '%s\n' "$ANOTI_DIR"; exit 0; fi
-f=".claude/anoti.local.md"
-if [ -f "$f" ]; then
-  v="$(sed -n '/^---$/,/^---$/{ /^state_dir:/s/state_dir: *//p; }' "$f" | head -1)"
-  [ -n "$v" ] && { printf '%s\n' "$v"; exit 0; }
+has() { command ls -1a "$1" 2>/dev/null | grep -qxF "$2"; }
+d="$(pwd -P)"
+while :; do
+  if [ -f "$d/.claude/anoti.local.md" ] && has "$d/.claude" "anoti.local.md"; then
+    v="$(sed -n '/^---$/,/^---$/{ /^state_dir:/{ s/state_dir: *//; s/[[:space:]]*$//; p; }; }' "$d/.claude/anoti.local.md" | head -1)"
+    if [ -n "$v" ]; then
+      case "$v" in /*) printf '%s\n' "$v" ;; *) printf '%s\n' "$d/$v" ;; esac
+      exit 0
+    fi
+  fi
+  if { [ -f "$d/GROUNDING.yaml" ] && has "$d" "GROUNDING.yaml"; } \
+    || { [ -d "$d/.anoti" ] && has "$d" ".anoti"; }; then
+    printf '%s\n' "$d/.anoti"
+    exit 0
+  fi
+  [ "$d" = "/" ] && break
+  d="$(dirname "$d")"
+done
+if [ -n "$req" ]; then
+  echo "anoti-dir: no anoti workspace found walking up from $PWD — run inside a governed project or set ANOTI_DIR" >&2
+  exit 1
 fi
 printf '.anoti\n'

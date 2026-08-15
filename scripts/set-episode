@@ -3,7 +3,7 @@
 # Mechanical episode transition; rejects unknown states, never corrupts.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
-AD="$("$SELF/anoti-dir")"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
 sid="${1:?usage: set-episode <session-id> <state>}"
 ep="${2:?state required}"
 case "$ep" in idle|candidate-detected|awaiting-approval|committed) ;;

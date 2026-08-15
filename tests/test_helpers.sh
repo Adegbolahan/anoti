@@ -1,5 +1,6 @@
 tmp="$(mktemp -d)"; ( cd "$tmp"
 # --- append-classification: creates state, appends safely, logs telemetry ---
+mkdir -p .anoti  # anchor: #13 writers refuse unanchored dirs
 "$ROOT/scripts/append-classification" s1 slow "ambiguous ask: needs frame, budget"
 assert_ok $? "append-classification exits 0"
 assert_eq "$(yq -r '.classifications | length' .anoti/sessions/s1.yaml)" "1" "one classification appended"
@@ -62,6 +63,7 @@ printf -- '---\nstate_dir: .claude/anoti2\n---\n' > .claude/anoti.local.md
 "$ROOT/scripts/append-classification" cfg2 fast "settings test"
 [ -f .claude/anoti2/sessions/cfg2.yaml ]; assert_ok $? "settings-file state_dir honored"
 rm .claude/anoti.local.md
+mkdir -p .anoti  # the workspace dir itself is the anchor (#13)
 "$ROOT/scripts/append-classification" cfg3 fast "default test"
 [ -f .anoti/sessions/cfg3.yaml ]; assert_ok $? "default .anoti without any knob"
 cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
@@ -72,6 +74,7 @@ printf '%s' "$out" | grep -q "2 records"; assert_ok $? "retrieve trust check hon
 
 # state dir is self-ignoring: creators drop .gitignore('*') inside it
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 "$ROOT/scripts/append-classification" gi fast "gitignore test"
 [ -f .anoti/.gitignore ] && [ "$(cat .anoti/.gitignore)" = "*" ]
 assert_ok $? "state dir self-ignoring via .anoti/.gitignore"
@@ -119,6 +122,7 @@ assert_eq "$(stat -c %a s.yaml 2>/dev/null || stat -f %Lp s.yaml 2>/dev/null)" "
 ); rm -rf "$tmp"
 # #1/#2: session-append covers every list the skills instruct; frames are a list
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 printf '%s' '{"id":"F1","goal":"first workstream","status":"active"}' | "$ROOT/scripts/session-append" sa frames
 assert_ok $? "session-append frames works"
 printf '%s' '{"id":"F2","goal":"second workstream","status":"active"}' | "$ROOT/scripts/session-append" sa frames
@@ -146,6 +150,7 @@ assert_eq "$?" "1" "garbage rejected, store untouched"
 # --- issue batch 0.5.4 ---
 # #1: set-episode + inhibit write telemetry lines
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 "$ROOT/scripts/append-classification" t1 fast "seed" >/dev/null 2>&1
 printf '{"session_id":"t1","tool_name":"Write","tool_input":{"file_path":"GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit" >/dev/null
 grep -q "inhibit	deny" .anoti/telemetry.log
@@ -170,6 +175,7 @@ grep -q "^- .* — a lesson" LESSONS-LEARNT.md; assert_ok $? "append-lesson appe
 ); rm -rf "$tmp"
 # #5: amends chain validated
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 printf '%s' '{"id":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/session-append" am frames
 printf '%s' '{"id":"F1b","amends":"F1","goal":"g+","status":"active"}' | "$ROOT/scripts/session-append" am frames
 assert_ok $? "valid amends target accepted"
@@ -182,6 +188,7 @@ tmp="$(mktemp -d)"; (
 cd "$tmp"
 git init -q -b main repo && cd repo
 git -c user.email=t@t.t -c user.name=t commit --allow-empty -m init -q
+mkdir -p .anoti
 out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_path":"README.md"}}' | "$ROOT/scripts/inhibit")"
 printf '%s' "$out" | grep -q '"permissionDecision": *"deny"'
 assert_ok $? "edit on default branch (main) is denied"
@@ -209,6 +216,7 @@ out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_pa
 
 # --- #9 session-consume: mark-applied candidate consumption ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 printf '%s' '{"id":"c1","type":"claim","statement":"first"}' | "$ROOT/scripts/session-append" sc candidates
 printf '%s' '{"id":"c2","type":"lesson","statement":"second"}' | "$ROOT/scripts/session-append" sc candidates
 "$ROOT/scripts/session-consume" sc candidates --ids c1
@@ -248,6 +256,7 @@ assert_eq "$?" "1" "garbage JSON rejected in stdin mode"
 
 # --- #7 classify: machine-notification turns are exempt ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 out="$(printf '%s' '{"session_id":"cx","prompt":"[SYSTEM NOTIFICATION - NOT USER INPUT] subagent skeptic completed"}' | "$ROOT/scripts/classify")"
 [ -z "$out" ]; assert_ok $? "bracketed system notification skips the attention tax"
 out="$(printf '%s' '{"session_id":"cx","prompt":"<task-notification>workflow wf_x finished</task-notification>"}' | "$ROOT/scripts/classify")"
@@ -262,6 +271,7 @@ assert_ok $? "a prompt merely quoting the marker is still classified (prefix mat
 
 # --- #10 set-ratification / set-status: the ritual can effect decisions ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
 "$ROOT/scripts/set-ratification" s.yaml D001 approved "two sessions, distinct tasks"
 assert_ok $? "set-ratification exits 0"
@@ -291,6 +301,7 @@ assert_ok $? "set-* helpers warn loudly when global trust needs explicit consent
 
 # --- wildcard-equality audit closure: ids meet yq only after exact resolution ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
 "$ROOT/scripts/append-event" s.yaml 'D*' promoted human "wildcard must not match D001" 2>/dev/null
 assert_eq "$?" "1" "append-event rejects a wildcard-shaped id with no literal match"
@@ -341,4 +352,75 @@ grep '^\- \[x\]' C.md | grep -c "$(printf '\r')" | grep -q '^0$'
 assert_ok $? "no stray carriage return embedded in the ticked line"
 grep -q 'DONE.*closed' C.md
 assert_ok $? "DONE suffix lands at end of the CRLF-origin line"
+); rm -rf "$tmp"
+
+# --- #13 anoti-dir: root-anchored resolution, no stray stores ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p proj/sub/inner
+mkdir proj/.anoti
+cd proj/sub/inner
+root="$(cd ../.. && pwd -P)"
+assert_eq "$("$ROOT/scripts/anoti-dir")" "$root/.anoti" "walk-up finds the root .anoti from a nested subdir"
+cd "$tmp"; mkdir -p g/sub && cp "$ROOT/tests/fixtures/store_valid.yaml" g/GROUNDING.yaml
+cd g/sub
+groot="$(cd .. && pwd -P)"
+assert_eq "$("$ROOT/scripts/anoti-dir")" "$groot/.anoti" "GROUNDING.yaml anchors resolution from a subdir"
+"$ROOT/scripts/append-classification" s13 fast "subdir write test"
+assert_ok $? "writer succeeds from a subdir of a governed project"
+[ -f "$groot/.anoti/sessions/s13.yaml" ]
+assert_ok $? "the write landed in the ROOT store"
+[ ! -d .anoti ]
+assert_ok $? "no stray state dir minted in the subdir"
+cd "$tmp"; mkdir -p ov/sub
+printf -- '---\nstate_dir: custom-state\n---\n' > /dev/null
+mkdir -p ov/.claude && printf -- '---\nstate_dir: custom-state\n---\n' > ov/.claude/anoti.local.md
+cd ov/sub
+oroot="$(cd .. && pwd -P)"
+assert_eq "$("$ROOT/scripts/anoti-dir")" "$oroot/custom-state" "state_dir override found by walk-up from a subdir"
+cd "$tmp"; mkdir bare && cd bare
+assert_eq "$("$ROOT/scripts/anoti-dir")" ".anoti" "unanchored plain call keeps the back-compat default"
+"$ROOT/scripts/anoti-dir" --require >/dev/null 2>&1
+assert_eq "$?" "1" "unanchored --require fails loudly"
+"$ROOT/scripts/append-classification" s13 fast "should refuse" 2>/dev/null
+assert_eq "$?" "1" "writer refuses when unanchored"
+[ ! -d .anoti ]
+assert_ok $? "refusal mints no stray store"
+printf '%s' '{"id":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/session-append" s13 frames 2>/dev/null
+assert_eq "$?" "1" "session-append refuses when unanchored"
+ANOTI_DIR="$tmp/explicit" "$ROOT/scripts/anoti-dir"
+assert_eq "$(ANOTI_DIR="$tmp/explicit" "$ROOT/scripts/anoti-dir")" "$tmp/explicit" "ANOTI_DIR env still wins over everything"
+out="$(printf '%s' '{"session_id":"cu","prompt":"fix the login bug"}' | "$ROOT/scripts/classify")"
+[ -z "$out" ]
+assert_ok $? "classify is silent where no workspace anchors (US-002)"
+cd "$tmp"; cd g
+out="$(printf '%s' '{"session_id":"cg","prompt":"fix the login bug"}' | "$ROOT/scripts/classify")"
+printf '%s' "$out" | grep -q "anoti-attend"
+assert_ok $? "classify still fires in a governed project"
+touch "$tmp/.probe-AB"
+if [ -e "$tmp/.probe-ab" ]; then
+  cd "$tmp"; mkdir ci && cd ci
+  cp "$ROOT/tests/fixtures/store_valid.yaml" grounding.yaml
+  assert_eq "$("$ROOT/scripts/anoti-dir")" ".anoti" "lowercase grounding.yaml is not a marker (case-insensitive fs)"
+else
+  echo "  (skip: case-sensitive filesystem — marker case scenario cannot reproduce here)"
+fi
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+printf '{"session_id":"pc9"}' | "$ROOT/scripts/persist-session"
+assert_ok $? "persist-session fails open when unanchored"
+[ ! -d .anoti ]
+assert_ok $? "persist-session mints no stray store (hook contract + #13)"
+printf 'a: 1\n' > lone.yaml
+"$ROOT/scripts/trust" lone.yaml >/dev/null 2>&1
+assert_eq "$?" "1" "trust refuses a store outside any workspace"
+[ ! -d .anoti ]
+assert_ok $? "trust refusal mints no stray store"
+err="$(printf '{"session_id":"ib9","tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}' | "$ROOT/scripts/inhibit" 2>&1 >/dev/null)"
+[ -z "$err" ]
+assert_ok $? "inhibit deny in an unanchored dir leaks nothing to stderr"
+mkdir -p ws/.claude && printf -- '---\nstate_dir: padded-state   \n---\n' > ws/.claude/anoti.local.md
+cd ws
+r="$("$ROOT/scripts/anoti-dir")"
+[ "$r" = "$(pwd -P)/padded-state" ]
+assert_ok $? "state_dir trailing whitespace stripped from the resolved path"
 ); rm -rf "$tmp"

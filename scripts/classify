@@ -13,6 +13,10 @@ case "$p" in
   "[SYSTEM NOTIFICATION - NOT USER INPUT]"*|"<task-notification"*) exit 0 ;;
 esac
 SELF="$(cd "$(dirname "$0")" && pwd)"
+# #13: no governed workspace, no attention tax — silence matches the
+# retrieval hook's contract and US-002; classification writes here would
+# only mint the stray stores the resolver now refuses to create
+"$SELF/anoti-dir" --require >/dev/null 2>&1 || exit 0
 ctx="<anoti-attend>
 Classify this prompt BEFORE exploring or answering. SLOW if any apply: it establishes or changes project decisions/conventions; it touches a stated ground rule or multiple files; its goal is ambiguous; it is destructive or outward-facing. Otherwise FAST (small, unambiguous, low-consequence). Slow-path: invoke the anoti attend skill first and build a frame. Headless sessions classify identically — slow still frames; escalations queue per human-absent rules. Log the verdict mechanically — never hand-edit session YAML:
 $SELF/append-classification $sid fast|slow \"one-line reason\"

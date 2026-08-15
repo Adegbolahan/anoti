@@ -9,7 +9,9 @@ tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)" || exit
 [ -n "$tool" ] || exit 0
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
 decide() {
-  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${sid:-?}" "inhibit" "$1" "$2" >> "$AD/telemetry.log" 2>/dev/null || true
+  if [ -d "$AD" ]; then
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${sid:-?}" "inhibit" "$1" "$2" >> "$AD/telemetry.log" 2>/dev/null || true
+  fi
   jq -n --arg d "$1" --arg r "$2" \
     '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:$d,permissionDecisionReason:$r}}'
   exit 0

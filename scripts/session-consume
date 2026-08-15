@@ -7,7 +7,7 @@
 # re-propose. Without --ids, every unapplied candidate is consumed.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
-AD="$("$SELF/anoti-dir")"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
 sid="${1:?usage: session-consume <session-id> candidates [--ids id1,id2,...]}"
 key="${2:?list key required}"
 [ "$key" = "candidates" ] || { echo "session-consume: only 'candidates' is consumable" >&2; exit 1; }

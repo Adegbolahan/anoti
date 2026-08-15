@@ -3,6 +3,28 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.11] — 2026-08-15
+
+- Sixth field-report fix (issue #13, livingsyncs polyrepo): state
+  resolution anchors to the project root. `anoti-dir` walks up from cwd
+  to the nearest marker (.claude/anoti.local.md `state_dir`,
+  GROUNDING.yaml, `.anoti/` — case-exact per #11) and returns absolute
+  paths, so a helper run from a subdirectory hits the project's store
+  instead of silently reading — or minting — a stray one. Writers
+  (append-classification, session-append, session-consume, set-episode)
+  pass `--require` and refuse loudly when unanchored: a wrong cwd is
+  now a clear error about location, never a wrong-store "not found" or
+  a phantom success. The classify hook goes silent in unanchored
+  directories, matching retrieve's silence contract (US-002) — the
+  attention tax stops minting stray telemetry in ungoverned dirs.
+  ANOTI_DIR still overrides everything verbatim; plain reads keep the
+  back-compat default. Adversarial review closed two further stray-store
+  paths the sweep missed — persist-session (an automatic PreCompact
+  write in ANY dir) now fails open unanchored, and trust anchors at the
+  store's own directory, refusing a bare yaml outside any workspace —
+  plus an inhibit stderr leak and state_dir trailing-whitespace edge.
+  Design-spec resolution rule amended (dated).
+
 ## [0.5.10] — 2026-08-15
 
 - Fifth field-report fix (issue #12, livingsyncs): `complete-todo` adds

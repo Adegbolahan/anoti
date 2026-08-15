@@ -1,4 +1,5 @@
 tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
 printf '{"session_id":"abc"}' | "$ROOT/scripts/persist-session"
 assert_ok $? "persist-session exits 0"
 [ -f .anoti/sessions/abc.yaml ]; assert_ok $? "state file created"

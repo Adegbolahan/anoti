@@ -612,6 +612,12 @@ enforcement layer.
   deferred (decision D013); validation criterion reworded accordingly.
 - 2026-08-13 — D016: project state dir configurable (ANOTI_DIR >
   .claude/anoti.local.md state_dir > default .anoti), always
-  project-relative; global tier unaffected. Frame gains story_ref; the
+  project-relative; global tier unaffected.
+- 2026-08-15 — amended per issue #13: resolution anchors to the project
+  root by marker walk-up (nearest of .claude/anoti.local.md state_dir,
+  GROUNDING.yaml, .anoti/ — case-exact per #11; ANOTI_DIR still wins
+  verbatim), returning absolute paths. Writers require an anchor and
+  refuse loudly when none exists — no implicit store creation; the
+  classify hook is silent in unanchored directories (US-002). Frame gains story_ref; the
   retrieval digest surfaces HIGH-LEVEL-STORIES as the value standard.
 - 2026-08-13 — Component tree refreshed to 0.4.0 reality (15 scripts incl. mechanical helpers, document-format skills, retrospect policy, seven commands, benchmark dir); requirements-analyst wired to the direction skill.

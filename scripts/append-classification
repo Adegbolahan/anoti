@@ -4,7 +4,7 @@
 # The model must never hand-edit session YAML; it calls this instead.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
-AD="$("$SELF/anoti-dir")"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
 sid="${1:?usage: append-classification <session-id> <fast|slow> <reason>}"
 verdict="${2:?verdict required (fast|slow)}"
 shift 2

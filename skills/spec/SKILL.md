@@ -10,6 +10,9 @@ Where — two naming families, one rule:
 - **Standalone documents** (project designs, experiments): date-first —
   `docs/specs/YYYY-MM-DD-<topic>-design.md` /
   `docs/specs/YYYY-MM-DD-exp-<topic>.md` — a chronological register.
+  `docs/specs/` is the default home; a workspace that adopted an
+  existing organ records it as `spec_dir:` in `.claude/anoti.local.md`
+  and that mapping wins (issue #16).
 - **Story-scoped specs**: story-first — `docs/specs/us-XXX-<name>.md` —
   the US-id is the stable key so a story's spec, plan, and reviews sort
   together; the date lives inside the document and in git.

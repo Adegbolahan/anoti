@@ -3,6 +3,19 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.17] — 2026-08-15
+
+- Ninth field-report batch (issues #16-#17, ecounterlist brownfield):
+  skillify detects adopted spec/plan organ homes before scaffolding —
+  existing homes are recorded as `spec_dir:`/`plan_dir:` in
+  `.claude/anoti.local.md` instead of minting duplicate `docs/` dirs,
+  and the bootstrap record states exactly what was created (a record
+  disagreeing with the filesystem it describes is the failure mode the
+  store exists to prevent). The spec and plan skills file to the
+  recorded mapping, defaulting to `docs/` (#16). The routing-inputs
+  half (#17 — roles/ and SKILL-MAP absent in governed projects) was
+  fixed in 0.5.16's plugin-root resolution paragraph; closed against it.
+
 ## [0.5.16] — 2026-08-15
 
 - Eighth field-report fix (issue #15, livingsyncs — highest severity to

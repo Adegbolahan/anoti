@@ -33,6 +33,17 @@ adds at most a short documentation note, never a retrieval pointer.
 
 ## Migration
 
+**Adopted organ homes (issue #16):** before scaffolding `docs/specs/`
+or `docs/plans/`, look for existing spec/plan homes (a `.claude/project/`
+tree, a `specs/` dir, wherever the project already files them). If found,
+DO NOT scaffold the default directories — record the adopted homes as
+`spec_dir:`/`plan_dir:` in `.claude/anoti.local.md` frontmatter (the
+same file that carries `state_dir:`), and the spec/plan skills will file
+there. The bootstrap record states **exactly what it created** — a
+record claiming "only X was created" while the scaffold also minted
+organ directories is the store disagreeing with the filesystem, the
+exact failure mode this system exists to prevent.
+
 **Case-insensitive collision check (issue #11):** before creating any
 organ file, list the target directory and compare names exactly. If an
 existing file matches an organ name only case-insensitively (a project's

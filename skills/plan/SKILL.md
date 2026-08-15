@@ -43,6 +43,10 @@ role; spawn arithmetic against the budget (≤3 concurrent, ≤8/session)
 with one-line justification per spawn; conditional branches named in
 advance so mid-flight judgment executes the plan instead of improvising.
 
+Plans file to `docs/plans/` by default; a workspace that adopted an
+existing organ records it as `plan_dir:` in `.claude/anoti.local.md`
+and that mapping wins (issue #16).
+
 ## Rules
 
 - **Every task names its role** — one hat from `roles/` per task, with

@@ -1,0 +1,29 @@
+#!/bin/bash
+# complete-todo <TODOS.md> <match> <note...>
+# The tick half of the TODOS contract (issue #12): flips exactly ONE
+# unchecked item whose text contains <match> to "- [x] ... — DONE
+# <date>: <note>". <match> is a fixed string — it never meets a pattern
+# engine (wildcard lesson, 2026-08-13). Refuses on zero matches (a
+# silent no-op looks like a successful closure) and on multiple matches
+# (be specific). Never deletes: checked items are history. A CRLF
+# matched line is normalized to LF so the DONE suffix cannot land behind
+# a stray carriage return; other lines keep their endings.
+set -u
+f="${1:?usage: complete-todo <TODOS.md> <match> <note...>}"
+m="${2:?match string required}"
+shift 2
+note="${*:?note required}"
+[ -f "$f" ] || { echo "complete-todo: no such file: $f" >&2; exit 1; }
+ml="$(grep -n -- '^- \[ \]' "$f" | grep -F -- "$m" || true)"
+c=0; [ -n "$ml" ] && c="$(printf '%s\n' "$ml" | grep -c .)"
+[ "$c" -eq 0 ] && { echo "complete-todo: no unchecked item matches '$m' in $f" >&2; exit 1; }
+[ "$c" -gt 1 ] && { echo "complete-todo: $c unchecked items match '$m' — be specific:" >&2; printf '%s\n' "$ml" >&2; exit 1; }
+ln="${ml%%:*}"
+TN="$note" TS="$(date -u +%Y-%m-%d)" awk -v n="$ln" '
+  NR == n { sub(/\r$/, ""); sub(/^- \[ \]/, "- [x]"); $0 = $0 " — DONE " ENVIRON["TS"] ": " ENVIRON["TN"] }
+  { print }' "$f" > "$f.tmp" || { rm -f "$f.tmp"; exit 1; }
+cmp -s "$f" "$f.tmp" && { rm -f "$f.tmp"; echo "complete-todo: nothing changed — refusing to pretend closure" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
+mv "$f.tmp" "$f"
+exit 0

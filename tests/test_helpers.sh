@@ -300,3 +300,45 @@ printf '%s' '{"id":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/session-
 printf '%s' '{"id":"F2","amends":"F*","goal":"g2","status":"active"}' | "$ROOT/scripts/session-append" wc frames 2>/dev/null
 assert_eq "$?" "1" "amends target must match literally, never as a pattern"
 ); rm -rf "$tmp"
+
+# --- #12 complete-todo: the tick half of the TODOS contract ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+touch T.md
+"$ROOT/scripts/append-todo" T.md "alpha task: verify the widget"
+"$ROOT/scripts/append-todo" T.md "beta task: ship the gadget"
+"$ROOT/scripts/complete-todo" T.md "alpha" "verified in batch 12"
+assert_ok $? "complete-todo exits 0 on a single match"
+grep -q '^- \[x\] alpha task' T.md
+assert_ok $? "matched item flipped to checked"
+grep -q 'DONE.*verified in batch 12' T.md
+assert_ok $? "DONE date + note appended"
+grep -q '^- \[ \] beta task' T.md
+assert_ok $? "other items untouched"
+assert_eq "$(grep -c '^- ' T.md)" "2" "never deletes — checked items are history"
+"$ROOT/scripts/complete-todo" T.md "alpha" "again" 2>/dev/null
+assert_eq "$?" "1" "checked items never re-match: zero-match refused"
+"$ROOT/scripts/append-todo" T.md "dup pair one"
+"$ROOT/scripts/append-todo" T.md "dup pair two"
+"$ROOT/scripts/complete-todo" T.md "dup pair" "ambiguous" 2>/dev/null
+assert_eq "$?" "1" "multiple matches refused loudly"
+assert_eq "$(grep -c '^- \[ \] dup pair' T.md)" "2" "file untouched on refusal"
+"$ROOT/scripts/append-todo" T.md "weird * glob [item]"
+"$ROOT/scripts/complete-todo" T.md "* glob [item]" "fixed-string match"
+assert_ok $? "glob-shaped match text matches literally, never as a pattern"
+grep -q '^- \[x\] weird \* glob \[item\]' T.md
+assert_ok $? "the glob-shaped item is the one ticked"
+n="note with \"quotes\" and \\backslash and :colons"
+"$ROOT/scripts/append-todo" T.md "gamma item"
+"$ROOT/scripts/complete-todo" T.md "gamma" "$n"
+grep -qF "$n" T.md
+assert_ok $? "hostile note text survives intact"
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+printf -- '- [ ] crlf task\r\n- [ ] other item\r\n' > C.md
+"$ROOT/scripts/complete-todo" C.md "crlf" "closed"
+assert_ok $? "complete-todo handles a CRLF file"
+grep '^\- \[x\]' C.md | grep -c "$(printf '\r')" | grep -q '^0$'
+assert_ok $? "no stray carriage return embedded in the ticked line"
+grep -q 'DONE.*closed' C.md
+assert_ok $? "DONE suffix lands at end of the CRLF-origin line"
+); rm -rf "$tmp"

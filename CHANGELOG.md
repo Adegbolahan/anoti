@@ -3,6 +3,17 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.10] — 2026-08-15
+
+- Fifth field-report fix (issue #12, livingsyncs): `complete-todo` adds
+  the tick half of the TODOS contract — flips exactly ONE matching
+  unchecked item to `- [x] … — DONE <date>: <note>`, fixed-string
+  matching only (match text never meets a pattern engine), refuses zero
+  and multiple matches loudly (a silent no-op looks like closure), and
+  never deletes. The inhibit denial's "write via the helpers" now names
+  a real route for every guarded organ operation; the audit's staleness
+  sweep can mechanically close the todos it opens.
+
 ## [0.5.9] — 2026-08-14
 
 - Lessons surfacing: LESSONS-LEARNT.md was the one write-only organ —

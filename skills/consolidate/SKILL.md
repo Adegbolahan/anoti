@@ -15,6 +15,7 @@ scripts/append-classification <session-id> <fast|slow> <reason...>
 scripts/session-append <session-id> <frames|hypotheses|in_flight|candidates>  # JSON on stdin
 scripts/append-question <store.yaml>            # question JSON on stdin
 scripts/append-todo <TODOS.md> <text...>        # dated unchecked item
+scripts/complete-todo <TODOS.md> <match> <note...>  # tick ONE matching item — DONE date + note; refuses ambiguity
 scripts/append-lesson <LESSONS-LEARNT.md> <text...>  # dated lesson entry
 scripts/set-episode <session-id> <idle|candidate-detected|awaiting-approval|committed>
 scripts/append-record <store.yaml>              # record as JSON on stdin
@@ -28,6 +29,13 @@ scripts/trust <store.yaml>                      # provenance approval
 scripts/regen-index <store.yaml>
 scripts/validate-workspace <store.yaml>
 ```
+
+**Gate and helpers, by design:** the inhibition gate intercepts raw
+Edit/Write on organ files; it does not intercept the helper scripts —
+running a helper IS the sanctioned path, and the episode discipline
+around organ writes is procedural, enforced by this skill's steps and
+the trail, not by the hook. A helper run outside an episode is a
+process violation the audit counts, not a technical impossibility.
 
 ## Procedure
 

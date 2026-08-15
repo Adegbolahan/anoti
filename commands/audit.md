@@ -27,6 +27,9 @@ out-of-cadence deviation, never silently normalized.
    - direction docs whose `Last Updated` predates the newest phase
      transition → flag as due-an-audit per the direction skill's rule;
    - TODOS items raised >30 days ago with no linked progress → list;
+     items the trail shows satisfied → tick mechanically with
+     `scripts/complete-todo <TODOS.md> <match> "<evidence ref>"` inside
+     the episode flow — the sweep can now close what it opens;
    - abandoned session files in the state dir → list;
    - probable claims older than 14 days (the digest already nudges;
      the audit records the queue's depth over time).
@@ -39,7 +42,7 @@ out-of-cadence deviation, never silently normalized.
    (store, TODOS.md, LESSONS-LEARNT.md) go through the consolidate flow
    as usual — open the episode first (scripts/set-episode) or the
    inhibit gate will correctly refuse; the mechanical one-liners are
-   scripts/append-todo and scripts/append-lesson.
+   scripts/append-todo, scripts/complete-todo, and scripts/append-lesson.
 
 **Scheduling:** the human wires the cadence — `/loop 7d /anoti:audit`
 for an in-terminal loop, or a scheduled cloud routine where available.

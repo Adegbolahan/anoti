@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "anoti",
-  "version": "0.5.14",
+  "version": "0.5.15",
   "description": "anoti — a human-shaped cognitive work cycle for AI agents over governed, evidence-bearing, human-ratified memory.",
   "owner": {
     "name": "Adegbolahan",
@@ -11,7 +11,7 @@
     {
       "name": "anoti",
       "description": "Governed agent memory and workflow: retrieval with a trust boundary, attention framing, a conductor-led cascade, inhibition gates, and human-ratified consolidation. Provides /new, /implement, /review-work, /update, /review, /recall, /consolidate and /audit.",
-      "version": "0.5.14",
+      "version": "0.5.15",
       "author": {
         "name": "Adegbolahan"
       },

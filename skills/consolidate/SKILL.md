@@ -10,6 +10,10 @@ the single writer; agents (including the consolidator) only propose.
 
 ## Helper quick reference (exact signatures — never open the scripts)
 
+One entry point works for all of them: `scripts/anoti <action> [args...]`
+— the action is the helper name below; stdin and exit codes pass through
+(`anoti help` lists everything).
+
 ```
 scripts/append-classification <session-id> <fast|slow> <reason...>
 scripts/session-append <session-id> <frames|hypotheses|in_flight|candidates>  # JSON on stdin

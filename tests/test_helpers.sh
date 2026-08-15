@@ -468,3 +468,29 @@ out="$(printf '{"session_id":"q14"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSp
 printf '%s' "$out" | grep -q "Q009"
 assert_eq "$?" "1" "answered question no longer surfaces in the digest (end-to-end)"
 ); rm -rf "$tmp"
+
+# --- anoti dispatcher: one entry point, action = script name ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+"$ROOT/scripts/anoti" append-classification d1 fast "via dispatcher"
+assert_ok $? "dispatcher runs a helper by action name"
+assert_eq "$(yq -r '.classifications | length' .anoti/sessions/d1.yaml)" "1" "the dispatched write landed"
+printf '%s' '{"id":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/anoti" session-append d1 frames
+assert_ok $? "stdin passes through the dispatcher"
+"$ROOT/scripts/anoti" set-episode d1 bogus 2>/dev/null
+assert_eq "$?" "1" "exit codes pass through"
+"$ROOT/scripts/anoti" no-such-action 2>/dev/null
+assert_eq "$?" "1" "unknown action refused"
+"$ROOT/scripts/anoti" ../etc/passwd 2>/dev/null
+assert_eq "$?" "1" "path traversal refused"
+"$ROOT/scripts/anoti" anoti 2>/dev/null
+assert_eq "$?" "1" "self-dispatch refused"
+"$ROOT/scripts/anoti" help | grep -q "append-record"
+assert_ok $? "help lists the actions"
+"$ROOT/scripts/anoti" help | grep "classify" | grep -qi "hook"
+assert_ok $? "hook entry points labeled as hooks, not given false CLI usage"
+"$ROOT/scripts/anoti" help | grep -q "trust \[--global\]"
+assert_ok $? "usage lines are whole, not mid-sentence truncations"
+grep -q '^exec ' "$ROOT/scripts/anoti"
+assert_ok $? "dispatch uses exec — no double-fork (mechanism pin)"
+); rm -rf "$tmp"

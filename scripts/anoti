@@ -1,0 +1,30 @@
+#!/bin/bash
+# anoti <action> [args...] — one entry point for every helper: the
+# action IS the script name (anoti append-record store.yaml < r.json).
+# Purely additive: direct script calls keep working; hooks keep their
+# absolute paths. Stdin, argv, and exit codes pass through untouched.
+# `anoti help` lists every action with its usage line.
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+a="${1:-help}"
+[ "$#" -gt 0 ] && shift
+case "$a" in
+  help|-h|--help|list)
+    echo "anoti <action> [args...] — actions:"
+    for f in "$SELF"/*; do
+      n="$(basename "$f")"
+      [ -f "$f" ] && [ -x "$f" ] && [ "$n" != "anoti" ] || continue
+      case "$n" in
+        retrieve|classify|inhibit|persist-session|consolidation-gate|cleanup-session)
+          printf '  %-22s %s\n' "$n" "(hook — the harness runs it; JSON event on stdin)"; continue ;;
+      esac
+      u="$(sed -n '2s/^# *//p' "$f")"
+      printf '  %-22s %s\n' "$n" "$u"
+    done
+    exit 0 ;;
+esac
+case "$a" in
+  */*|.*|anoti) echo "anoti: invalid action '$a' (run: anoti help)" >&2; exit 1 ;;
+esac
+[ -f "$SELF/$a" ] && [ -x "$SELF/$a" ] || { echo "anoti: unknown action '$a' (run: anoti help)" >&2; exit 1; }
+exec "$SELF/$a" "$@"

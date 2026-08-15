@@ -1,7 +1,7 @@
 #!/bin/bash
-# anoti-dir [--require] — resolve the state directory by walking up from
-# cwd to the nearest project root (issue #13): a helper run from a
-# subdirectory must hit the project's store, never mint a stray one.
+# anoti-dir [--require] — print the resolved state dir (root-marker walk-up).
+# Issue #13: a helper run from a subdirectory must hit the project's
+# store, never mint a stray one; --require fails loudly when unanchored.
 # Markers, checked case-exactly per #11, nearest directory wins:
 #   .claude/anoti.local.md with state_dir:  ->  that dir/<state_dir>
 #   GROUNDING.yaml or .anoti/               ->  that dir/.anoti

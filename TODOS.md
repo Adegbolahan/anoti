@@ -45,3 +45,6 @@
       validating the whole file after each write. Observed live 2026-08-13.
       (raised 2026-08-13)
 - [x] Audit every helper's yq id comparison for wildcard-equality (yq string == pattern-matches '*'): session-append amends check, append-evidence/append-event record-id checks — port the exact-match index pattern from session-consume (found 2026-08-13 fixing #9) (raised 2026-08-13; done 2026-08-13 in the #10/#11 batch — shared record-index helper, test-pinned)
+- [ ] Helper-sweep candidate (the #10/#12/#14 class, found proactively): append-relationship — consolidate step 5 instructs refines/contradicts relationships on records, but no helper writes one; hand-edit is the only path (raised 2026-08-15)
+- [ ] Helper-sweep candidate: reopen-question — resolution notes name reopen conditions (Q001: 'reopen on a scaled comprehension test') but resolve-question refuses non-open entries and nothing flips answered back to open with an event trail (raised 2026-08-15)
+- [ ] Helper-sweep candidate: append-pending / resolve-pending — D024 made pending.md the single human-absent surface and the feedback skill instructs appending pointer lines to it, but the writes are bare echos with no helper contract (raised 2026-08-15)

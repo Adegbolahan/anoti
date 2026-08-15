@@ -1,6 +1,6 @@
 #!/bin/bash
-# trust [--global] <store.yaml> — record the store's content hash as
-# user-approved. Trust lives ADJACENT to its store: realpath-normalized
+# trust [--global] <store.yaml> — record the store's hash as user-approved.
+# Details: Trust lives ADJACENT to its store: realpath-normalized
 # store path under realpath-normalized $HOME/.claude/anoti/ ->
 # $HOME/.claude/anoti/trust (requires --global: deliberate friction on
 # the machine-wide path); otherwise <state-dir>/trust. Atomic writes.

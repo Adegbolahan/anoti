@@ -3,6 +3,16 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.15] — 2026-08-15
+
+- `anoti` dispatcher (human directive): one entry point for every
+  helper — `scripts/anoti <action> [args...]`, the action being the
+  script name; stdin, argv, and exit codes pass through untouched;
+  `anoti help` lists every action with its usage line. Purely additive
+  (direct calls and hook paths unchanged); refuses unknown actions,
+  path traversal, and self-dispatch. The shell-native answer to the
+  one-tool ergonomics question, consistent with D022's no-MCP ruling.
+
 ## [0.5.14] — 2026-08-15
 
 - Seventh field-report fix (issue #14, ecounterlist): `resolve-question`

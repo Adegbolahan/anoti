@@ -14,6 +14,10 @@ m="${2:?match string required}"
 shift 2
 note="${*:?note required}"
 [ -f "$f" ] || { echo "complete-todo: no such file: $f" >&2; exit 1; }
+SELF="$(cd "$(dirname "$0")" && pwd)"
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
 ml="$(grep -n -- '^- \[ \]' "$f" | grep -F -- "$m" || true)"
 c=0; [ -n "$ml" ] && c="$(printf '%s\n' "$ml" | grep -c .)"
 [ "$c" -eq 0 ] && { echo "complete-todo: no unchecked item matches '$m' in $f" >&2; exit 1; }
@@ -21,9 +25,9 @@ c=0; [ -n "$ml" ] && c="$(printf '%s\n' "$ml" | grep -c .)"
 ln="${ml%%:*}"
 TN="$note" TS="$(date -u +%Y-%m-%d)" awk -v n="$ln" '
   NR == n { sub(/\r$/, ""); sub(/^- \[ \]/, "- [x]"); $0 = $0 " — DONE " ENVIRON["TS"] ": " ENVIRON["TN"] }
-  { print }' "$f" > "$f.tmp" || { rm -f "$f.tmp"; exit 1; }
-cmp -s "$f" "$f.tmp" && { rm -f "$f.tmp"; echo "complete-todo: nothing changed — refusing to pretend closure" >&2; exit 1; }
+  { print }' "$f" > "$f.tmp.$$" || { rm -f "$f.tmp.$$"; exit 1; }
+cmp -s "$f" "$f.tmp.$$" && { rm -f "$f.tmp.$$"; echo "complete-todo: nothing changed — refusing to pretend closure" >&2; exit 1; }
 pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
-[ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
-mv "$f.tmp" "$f"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
 exit 0

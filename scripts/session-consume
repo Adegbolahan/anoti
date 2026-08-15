@@ -23,6 +23,9 @@ fi
   [ -z "$ids" ] && exit 0
   echo "session-consume: no candidates in $sf" >&2; exit 1
 }
+. "$SELF/store-lock"
+lock_store "$sf" || exit 1
+trap 'unlock_store "$sf"' EXIT
 ts="$(date -u +%Y-%m-%d)"
 if [ -n "$ids" ]; then
   # yq's string == does WILDCARD matching, so requested ids are resolved
@@ -41,14 +44,14 @@ if [ -n "$ids" ]; then
     done <<< "$all_ids"
     [ -n "$found" ] || { echo "session-consume: no candidate '$id' in $sf" >&2; exit 1; }
   done
-  cp "$sf" "$sf.tmp"
+  cp "$sf" "$sf.tmp.$$"
   for i in $idxs; do
-    TS="$ts" yq -i ".candidates[$i].applied = true | .candidates[$i].applied_date = strenv(TS)" "$sf.tmp" \
-      || { rm -f "$sf.tmp"; exit 1; }
+    TS="$ts" yq -i ".candidates[$i].applied = true | .candidates[$i].applied_date = strenv(TS)" "$sf.tmp.$$" \
+      || { rm -f "$sf.tmp.$$"; exit 1; }
   done
 else
-  TS="$ts" yq '(.candidates[] | select(.applied != true)) |= (.applied = true | .applied_date = strenv(TS))' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
+  TS="$ts" yq '(.candidates[] | select(.applied != true)) |= (.applied = true | .applied_date = strenv(TS))' "$sf" > "$sf.tmp.$$" || { rm -f "$sf.tmp.$$"; exit 1; }
 fi
-yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; echo "session-consume: refusing to write unparseable state" >&2; exit 1; }
-mv "$sf.tmp" "$sf"
+yq -e '.' "$sf.tmp.$$" >/dev/null 2>&1 || { rm -f "$sf.tmp.$$"; echo "session-consume: refusing to write unparseable state" >&2; exit 1; }
+mv "$sf.tmp.$$" "$sf"
 exit 0

@@ -3,6 +3,25 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.16] — 2026-08-15
+
+- Eighth field-report fix (issue #15, livingsyncs — highest severity to
+  date: a human ratification silently discarded during the review
+  ritual, both racing helpers exiting 0). Every store mutator (8) and
+  session-state writer (3) now serializes its read-modify-write through
+  a shared mkdir lock (portable — flock does not ship on macOS), with
+  stale-lock stealing (>30s), a loud ~5s timeout, and unique per-process
+  scratch paths (the fixed `<store>.tmp` collision is gone). The
+  decision helpers (set-ratification, set-status, resolve-question)
+  read the field back after the move and fail loudly on mismatch. The
+  issue's own 10-round two-writer reproduction is now a test: zero
+  lost writes, previously 10/10 rounds losing at least one. Hooks stay
+  lock-free by design (fail-open, harness-serialized).
+- Spec routing paths (field relay): roles/ and SKILL-MAP live in the
+  plugin root, not governed projects — the skill now says to resolve
+  them from the newest installed plugin root, or a project's own agent
+  register with the substitution flagged inline.
+
 ## [0.5.15] — 2026-08-15
 
 - `anoti` dispatcher (human directive): one entry point for every

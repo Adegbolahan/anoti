@@ -494,3 +494,61 @@ assert_ok $? "usage lines are whole, not mid-sentence truncations"
 grep -q '^exec ' "$ROOT/scripts/anoti"
 assert_ok $? "dispatch uses exec — no double-fork (mechanism pin)"
 ); rm -rf "$tmp"
+
+# --- #15 write serialization: concurrent writers never silently lose ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+lost=0
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  "$ROOT/scripts/append-evidence" s.yaml D001 observation "A-$i" &
+  "$ROOT/scripts/append-evidence" s.yaml D002 observation "B-$i" &
+  wait
+  grep -q "A-$i" s.yaml || lost=$((lost+1))
+  grep -q "B-$i" s.yaml || lost=$((lost+1))
+done
+assert_eq "$lost" "0" "10 concurrent rounds, zero lost writes (#15 repro)"
+[ ! -d s.yaml.lock ]
+assert_ok $? "lock released after concurrent rounds"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_ok $? "store valid after 20 concurrent writes"
+printf 'bogus: [unclosed' > bad.yaml
+"$ROOT/scripts/append-event" bad.yaml D001 test session "x" 2>/dev/null
+[ ! -d bad.yaml.lock ]
+assert_ok $? "lock released on failure paths (trap EXIT)"
+mkdir s.yaml.lock && touch -t 202501010000 s.yaml.lock
+"$ROOT/scripts/append-evidence" s.yaml D001 observation "after stale steal"
+assert_ok $? "stale lock (>30s) stolen, write proceeds"
+grep -q "after stale steal" s.yaml
+assert_ok $? "the post-steal write landed"
+grep -c '^' /dev/null >/dev/null
+command ls s.yaml.tmp* 2>/dev/null | grep -q .
+assert_eq "$?" "1" "no scratch files left behind"
+grep -q 'tmp\.\$\$' "$ROOT/scripts/set-status" && grep -q "store-lock" "$ROOT/scripts/set-ratification"
+assert_ok $? "unique scratch paths + shared lock lib in the mutators (mechanism pin)"
+grep -qi "verify" "$ROOT/scripts/set-status" || grep -q 'got=' "$ROOT/scripts/set-status"
+assert_ok $? "decision helpers read the field back after the write"
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+i=1
+while [ "$i" -le 12 ]; do
+  printf '%s' "{\"id\":\"F$i\",\"goal\":\"g$i\",\"status\":\"active\"}" | "$ROOT/scripts/session-append" cs frames &
+  i=$((i+1))
+done
+wait
+assert_eq "$(yq -r '.frames | length' .anoti/sessions/cs.yaml)" "12" "12 concurrent session-appends, zero lost (#15 session path)"
+printf '%s' '{"id":"c1","type":"claim","statement":"x"}' | "$ROOT/scripts/session-append" cs candidates
+printf '%s' '{"id":"c2","type":"claim","statement":"y"}' | "$ROOT/scripts/session-append" cs candidates
+( "$ROOT/scripts/session-consume" cs candidates & printf '%s' '{"id":"c3","type":"claim","statement":"z"}' | "$ROOT/scripts/session-append" cs candidates & wait )
+assert_eq "$(yq -r '.candidates | length' .anoti/sessions/cs.yaml)" "3" "consume racing append loses nothing (default branch locked)"
+mkdir -p .anoti/sessions 2>/dev/null
+mkdir .anoti/sessions/cs.yaml.lock 2>/dev/null && touch -t 202501010000 .anoti/sessions/cs.yaml.lock
+j=1
+while [ "$j" -le 8 ]; do
+  printf '%s' "{\"id\":\"S$j\",\"statement\":\"h$j\"}" | "$ROOT/scripts/session-append" cs hypotheses &
+  j=$((j+1))
+done
+wait
+assert_eq "$(yq -r '.hypotheses | length' .anoti/sessions/cs.yaml)" "8" "8 writers through a stale-lock steal, zero lost (atomic-rename steal)"
+); rm -rf "$tmp"

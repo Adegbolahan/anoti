@@ -23,14 +23,19 @@ done <<< "$(yq -r '.open_questions // [] | .[] | .id // ""' "$f" 2>/dev/null)"
 [ -n "$idx" ] || { echo "resolve-question: no question '$qid' in $f" >&2; exit 1; }
 st="$(yq -r ".open_questions[$idx].status // \"\"" "$f")"
 [ "$st" = "open" ] || { echo "resolve-question: '$qid' is not open (status: ${st:-unset}) — refusing a no-op closure" >&2; exit 1; }
-cp "$f" "$f.tmp"
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+cp "$f" "$f.tmp.$$"
 TS="$(date -u +%Y-%m-%d)" N="$note" \
-  yq -i ".open_questions[$idx].status = \"answered\" | .open_questions[$idx].resolution = strenv(TS) + \" — \" + strenv(N)" "$f.tmp" \
-  || { rm -f "$f.tmp"; exit 1; }
-"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "resolve-question: result failed validation; store untouched" >&2; exit 1; }
+  yq -i ".open_questions[$idx].status = \"answered\" | .open_questions[$idx].resolution = strenv(TS) + \" — \" + strenv(N)" "$f.tmp.$$" \
+  || { rm -f "$f.tmp.$$"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp.$$" >/dev/null 2>&1 || { rm -f "$f.tmp.$$"; echo "resolve-question: result failed validation; store untouched" >&2; exit 1; }
 pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
-[ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
-mv "$f.tmp" "$f"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
+got="$(yq -r ".open_questions[$idx].status // \"\"" "$f")"
+[ "$got" = "answered" ] || { echo "resolve-question: post-write verify FAILED — store holds '$got'; a concurrent writer may have intervened, retry" >&2; exit 1; }
 "$SELF/regen-index" "$f"
 "$SELF/trust" "$f" >/dev/null 2>&1 \
   || echo "resolve-question: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2

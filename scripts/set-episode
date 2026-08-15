@@ -10,8 +10,11 @@ case "$ep" in idle|candidate-detected|awaiting-approval|committed) ;;
   *) echo "set-episode: invalid state '$ep'" >&2; exit 1 ;; esac
 sf="$AD/sessions/$sid.yaml"
 [ -f "$sf" ] || { echo "set-episode: no state file for session $sid" >&2; exit 1; }
-E="$ep" yq '.episode = strenv(E)' "$sf" > "$sf.tmp" || { rm -f "$sf.tmp"; exit 1; }
-yq -e '.' "$sf.tmp" >/dev/null 2>&1 || { rm -f "$sf.tmp"; exit 1; }
-mv "$sf.tmp" "$sf"
+. "$SELF/store-lock"
+lock_store "$sf" || exit 1
+trap 'unlock_store "$sf"' EXIT
+E="$ep" yq '.episode = strenv(E)' "$sf" > "$sf.tmp.$$" || { rm -f "$sf.tmp.$$"; exit 1; }
+yq -e '.' "$sf.tmp.$$" >/dev/null 2>&1 || { rm -f "$sf.tmp.$$"; exit 1; }
+mv "$sf.tmp.$$" "$sf"
 printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "episode" "$ep" >> "$AD/telemetry.log" 2>/dev/null || true
 exit 0

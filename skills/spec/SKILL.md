@@ -42,7 +42,11 @@ entries, not silent edits.
      harness — whatever the work touches.
    How to choose: read the roles register (`roles/` — one file per hat,
    each states what it owns) and `docs/SKILL-MAP.md` (every skill's
-   inbound paths); pick the narrowest hat that owns the component.
+   inbound paths) — **both live in the plugin root, not the governed
+   project**: resolve them from the newest installed plugin root when
+   there is no local copy. A project with its own agent register may
+   route from that instead, flagging the substitution inline. Pick the
+   narrowest hat that owns the component.
    The spec suggests; the deliberate skill assigns — but a spec that
    names no route leaves every implementer guessing.
 

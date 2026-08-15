@@ -18,14 +18,19 @@ SELF="$(cd "$(dirname "$0")" && pwd)"
 idx="$("$SELF/record-index" "$f" "$rid")" \
   || { echo "set-ratification: no record '$rid' in $f" >&2; exit 1; }
 case "$val" in approved) act="ratified" ;; rejected) act="rejected" ;; pending) act="reopened" ;; esac
-cp "$f" "$f.tmp"
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+cp "$f" "$f.tmp.$$"
 TS="$(date -u +%Y-%m-%d)" V="$val" N="$note" A="$act" \
-  yq -i ".records[$idx].ratification = strenv(V) | .records[$idx].events += [{\"date\": strenv(TS), \"action\": strenv(A), \"by\": \"human\", \"note\": strenv(N)}]" "$f.tmp" \
-  || { rm -f "$f.tmp"; exit 1; }
-"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "set-ratification: result failed validation; store untouched" >&2; exit 1; }
+  yq -i ".records[$idx].ratification = strenv(V) | .records[$idx].events += [{\"date\": strenv(TS), \"action\": strenv(A), \"by\": \"human\", \"note\": strenv(N)}]" "$f.tmp.$$" \
+  || { rm -f "$f.tmp.$$"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp.$$" >/dev/null 2>&1 || { rm -f "$f.tmp.$$"; echo "set-ratification: result failed validation; store untouched" >&2; exit 1; }
 pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
-[ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
-mv "$f.tmp" "$f"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
+got="$(yq -r ".records[$idx].ratification // \"\"" "$f")"
+[ "$got" = "$val" ] || { echo "set-ratification: post-write verify FAILED — store holds '$got', not '$val'; a concurrent writer may have intervened, retry" >&2; exit 1; }
 "$SELF/regen-index" "$f"
 "$SELF/trust" "$f" >/dev/null 2>&1 \
   || echo "set-ratification: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2

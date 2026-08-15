@@ -1,0 +1,39 @@
+# store-lock — sourced serialization for read-modify-write helpers
+# (issue #15: concurrent sessions silently lost each other's writes,
+# both exiting 0). mkdir is the portable atomic primitive (flock does
+# not ship on macOS). Callers: lock_store "$file" before the snapshot,
+# trap 'unlock_store "$file"' EXIT. Stale locks (>30s, a crashed
+# writer) are stolen; waiting times out loudly at ~15s (queued writers each pay full yq startup; CI machines are slow). This file is
+# deliberately NOT executable — it is a library, not an action.
+lock_store() {
+  _lf="$1.lock"
+  _tries=0
+  until mkdir "$_lf" 2>/dev/null; do
+    _now="$(date +%s)"
+    _mt="$(stat -c %Y "$_lf" 2>/dev/null || stat -f %m "$_lf" 2>/dev/null || echo "$_now")"
+    if [ $(( _now - _mt )) -gt 30 ]; then
+      # stealing is itself serialized (mkdir steal-lock) and staleness
+      # re-verified while holding it: a live lock can never be removed,
+      # because L cannot be re-created while it exists and no other
+      # stealer can remove it concurrently. Naive rmdir and even
+      # stat-then-mv both let two processes win (skeptic-reproduced).
+      if mkdir "$_lf.steal" 2>/dev/null; then
+        _now2="$(date +%s)"
+        _mt2="$(stat -c %Y "$_lf" 2>/dev/null || stat -f %m "$_lf" 2>/dev/null || echo 0)"
+        if [ "$_mt2" != "0" ] && [ $(( _now2 - _mt2 )) -gt 30 ]; then
+          rm -rf "$_lf" 2>/dev/null
+        fi
+        rmdir "$_lf.steal" 2>/dev/null
+      fi
+      continue
+    fi
+    _tries=$(( _tries + 1 ))
+    if [ "$_tries" -gt 300 ]; then
+      echo "store-lock: timed out waiting for $_lf — a concurrent writer holds it; retry, or remove the dir if its owner crashed" >&2
+      return 1
+    fi
+    sleep 0.05
+  done
+  return 0
+}
+unlock_store() { rmdir "$1.lock" 2>/dev/null || true; }

@@ -32,11 +32,19 @@ entries, not silent edits.
    requirements get observable pass conditions.
 7. **Out of scope** — named exclusions, so absence reads as decision.
 8. **Success criteria** — measurable, checkable when the work claims done.
-9. **Execution routing** — name the roles (`roles/`) and skills the
-   implementing cascade should engage, one line of why per assignment
-   (e.g. "architect: decomposition crosses two organs; git skill: the
-   work commits"). The spec suggests; the deliberate skill assigns —
-   but a spec that names no route leaves every implementer guessing.
+9. **Execution routing** — name who performs the work this spec
+   defines, one line of why per assignment:
+   - **plan owner**: the role that decomposes this spec into the plan —
+     architect for technical decomposition, project-manager for
+     sequencing (the plan skill then requires an owner-role per task);
+   - **builder hats**: one role per component, from the roles register;
+   - **skills each hat loads**: test-driven, git, direction, benchmark
+     harness — whatever the work touches.
+   How to choose: read the roles register (`roles/` — one file per hat,
+   each states what it owns) and `docs/SKILL-MAP.md` (every skill's
+   inbound paths); pick the narrowest hat that owns the component.
+   The spec suggests; the deliberate skill assigns — but a spec that
+   names no route leaves every implementer guessing.
 
 ## Experiment spec — required sections (pre-registration discipline)
 
@@ -52,6 +60,12 @@ entries, not silent edits.
 6. **Cost estimate** — tokens and human time, honest.
 7. **Results** — empty at filing, by construction; raw outputs filed
    under `docs/trials/` with the spec's date prefix.
+8. **Execution routing** — who runs it: the role per arm or stage, the
+   grader/reviewer role (independent of the runner —
+   policy-adversarial-handoff), and the skills each loads
+   (policy-reader-run for fixture sessions, the benchmark harness,
+   policy-epistemic always). Chosen the same way as design-spec
+   routing: roles register + `docs/SKILL-MAP.md`, narrowest hat wins.
 
 ## Rules
 

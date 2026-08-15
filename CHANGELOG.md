@@ -3,6 +3,19 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.13] — 2026-08-15
+
+- Spec routing completed (human review caught 0.5.12's version landing
+  incomplete): the Execution-routing section now names the plan owner
+  (architect vs project-manager), builder hats per component, and the
+  skills each hat loads; says HOW to choose (roles register +
+  SKILL-MAP, narrowest hat that owns the component); names the handoff
+  (the plan skill requires an owner-role per task downstream); and
+  experiment specs get their own routing section (runner per arm,
+  independent grader per adversarial-handoff, reader-run and harness
+  skills). A spec now suggests its performers on both templates, not
+  one.
+
 ## [0.5.12] — 2026-08-15
 
 - Gap-closure batch (self-audit, human-commissioned):

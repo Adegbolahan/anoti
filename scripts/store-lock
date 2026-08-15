@@ -1,9 +1,10 @@
+# shellcheck shell=bash
 # store-lock — sourced serialization for read-modify-write helpers
 # (issue #15: concurrent sessions silently lost each other's writes,
 # both exiting 0). mkdir is the portable atomic primitive (flock does
 # not ship on macOS). Callers: lock_store "$file" before the snapshot,
 # trap 'unlock_store "$file"' EXIT. Stale locks (>30s, a crashed
-# writer) are stolen; waiting times out loudly at ~15s (queued writers each pay full yq startup; CI machines are slow). This file is
+# writer) are stolen; waiting times out loudly at ~60s (queued writers each pay full yq startup; CI runners are slow and heavily contended). This file is
 # deliberately NOT executable — it is a library, not an action.
 lock_store() {
   _lf="$1.lock"
@@ -28,7 +29,7 @@ lock_store() {
       continue
     fi
     _tries=$(( _tries + 1 ))
-    if [ "$_tries" -gt 300 ]; then
+    if [ "$_tries" -gt 1200 ]; then
       echo "store-lock: timed out waiting for $_lf — a concurrent writer holds it; retry, or remove the dir if its owner crashed" >&2
       return 1
     fi

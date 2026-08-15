@@ -10,17 +10,22 @@ a="${1:-help}"
 [ "$#" -gt 0 ] && shift
 case "$a" in
   help|-h|--help|list)
-    echo "anoti <action> [args...] — actions:"
+    out="anoti <action> [args...] — actions:"
     for f in "$SELF"/*; do
       n="$(basename "$f")"
       [ -f "$f" ] && [ -x "$f" ] && [ "$n" != "anoti" ] || continue
       case "$n" in
         retrieve|classify|inhibit|persist-session|consolidation-gate|cleanup-session)
-          printf '  %-22s %s\n' "$n" "(hook — the harness runs it; JSON event on stdin)"; continue ;;
+          out="$out
+$(printf '  %-22s %s' "$n" "(hook — the harness runs it; JSON event on stdin)")"; continue ;;
       esac
       u="$(sed -n '2s/^# *//p' "$f")"
-      printf '  %-22s %s\n' "$n" "$u"
+      out="$out
+$(printf '  %-22s %s' "$n" "$u")"
     done
+    # one write, EPIPE-quiet: help | grep -q closes the pipe early and
+    # per-line printfs sprayed 'write error' noise across CI logs
+    { printf '%s\n' "$out"; } 2>/dev/null
     exit 0 ;;
 esac
 case "$a" in

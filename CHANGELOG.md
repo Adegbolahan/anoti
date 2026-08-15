@@ -17,6 +17,12 @@ their message (CI enforces the section exists and is non-empty).
   issue's own 10-round two-writer reproduction is now a test: zero
   lost writes, previously 10/10 rounds losing at least one. Hooks stay
   lock-free by design (fail-open, harness-serialized).
+- CI hotfix (same release): store-lock gains its shellcheck shell
+  directive (sourced lib, no shebang by design), the lock timeout rises
+  to ~60s (8 serialized yq-heavy writers exceeded 15s on a contended
+  ubuntu runner — loud timeout, but the test rightly counts it as a
+  loss), and `anoti help` writes once, EPIPE-quiet (help | grep -q
+  sprayed write-error noise across CI logs).
 - Spec routing paths (field relay): roles/ and SKILL-MAP live in the
   plugin root, not governed projects — the skill now says to resolve
   them from the newest installed plugin root, or a project's own agent

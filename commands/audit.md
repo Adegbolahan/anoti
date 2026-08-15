@@ -36,7 +36,11 @@ out-of-cadence deviation, never silently normalized.
      (`git ls-remote --tags`); a newer release means field fixes this
      project lacks → recommend the plugin update + /anoti:update;
    - probable claims older than 14 days (the digest already nudges;
-     the audit records the queue's depth over time).
+     the audit records the queue's depth over time);
+   - open questions the trail shows answered (a shipped fix, a closed
+     issue, a ratified record) → retire mechanically with
+     `scripts/resolve-question <store> <id> "<resolver ref>"` inside
+     the episode flow.
 4. **Apply the frozen decision rules** — incidents produce evidence
    events + mandatory lessons; four clean audits may append one
    observational supporting event (probable-cap); ratification-integrity

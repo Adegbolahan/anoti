@@ -56,8 +56,9 @@ store_digest() { # $1=file $2=name $3=trustfile $4=line-label ("" or "[global] "
     q="$(yq -r '[.open_questions // [] | .[] | select(.status == "open")] | length' "$1" 2>/dev/null || echo 0)"
     if [ "$q" -gt 0 ]; then
       emit "- ${L}open questions ($2): $q"
-      for qid in $(yq -r '.open_questions // [] | .[] | select(.status == "open") | .id' "$1" 2>/dev/null); do
-        qtext="$(yq -r ".open_questions[] | select(.id == \"$qid\") | .question" "$1" 2>/dev/null | tr '\n' ' ' | cut -c1-220)"
+      for qi in $(yq -r '.open_questions // [] | to_entries | .[] | select(.value.status == "open") | .key' "$1" 2>/dev/null); do
+        qid="$(yq -r ".open_questions[$qi].id // \"\"" "$1" 2>/dev/null)"
+        qtext="$(yq -r ".open_questions[$qi].question // \"\"" "$1" 2>/dev/null | tr '\n' ' ' | cut -c1-220)"
         try_emit "  - ${L}$qid: $qtext"
       done
     fi

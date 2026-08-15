@@ -3,6 +3,17 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.14] — 2026-08-15
+
+- Seventh field-report fix (issue #14, ecounterlist): `resolve-question`
+  adds the retire half of the open_questions contract — flips exactly
+  one open entry to `status: answered` with a dated resolution note
+  (the store's established convention), never deletes, refuses unknown
+  ids and non-open entries, ids by exact comparison per G002, full
+  set-ratification write contract. The digest's question loop also
+  drops its own yq `==` (index iteration) — the G002 class closed in
+  the last place it lived.
+
 ## [0.5.13] — 2026-08-15
 
 - Spec routing completed (human review caught 0.5.12's version landing

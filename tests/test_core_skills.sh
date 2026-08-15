@@ -140,3 +140,5 @@ awk '/Experiment spec/,/## Rules/' "$ROOT/skills/spec/SKILL.md" | grep -qi "rout
 assert_ok $? "experiment specs carry execution routing too"
 grep -qi "plan skill" "$ROOT/skills/spec/SKILL.md"
 assert_ok $? "spec names its handoff: the plan skill picks up the routing"
+grep -q "resolve-question" "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "#14 consolidate quick-reference carries resolve-question"

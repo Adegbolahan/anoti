@@ -1,5 +1,6 @@
 #!/bin/bash
 # append-question <store.yaml>   (question as JSON on stdin)
+# Counterpart: resolve-question retires an answered entry.
 # Mechanical open_questions append — the write the consolidate skill
 # mandates when promoting surviving doubts. Validates before moving;
 # preserves the store's file mode.

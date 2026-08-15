@@ -14,6 +14,7 @@ the single writer; agents (including the consolidator) only propose.
 scripts/append-classification <session-id> <fast|slow> <reason...>
 scripts/session-append <session-id> <frames|hypotheses|in_flight|candidates>  # JSON on stdin
 scripts/append-question <store.yaml>            # question JSON on stdin
+scripts/resolve-question <store.yaml> <id> <note...>  # retire an answered question — dated resolution, never deletes
 scripts/append-todo <TODOS.md> <text...>        # dated unchecked item
 scripts/complete-todo <TODOS.md> <match> <note...>  # tick ONE matching item — DONE date + note; refuses ambiguity
 scripts/append-lesson <LESSONS-LEARNT.md> <text...>  # dated lesson entry
@@ -102,7 +103,10 @@ process violation the audit counts, not a technical impossibility.
    reported (D021).
 9. **After event appends:** run `scripts/trust <store>` (append-record
    does this itself; append-event leaves trust to the flow's end).
-10. **Questions:** promote surviving report doubts mechanically —
+10. **Questions:** promote surviving report doubts mechanically — and
+    when a candidate ANSWERS an existing open question, retire it in the
+    same breath: `scripts/resolve-question <store> <id> "<what answered
+    it>"` (issue #14) —
     build `{id, date, question, raised_by, context, status, refs}` as
     JSON and `scripts/append-question <store> < q.json`.
 11. **Run the session retrospective** (policy-retrospect, universal):

@@ -1,0 +1,37 @@
+#!/bin/bash
+# resolve-question <store.yaml> <question-id> <note...>
+# The retire half of the open_questions contract (issue #14 — the #12
+# argument, third organ): flips exactly ONE open entry to
+# status: answered with a dated resolution note, matching the store's
+# established convention. Never deletes — answered questions are
+# history. Refuses unknown ids and non-open entries (a silent no-op
+# reads as a successful closure). Ids resolve by exact shell comparison
+# (G002: yq's == pattern-matches). Validates, preserves mode,
+# regenerates the index, re-trusts — set-ratification's contract.
+set -u
+f="${1:?usage: resolve-question <store> <question-id> <note...>}"
+qid="${2:?question id required}"
+shift 2
+note="${*:?note required}"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+idx=""
+i=0
+while IFS= read -r cur; do
+  [ "$cur" = "$qid" ] && idx="$i"
+  i=$((i+1))
+done <<< "$(yq -r '.open_questions // [] | .[] | .id // ""' "$f" 2>/dev/null)"
+[ -n "$idx" ] || { echo "resolve-question: no question '$qid' in $f" >&2; exit 1; }
+st="$(yq -r ".open_questions[$idx].status // \"\"" "$f")"
+[ "$st" = "open" ] || { echo "resolve-question: '$qid' is not open (status: ${st:-unset}) — refusing a no-op closure" >&2; exit 1; }
+cp "$f" "$f.tmp"
+TS="$(date -u +%Y-%m-%d)" N="$note" \
+  yq -i ".open_questions[$idx].status = \"answered\" | .open_questions[$idx].resolution = strenv(TS) + \" — \" + strenv(N)" "$f.tmp" \
+  || { rm -f "$f.tmp"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp" >/dev/null 2>&1 || { rm -f "$f.tmp"; echo "resolve-question: result failed validation; store untouched" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp" 2>/dev/null
+mv "$f.tmp" "$f"
+"$SELF/regen-index" "$f"
+"$SELF/trust" "$f" >/dev/null 2>&1 \
+  || echo "resolve-question: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+exit 0

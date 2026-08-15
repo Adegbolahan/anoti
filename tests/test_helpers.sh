@@ -438,3 +438,33 @@ out="$(printf '{"session_id":"g2","tool_name":"Edit","tool_input":{"file_path":"
 printf '%s' "$out" | grep -q "write via the helpers"
 assert_ok $? "memory-organ denial still routes via the helpers"
 ); rm -rf "$tmp"
+
+# --- #14 resolve-question: the retire half of the open_questions contract ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+printf '%s' '{"id":"Q009","date":"2026-08-15","question":"is the retire half missing?","raised_by":"session","status":"open"}' | "$ROOT/scripts/append-question" s.yaml
+printf '%s' '{"id":"Q010","date":"2026-08-15","question":"still open after sibling resolves?","raised_by":"session","status":"open"}' | "$ROOT/scripts/append-question" s.yaml
+"$ROOT/scripts/resolve-question" s.yaml Q009 "answered upstream: helper shipped in 0.5.14 (#14)"
+assert_ok $? "resolve-question exits 0 on an open match"
+assert_eq "$(yq -r '.open_questions[] | select(.id=="Q009") | .status' s.yaml)" "answered" "status flips to answered (store convention)"
+yq -r '.open_questions[] | select(.id=="Q009") | .resolution' s.yaml | grep -q "helper shipped"
+assert_ok $? "dated resolution note recorded"
+assert_eq "$(yq -r '.open_questions[] | select(.id=="Q010") | .status' s.yaml)" "open" "sibling question untouched"
+assert_eq "$(yq -r '.open_questions | length' s.yaml)" "2" "never deletes — both entries remain"
+"$ROOT/scripts/resolve-question" s.yaml Q009 "again" 2>/dev/null
+assert_eq "$?" "1" "already-answered refused — no silent re-closure"
+"$ROOT/scripts/resolve-question" s.yaml NOPE "x" 2>/dev/null
+assert_eq "$?" "1" "unknown question id refused"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_ok $? "store valid after resolution"
+grep -qs "$(shasum -a 256 s.yaml | cut -d' ' -f1)" .anoti/trust
+assert_ok $? "store re-trusted after resolution"
+yq -i '.index = []' s.yaml
+"$ROOT/scripts/resolve-question" s.yaml Q010 "second closure to test index regen"
+assert_eq "$(yq -r '.index | length' s.yaml)" "$(yq -r '.records | length' s.yaml)" "resolve-question regenerates the index (mutation-proof)"
+cp s.yaml GROUNDING.yaml && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$(printf '{"session_id":"q14"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "Q009"
+assert_eq "$?" "1" "answered question no longer surfaces in the digest (end-to-end)"
+); rm -rf "$tmp"

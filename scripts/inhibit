@@ -20,7 +20,16 @@ case "$tool" in
   Write|Edit|NotebookEdit)
     p="$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' 2>/dev/null)"
     case "$p" in
-      *GROUNDING.yaml|*ROADMAP.md|*HIGH-LEVEL-STORIES.md|*TODOS.md|*LESSONS-LEARNT.md)
+      *ROADMAP.md|*HIGH-LEVEL-STORIES.md)
+        ep="idle"
+        if [ -n "$sid" ] && [ -f "$AD/sessions/$sid.yaml" ]; then
+          ep="$(yq -r '.episode // "idle"' "$AD/sessions/$sid.yaml" 2>/dev/null || echo idle)"
+        fi
+        case "$ep" in
+          awaiting-approval|committed) exit 0 ;;
+          *) decide deny "human-owned direction organ (episode=$ep) — agents draft via the direction skill and the human ratifies (policy-draft-for-ratification); apply only a human-ratified draft, with the episode open (scripts/set-episode $sid awaiting-approval). Unratified direct edits are reverted; these organs have no mechanical helper by design" ;;
+        esac ;;
+      *GROUNDING.yaml|*TODOS.md|*LESSONS-LEARNT.md)
         ep="idle"
         if [ -n "$sid" ] && [ -f "$AD/sessions/$sid.yaml" ]; then
           if yq -e '.' "$AD/sessions/$sid.yaml" >/dev/null 2>&1; then

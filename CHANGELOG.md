@@ -3,6 +3,43 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.12] — 2026-08-15
+
+- Gap-closure batch (self-audit, human-commissioned):
+  - Organ-aware inhibition (#10/#12 class closed proactively): direction
+    organs (ROADMAP, HIGH-LEVEL-STORIES) get a denial that tells the
+    truth — draft via the direction skill, hand-edit with the episode
+    open is the sanctioned mode, no mechanical helper by design; memory
+    organs keep the helper route. No denial promises a helper that does
+    not exist.
+  - macOS CI job: the case-insensitivity tests (#11 class) now execute
+    on a case-insensitive filesystem in CI instead of only on the
+    author's machine.
+  - Restart-drift digest line: when the session runs an older plugin
+    version than the newest installed in the cache, the digest says so
+    and nudges a restart — offline, no network. The audit gains the
+    networked half: newest installed vs newest released tag.
+  - Lesson graduation routed: consolidate's scope routing now names the
+    global-tier graduation class for agent-craft lessons (precedent
+    G002/G003 — yq wildcard equality and state-resolution anchoring,
+    graduated this release).
+  - Document routing (human directive): the spec standard gains a
+    required Execution-routing section (name the roles and skills the
+    implementing cascade should engage) and the plan standard requires
+    an owner-role per task — the document suggests, deliberate assigns.
+  - Adversarial fix round: direction-organ denial reconciled with the
+    direction skill and policy-draft-for-ratification (apply only a
+    human-ratified draft — no invented hand-edit mode), consolidate's
+    scope-routing prose repaired (splice garble, regression-pinned),
+    the drift line's newest-version computation filters to
+    version-shaped names, tests-macos gates the release, and the weak
+    guards the skeptic proved vacuous by mutation are now non-vacuous.
+- Review ritual ran live for the first time (data commit): D005/D008
+  promoted on multi-project field evidence, D014/D015 promoted as
+  closed historical claims, D003/D004/D010 kept with dated review
+  events, D022 (no-MCP ruling), D023 (adversarial-review efficacy,
+  probable), D024 (single pending surface) recorded.
+
 ## [0.5.11] — 2026-08-15
 
 - Sixth field-report fix (issue #13, livingsyncs polyrepo): state

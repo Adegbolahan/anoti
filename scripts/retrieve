@@ -91,6 +91,15 @@ if [ -n "$RM" ]; then
   [ -z "$ph" ] && ph="$(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -n "$ph" ] && emit "- roadmap phase: $ph (see $RM)"
 fi
+# restart-drift: when running from a version dir in the plugin cache and
+# a newer version is installed beside it, say so — offline, no network
+cur="$(basename "$(dirname "$SELF")")"
+if [ "$(basename "$(dirname "$(dirname "$SELF")")")" = "anoti" ] \
+  && printf '%s' "$cur" | grep -qE '^[0-9]+\.[0-9]+'; then
+  newest="$(command ls -1 "$(dirname "$(dirname "$SELF")")" 2>/dev/null | grep -E '^[0-9]+(\.[0-9]+)+$' | sort -V | tail -1)"
+  [ -n "$newest" ] && [ "$newest" != "$cur" ] \
+    && [ -n "$lines" ] && try_emit "- plugin update installed ($newest) but this session runs $cur — restart to load it"
+fi
 # orientation line only where a workspace already speaks — never
 # manufacture a digest for an ungoverned directory
 [ -n "$lines" ] && try_emit "- orientation: the demo skill teaches the workflows — when to use what, why, and a safe hands-on tour"

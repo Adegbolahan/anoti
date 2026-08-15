@@ -424,3 +424,17 @@ r="$("$ROOT/scripts/anoti-dir")"
 [ "$r" = "$(pwd -P)/padded-state" ]
 assert_ok $? "state_dir trailing whitespace stripped from the resolved path"
 ); rm -rf "$tmp"
+
+# --- gap 2: organ-aware denial — the unblock path is true for every organ ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+out="$(printf '{"session_id":"g2","tool_name":"Edit","tool_input":{"file_path":"docs/ROADMAP.md"}}' | "$ROOT/scripts/inhibit")"
+printf '%s' "$out" | grep -qi "direction skill" && printf '%s' "$out" | grep -qi "human-ratified draft"
+assert_ok $? "direction-organ denial matches draft-for-ratification (no phantom helpers, no invented mode)"
+out="$(printf '%s' "$out")"
+printf '%s' "$out" | grep -q "write via the helpers"
+assert_eq "$?" "1" "direction-organ denial does not promise helpers that do not exist"
+out="$(printf '{"session_id":"g2","tool_name":"Edit","tool_input":{"file_path":"TODOS.md"}}' | "$ROOT/scripts/inhibit")"
+printf '%s' "$out" | grep -q "write via the helpers"
+assert_ok $? "memory-organ denial still routes via the helpers"
+); rm -rf "$tmp"

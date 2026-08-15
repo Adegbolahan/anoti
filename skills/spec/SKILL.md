@@ -32,6 +32,11 @@ entries, not silent edits.
    requirements get observable pass conditions.
 7. **Out of scope** — named exclusions, so absence reads as decision.
 8. **Success criteria** — measurable, checkable when the work claims done.
+9. **Execution routing** — name the roles (`roles/`) and skills the
+   implementing cascade should engage, one line of why per assignment
+   (e.g. "architect: decomposition crosses two organs; git skill: the
+   work commits"). The spec suggests; the deliberate skill assigns —
+   but a spec that names no route leaves every implementer guessing.
 
 ## Experiment spec — required sections (pre-registration discipline)
 

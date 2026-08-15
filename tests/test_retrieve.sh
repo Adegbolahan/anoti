@@ -188,3 +188,30 @@ else
   echo "  (skip: case-sensitive filesystem — lessons case scenario cannot reproduce here)"
 fi
 ); rm -rf "$tmp"
+
+# --- gap 4: restart-drift line when the session runs an older cache version ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p cache/anoti/anoti/0.5.9 cache/anoti/anoti/0.5.11
+cp -R "$ROOT/scripts" cache/anoti/anoti/0.5.9/scripts
+mkdir -p proj && cd proj
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$(printf '{"session_id":"dr"}' | "$tmp/cache/anoti/anoti/0.5.9/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "0.5.11" && printf '%s' "$out" | grep -qi "restart"
+assert_ok $? "gap 4: digest surfaces newer installed version + restart nudge"
+out="$(printf '{"session_id":"dr"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -qi "restart to load"
+assert_eq "$?" "1" "no drift line when not running from a version cache"
+touch "$tmp/cache/anoti/anoti/zzz-notes.txt"
+mkdir -p "$tmp/cache/anoti/anoti/0.5.11/scripts" 2>/dev/null
+cp -R "$ROOT/scripts/." "$tmp/cache/anoti/anoti/0.5.11/scripts/" 2>/dev/null
+out="$(printf '{"session_id":"dr"}' | "$tmp/cache/anoti/anoti/0.5.11/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "zzz-notes"
+assert_eq "$?" "1" "stray cache files never counted as versions (newest filter)"
+printf '%s' "$out" | grep -qi "restart to load"
+assert_eq "$?" "1" "no drift line when already on the newest version"
+cd "$tmp" && mkdir ungov fakehome && cd ungov
+out="$(printf '{"session_id":"dr"}' | HOME="$tmp/fakehome" "$tmp/cache/anoti/anoti/0.5.9/scripts/retrieve")"
+[ -z "$out" ]
+assert_ok $? "drift line never manufactures a digest for an ungoverned dir (lines guard)"
+); rm -rf "$tmp"

@@ -64,8 +64,13 @@ process violation the audit counts, not a technical impossibility.
    record, not a new record. A contradiction is flagged (`contradicts`
    relationship + new open question), never resolved by overwrite.
 6. **Scope routing:** about-this-project → project store; about-the-user
-   or about-how-agents-work → global store. The human confirms routing —
-   misfiled memory is worse than no memory.
+   or about-how-agents-work → global store. A lesson whose applicability
+   is agent-craft rather than this project (a tooling gotcha, a
+   resolution principle, a pattern any governed project would hit) is a
+   **graduation candidate for the global tier**: propose it as a global
+   claim with the project trail as evidence, human-gated like every
+   global write (precedent: G002/G003, graduated 2026-08-15). The human
+   confirms routing — misfiled memory is worse than no memory.
 7. **Present to the human:** statement, type, evidence, suggested scope.
    Approved candidates append as `ratification: approved` only if the
    human said so explicitly; otherwise `pending`. **Instruction is

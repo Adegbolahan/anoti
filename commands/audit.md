@@ -31,6 +31,10 @@ out-of-cadence deviation, never silently normalized.
      `scripts/complete-todo <TODOS.md> <match> "<evidence ref>"` inside
      the episode flow — the sweep can now close what it opens;
    - abandoned session files in the state dir → list;
+   - plugin release drift: compare the newest installed plugin version
+     (plugin cache) against the anoti repo's newest release tag
+     (`git ls-remote --tags`); a newer release means field fixes this
+     project lacks → recommend the plugin update + /anoti:update;
    - probable claims older than 14 days (the digest already nudges;
      the audit records the queue's depth over time).
 4. **Apply the frozen decision rules** — incidents produce evidence

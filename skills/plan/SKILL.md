@@ -45,6 +45,11 @@ advance so mid-flight judgment executes the plan instead of improvising.
 
 ## Rules
 
+- **Every task names its role** — one hat from `roles/` per task, with
+  the skills that hat must load (test-driven, git, spec…). A task
+  without an owner-role is unassignable in the cascade; the plan
+  suggests, deliberate assigns.
+
 - **No placeholder** content: "TBD", "similar to task N", "add error
   handling", steps that describe without showing — plan failures, all.
 - Assume the executor has zero context and questionable taste: exact

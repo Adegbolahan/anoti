@@ -23,6 +23,16 @@ jobs:
       - name: Run suite
         run: bash tests/run.sh
 
+  tests-macos:
+    name: Test suite (macOS — case-insensitive fs)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yq and jq
+        run: brew install yq jq
+      - name: Run suite
+        run: bash tests/run.sh
+
   lint:
     name: shellcheck
     runs-on: ubuntu-latest
@@ -113,7 +123,7 @@ jobs:
 
   release:
     name: Tag release
-    needs: [tests, lint, hook-schema, versions]
+    needs: [tests, tests-macos, lint, hook-schema, versions]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

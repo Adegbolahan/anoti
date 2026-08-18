@@ -64,33 +64,69 @@ store_digest() { # $1=file $2=name $3=trustfile $4=line-label ("" or "[global] "
     fi
   fi
 }
+# #18: brownfield organ paths — the settings pattern (#16) extended to
+# every hook-read organ. Defaults stay D012's fixed paths; an explicit
+# key in .claude/anoti.local.md wins. Parse mirrors anoti-dir's.
+cfgk() {
+  [ -f .claude/anoti.local.md ] || return 0
+  sed -n "/^---$/,/^---$/{ /^$1:/{ s/^$1: *//; s/[[:space:]]*$//; p; }; }" .claude/anoti.local.md | head -1
+}
 g="$HOME/.claude/anoti/GROUNDING.yaml"
 [ -f "$g" ] && store_digest "$g" "global memory" "$HOME/.claude/anoti/trust" "[global] "
-fx GROUNDING.yaml && store_digest GROUNDING.yaml "project memory" "$AD/trust" ""
-if fx TODOS.md; then
-  tc="$(grep -c '^- \[ \]' TODOS.md 2>/dev/null)"; tc="${tc:-0}"
-  emit "- open todos: $tc (see TODOS.md)"
+PSTORE=""
+fx GROUNDING.yaml && { store_digest GROUNDING.yaml "project memory" "$AD/trust" ""; PSTORE=1; }
+TD="$(cfgk todos_path)"; [ -n "$TD" ] || TD=TODOS.md
+if fx "$TD"; then
+  tc="$(grep -c '^- \[ \]' "$TD" 2>/dev/null)"; tc="${tc:-0}"
+  emit "- open todos: $tc (see $TD)"
 fi
 # lessons is deliberately an enrichment (try_emit): unlike the count-only
 # core lines it carries content (the truncated latest entry), so it yields
 # under budget pressure rather than crowding the always-emit lines
-if fx LESSONS-LEARNT.md; then
-  lc="$(grep -c '^- ' LESSONS-LEARNT.md 2>/dev/null)"; lc="${lc:-0}"
+LL="$(cfgk lessons_path)"; [ -n "$LL" ] || LL=LESSONS-LEARNT.md
+if fx "$LL"; then
+  lc="$(grep -c '^- ' "$LL" 2>/dev/null)"; lc="${lc:-0}"
   if [ "$lc" -gt 0 ]; then
-    ll="$(grep '^- ' LESSONS-LEARNT.md | tail -1 | sed 's/^- //' | cut -c1-100)"
-    try_emit "- lessons: $lc (latest: $ll) — grep LESSONS-LEARNT.md for your topic at attend time"
+    ll="$(grep '^- ' "$LL" | tail -1 | sed 's/^- //' | cut -c1-100)"
+    try_emit "- lessons: $lc (latest: $ll) — grep $LL for your topic at attend time"
   fi
 fi
-HS=""; fx docs/HIGH-LEVEL-STORIES.md && HS=docs/HIGH-LEVEL-STORIES.md; [ -z "$HS" ] && fx HIGH-LEVEL-STORIES.md && HS=HIGH-LEVEL-STORIES.md
+HS="$(cfgk story_path)"
+[ -n "$HS" ] && ! fx "$HS" && HS=""
+[ -z "$HS" ] && fx docs/HIGH-LEVEL-STORIES.md && HS=docs/HIGH-LEVEL-STORIES.md
+[ -z "$HS" ] && fx HIGH-LEVEL-STORIES.md && HS=HIGH-LEVEL-STORIES.md
 if [ -n "$HS" ]; then
   sc2="$(grep -cE '^(\| US-[0-9]|- As )' "$HS" 2>/dev/null)"; sc2="${sc2:-0}"
   emit "- value standard: $HS ($sc2 stories) — attend traces goals to it"
 fi
-RM=""; fx docs/ROADMAP.md && RM=docs/ROADMAP.md; [ -z "$RM" ] && fx ROADMAP.md && RM=ROADMAP.md
+RM="$(cfgk roadmap_path)"
+[ -n "$RM" ] && ! fx "$RM" && RM=""
+[ -z "$RM" ] && fx docs/ROADMAP.md && RM=docs/ROADMAP.md
+[ -z "$RM" ] && fx ROADMAP.md && RM=ROADMAP.md
 if [ -n "$RM" ]; then
   ph="$(grep -m1 -i '^## .*current' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -z "$ph" ] && ph="$(grep -m1 '^## ' "$RM" 2>/dev/null | sed 's/^## //')"
   [ -n "$ph" ] && emit "- roadmap phase: $ph (see $RM)"
+fi
+# warnings only for a GOVERNED project (its own store present) — an
+# unrelated global store or a bare TODOS.md must not trigger them
+if [ -n "$PSTORE" ]; then
+  if [ -z "$RM" ]; then
+    rmc="$(cfgk roadmap_path)"
+    if [ -n "$rmc" ]; then
+      try_emit "- roadmap_path: '$rmc' does not resolve (case-exact) — fix .claude/anoti.local.md"
+    else
+      try_emit "- roadmap organ not found (docs/ROADMAP.md, ROADMAP.md, or roadmap_path: in .claude/anoti.local.md) — direction lines stay silent until mapped"
+    fi
+  fi
+  if [ -z "$HS" ]; then
+    hsc="$(cfgk story_path)"
+    if [ -n "$hsc" ]; then
+      try_emit "- story_path: '$hsc' does not resolve (case-exact) — fix .claude/anoti.local.md"
+    else
+      try_emit "- stories organ not found (docs/HIGH-LEVEL-STORIES.md, HIGH-LEVEL-STORIES.md, or story_path:) — attend has no value standard to trace to"
+    fi
+  fi
 fi
 # restart-drift: when running from a version dir in the plugin cache and
 # a newer version is installed beside it, say so — offline, no network

@@ -3,6 +3,23 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.18] — 2026-08-18
+
+- Tenth field-report fix (issue #18, AmFam Backstage — relayed via the
+  feedback queue, gh absent at the site): brownfield adoption now
+  covers every hook-read organ. `todos_path:`, `lessons_path:`,
+  `roadmap_path:`, `story_path:` in `.claude/anoti.local.md` are
+  resolved by retrieve exactly as `state_dir`/`spec_dir` are — D012's
+  fixed paths remain the defaults; the explicit mapping wins (repos
+  where `docs/` is a published TechDocs/MkDocs tree stop colliding).
+  The dangerous silence is gone: a workspace with a store but no
+  reachable roadmap/stories organ gets a loud digest line naming the
+  accepted paths and the config key. skillify's brownfield prose now
+  states exactly which organs adopt via which mechanism, offers the
+  verified root-symlink alternative (human-ratified, never silent),
+  and admits the gate limitation for non-canonical basenames.
+  Multi-valued spec_dir deferred to TODOS pending a second site.
+
 ## [0.5.17] — 2026-08-15
 
 - Ninth field-report batch (issues #16-#17, ecounterlist brownfield):

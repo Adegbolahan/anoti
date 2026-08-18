@@ -172,8 +172,8 @@ out="$(printf '{"session_id":"lx"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpe
 printf '%s' "$out" | grep -qi "lessons:"
 assert_eq "$?" "1" "no lessons organ -> no lessons line"
 ); rm -rf "$tmp"
-grep -q "fx LESSONS-LEARNT.md" "$ROOT/scripts/retrieve"
-assert_ok $? "lessons organ resolved case-exactly (mechanism pin)"
+grep -q 'fx "$LL"' "$ROOT/scripts/retrieve" && grep -q 'LL=LESSONS-LEARNT.md' "$ROOT/scripts/retrieve"
+assert_ok $? "lessons organ resolved case-exactly with configurable path (mechanism pin)"
 tmp="$(mktemp -d)"; ( cd "$tmp"
 touch .probe-AB
 if [ -e .probe-ab ]; then
@@ -214,4 +214,41 @@ cd "$tmp" && mkdir ungov fakehome && cd ungov
 out="$(printf '{"session_id":"dr"}' | HOME="$tmp/fakehome" "$tmp/cache/anoti/anoti/0.5.9/scripts/retrieve")"
 [ -z "$out" ]
 assert_ok $? "drift line never manufactures a digest for an ungoverned dir (lines guard)"
+); rm -rf "$tmp"
+
+# --- #18 organ-path adoption: the four hook-read organs get the #16 treatment ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+git init -q -b main .
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+mkdir -p dev-docs .claude
+printf -- '- [ ] field item (raised 2026-08-18)\n' > dev-docs/TODOS.md
+printf -- '- 2026-08-18 — field lesson\n' > dev-docs/LESSONS-LEARNT.md
+printf '## Phase 9: Field ← current\n' > dev-docs/roadmap.md
+printf '## Register\n- US-001 x\n- US-002 y\n' > dev-docs/stories.md
+printf -- '---\ntodos_path: dev-docs/TODOS.md\nlessons_path: dev-docs/LESSONS-LEARNT.md\nroadmap_path: dev-docs/roadmap.md\nstory_path: dev-docs/stories.md\n---\n' > .claude/anoti.local.md
+out="$(printf '{"session_id":"o18"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "open todos: 1"
+assert_ok $? "#18 todos_path honored"
+printf '%s' "$out" | grep -q "lessons: 1"
+assert_ok $? "#18 lessons_path honored"
+printf '%s' "$out" | grep -q "Phase 9"
+assert_ok $? "#18 roadmap_path honored (custom basename)"
+printf '%s' "$out" | grep -qi "value standard"
+assert_ok $? "#18 story_path honored"
+rm .claude/anoti.local.md
+out="$(printf '{"session_id":"o18"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -qi "roadmap organ not found\|no roadmap organ"
+assert_ok $? "#18 silent gap becomes a loud digest line (roadmap)"
+printf '%s' "$out" | grep -qi "stories organ not found\|no stories organ\|value-standard organ"
+assert_ok $? "#18 silent gap becomes a loud digest line (stories)"
+printf -- '---\nroadmap_path: dev-docs/GONE.md\n---\n' > .claude/anoti.local.md
+out="$(printf '{"session_id":"o18"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "roadmap_path: 'dev-docs/GONE.md' does not resolve"
+assert_ok $? "#18 a dangling configured path is named, not generic"
+cd "$tmp" && mkdir plain fakehome && cd plain
+printf -- '- [ ] stray todo\n' > TODOS.md
+out="$(printf '{"session_id":"o18b"}' | HOME="$tmp/fakehome" "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null)"
+printf '%s' "$out" | grep -qi "organ not found"
+assert_eq "$?" "1" "#18 no project store, no warnings — ungoverned dirs stay unnagged"
 ); rm -rf "$tmp"

@@ -3,6 +3,24 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.20] — 2026-08-18
+
+- Field-review fix: the inhibit destructive-SQL row fired on the word
+  "truncate" in prose (a heredoc file write and a commit message were
+  blocked — and, fittingly, this very changelog commit was blocked by the
+  old row while being written). The row now requires BOTH a SQL-shaped
+  statement AND a DB client in the command (psql, mysql, mariadb,
+  sqlite3, sqlcmd, clickhouse-client, cockroach, supabase, prisma); real
+  remote TRUNCATE / DROP DATABASE via a client — flag, pipe, or heredoc-fed — is
+  still denied. Six shapes test-pinned.
+- Field-review assessment (no code change): "session-append and
+  append-classification fail silently" is not reproducible on 0.5.11+ —
+  every writer refuses loudly (stderr + exit 1) when unanchored; before
+  0.5.11 the same writers silently succeeded into a stray store in the
+  wrong directory (issue #13). The reporting site should confirm its
+  plugin version and surface stderr; the digest's restart-drift line
+  (0.5.12) exists for exactly this.
+
 ## [0.5.19] — 2026-08-18
 
 - TODOS-closure batch (per-item adversarial review, human-raised spawn

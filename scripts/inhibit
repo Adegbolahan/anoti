@@ -71,8 +71,13 @@ case "$tool" in
     if printf '%s' "$c" | tr ';&|' '\n' | grep -E 'git push' | grep -E '[[:space:]](--force|-f)([[:space:]]|$)' | grep -qE '[[:space:]](main|master)([[:space:]]|$)'; then
       decide deny "catastrophic: force-push to default branch"
     fi
-    # deny row 3: destructive SQL at non-local target
-    if printf '%s' "$c" | grep -qiE 'DROP DATABASE|TRUNCATE ' && ! printf '%s' "$c" | grep -qE 'localhost|127\.0\.0\.1'; then
+    # deny row 3: destructive SQL at non-local target — requires BOTH a
+    # SQL-shaped statement AND a DB client in the command: the word
+    # "truncate" in prose written via heredoc or a commit message is not
+    # SQL (field review 2026-08-18: a file write was blocked for it)
+    if printf '%s' "$c" | grep -qiE 'DROP DATABASE|TRUNCATE[[:space:]]+(TABLE[[:space:]]+)?[A-Za-z_"`]' \
+      && printf '%s' "$c" | grep -qiE '(^|[[:space:]|;&(])(psql|mysql|mariadb|sqlite3|sqlcmd|clickhouse-client|cockroach|supabase|prisma)([[:space:]]|$)' \
+      && ! printf '%s' "$c" | grep -qE 'localhost|127\.0\.0\.1'; then
       decide deny "catastrophic: destructive SQL against non-local target"
     fi
     # ask row: consequential commands

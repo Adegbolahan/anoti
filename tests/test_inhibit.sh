@@ -24,3 +24,25 @@ assert_eq "$(d '{"session_id":"s","tool_name":"Bash","tool_input":{"command":"gi
 assert_eq "$(d '{"session_id":"s","tool_name":"Bash","tool_input":{"command":"git push --force origin main"}}')" "deny" "real force-push still denied"
 assert_eq "$(d '{"session_id":"s","tool_name":"Bash","tool_input":{"command":"git push -f origin main"}}')" "deny" "short-flag force-push still denied"
 ); rm -rf "$tmp"
+
+# --- field review: destructive-SQL row must not fire on prose ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+run_inhibit() { printf '{"session_id":"fp","tool_name":"Bash","tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -Rs .)" | "$ROOT/scripts/inhibit"; }
+out="$(run_inhibit 'cat > notes.md <<EOF
+We should truncate the log lines to 80 chars.
+EOF')"
+[ -z "$out" ]; assert_ok $? "prose containing 'truncate' in a heredoc is not destructive SQL"
+out="$(run_inhibit 'git commit -m "truncate the summary field"')"
+[ -z "$out" ]; assert_ok $? "commit message mentioning truncate is not destructive SQL"
+out="$(run_inhibit 'psql -h db.prod.example.com -c "TRUNCATE TABLE users"')"
+printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "TRUNCATE via a DB client against a remote host is still denied"
+out="$(run_inhibit 'echo "DROP DATABASE prod" | mysql -h 10.0.0.5')"
+printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "piped DROP DATABASE into a client is still denied"
+out="$(run_inhibit 'psql -h localhost -c "TRUNCATE TABLE users"')"
+[ -z "$out" ]; assert_ok $? "local target stays allowed (unchanged)"
+out="$(run_inhibit 'psql -h db.prod.example.com <<SQL
+TRUNCATE TABLE users;
+SQL')"
+printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "heredoc SQL fed to a client is still denied"
+); rm -rf "$tmp"

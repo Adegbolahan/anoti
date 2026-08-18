@@ -552,3 +552,123 @@ done
 wait
 assert_eq "$(yq -r '.hypotheses | length' .anoti/sessions/cs.yaml)" "8" "8 writers through a stale-lock steal, zero lost (atomic-rename steal)"
 ); rm -rf "$tmp"
+
+# --- TODO line-41 closure: unreadable state is loud on EVERY organ branch ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti/sessions
+printf 'episode: "unterminated\n' > .anoti/sessions/bad.yaml
+err="$(printf '{"session_id":"bad","tool_name":"Edit","tool_input":{"file_path":"docs/ROADMAP.md"}}' | "$ROOT/scripts/inhibit" 2>&1 >/dev/null)"
+printf '%s' "$err" | grep -q "session state unreadable"
+assert_ok $? "direction-organ branch warns on unreadable state (0.5.12 regression closed)"
+err="$(printf '%s' '{"id":"F2","amends":"F1","goal":"g","status":"active"}' | "$ROOT/scripts/session-append" bad frames 2>&1 >/dev/null)"
+printf '%s' "$err" | grep -q "unreadable"
+assert_ok $? "amends check names unreadable state, never a misleading data miss"
+); rm -rf "$tmp"
+
+# --- TODO: append-relationship — refines/contradicts get a mechanical path ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+"$ROOT/scripts/append-relationship" s.yaml D002 refines D001 "narrows the pipeline claim to the attention stage"
+assert_ok $? "append-relationship exits 0"
+assert_eq "$(yq -r '.records[] | select(.id=="D002") | .relationships[-1].type' s.yaml)" "refines" "relationship type recorded"
+assert_eq "$(yq -r '.records[] | select(.id=="D002") | .relationships[-1].target' s.yaml)" "D001" "relationship target recorded"
+yq -r '.records[] | select(.id=="D002") | .events[-1].note' s.yaml | grep -q "narrows"
+assert_ok $? "audit event carries the note"
+"$ROOT/scripts/append-relationship" s.yaml D002 bogus D001 "x" 2>/dev/null
+assert_eq "$?" "1" "unknown relationship type rejected"
+"$ROOT/scripts/append-relationship" s.yaml D002 refines NOPE "x" 2>/dev/null
+assert_eq "$?" "1" "unknown target rejected (exact match)"
+"$ROOT/scripts/append-relationship" s.yaml NOPE refines D001 "x" 2>/dev/null
+assert_eq "$?" "1" "unknown source rejected"
+"$ROOT/scripts/append-relationship" s.yaml D001 refines D001 "x" 2>/dev/null
+assert_eq "$?" "1" "self-reference rejected"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_ok $? "store valid after relationship append"
+grep -q "store-lock" "$ROOT/scripts/append-relationship"
+assert_ok $? "relationship writer carries the lock (mechanism pin)"
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+yq -i '.records[1].relationships += [{"type":"refines","target":"GHOST"}]' s.yaml
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_eq "$?" "1" "validator refuses a dangling relationship target"
+yq -i '.records[1].relationships = [{"type":"bogus","target":"D001"}]' s.yaml
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_eq "$?" "1" "validator refuses an unknown relationship type"
+yq -i '.records[1].relationships = [{"type":"refines","target":"D001","note":"legacy shape, no date"}]' s.yaml
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_ok $? "legacy relationship shape (no date, inline note) stays valid"
+); rm -rf "$tmp"
+
+# --- TODO: reopen-question — the lifecycle loop closes ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+printf '%s' '{"id":"Q101","date":"2026-08-18","question":"scale-dependent?","raised_by":"session","status":"open"}' | "$ROOT/scripts/append-question" s.yaml
+"$ROOT/scripts/resolve-question" s.yaml Q101 "ceilinged at small scale"
+"$ROOT/scripts/reopen-question" s.yaml Q101 "scaled comprehension test now exists — the named reopen condition"
+assert_ok $? "reopen-question exits 0 on an answered entry"
+assert_eq "$(yq -r '.open_questions[] | select(.id=="Q101") | .status' s.yaml)" "open" "status flips back to open"
+yq -r '.open_questions[] | select(.id=="Q101") | .reopened' s.yaml | grep -q "reopen condition"
+assert_ok $? "dated reopen note recorded"
+yq -r '.open_questions[] | select(.id=="Q101") | .resolution' s.yaml | grep -q "ceilinged"
+assert_ok $? "prior resolution kept as history — never deleted"
+"$ROOT/scripts/reopen-question" s.yaml Q101 "again" 2>/dev/null
+assert_eq "$?" "1" "already-open refused"
+"$ROOT/scripts/reopen-question" s.yaml NOPE "x" 2>/dev/null
+assert_eq "$?" "1" "unknown id refused"
+"$ROOT/scripts/validate-workspace" s.yaml >/dev/null 2>&1
+assert_ok $? "store valid after reopen"
+grep -q "store-lock" "$ROOT/scripts/reopen-question"
+assert_ok $? "reopen carries the lock (mechanism pin)"
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+printf '%s' '{"id":"QR1","date":"2026-08-18","question":"race target","raised_by":"session","status":"open"}' | "$ROOT/scripts/append-question" s.yaml
+"$ROOT/scripts/resolve-question" s.yaml QR1 "first closure"
+ok=0
+"$ROOT/scripts/reopen-question" s.yaml QR1 "racer A" 2>/dev/null && ok=$((ok+1)) &
+p1=$!
+"$ROOT/scripts/reopen-question" s.yaml QR1 "racer B" 2>/dev/null && ok=$((ok+1)) &
+p2=$!
+wait "$p1"; r1=$?
+wait "$p2"; r2=$?
+[ $((r1 + r2)) -eq 1 ]
+assert_ok $? "concurrent reopens: exactly one wins, one refuses (check under lock)"
+assert_eq "$(yq -r '.open_questions[] | select(.id=="QR1") | .status' s.yaml)" "open" "final state deterministic"
+); rm -rf "$tmp"
+
+# --- TODO: append-pending — the single human-absent surface gets its contract ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+"$ROOT/scripts/append-pending" "queued feedback draft: .anoti/feedback/x.md — propose when a human is present"
+assert_ok $? "append-pending exits 0"
+grep -q '^- \[ \] .*queued feedback draft' .anoti/pending.md
+assert_ok $? "pending line is a dated checkbox item"
+"$ROOT/scripts/append-pending" "escalation: merge decision awaited"
+assert_eq "$(grep -c '^- \[ \]' .anoti/pending.md)" "2" "entries accumulate"
+"$ROOT/scripts/complete-todo" .anoti/pending.md "merge decision" "human ruled: merge (session xyz)"
+assert_ok $? "resolve-pending IS complete-todo on pending.md — one mechanism (D024)"
+assert_eq "$(grep -c '^- \[ \]' .anoti/pending.md)" "1" "resolved entry ticked, history kept"
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$(printf '{"session_id":"pp"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "pending human-absent"
+assert_ok $? "digest surfaces pending while unresolved items exist"
+printf '%s' "$out" | grep -q "1 unresolved"
+assert_ok $? "digest counts unresolved, not total"
+"$ROOT/scripts/complete-todo" .anoti/pending.md "feedback draft" "proposed and filed as issue"
+out="$(printf '{"session_id":"pp"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "pending human-absent"
+assert_eq "$?" "1" "all resolved -> pending line gone"
+); rm -rf "$tmp"
+grep -q "store-lock" "$ROOT/scripts/append-pending"
+assert_ok $? "append-pending carries the lock (mechanism pin)"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+"$ROOT/scripts/append-pending" "line one
+line two smuggled"
+assert_eq "$(grep -c '^' .anoti/pending.md)" "1" "embedded newlines flattened — no orphan continuation lines"
+); rm -rf "$tmp"

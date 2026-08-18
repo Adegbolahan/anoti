@@ -1,5 +1,6 @@
 #!/bin/bash
 # resolve-question <store.yaml> <question-id> <note...>
+# Counterpart: reopen-question flips an answered entry back to open.
 # The retire half of the open_questions contract (issue #14 — the #12
 # argument, third organ): flips exactly ONE open entry to
 # status: answered with a dated resolution note, matching the store's
@@ -14,6 +15,11 @@ qid="${2:?question id required}"
 shift 2
 note="${*:?note required}"
 SELF="$(cd "$(dirname "$0")" && pwd)"
+# precondition and index resolve UNDER the lock (same race class as
+# reopen-question — check-then-lock let two racers both pass)
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
 idx=""
 i=0
 while IFS= read -r cur; do
@@ -23,9 +29,6 @@ done <<< "$(yq -r '.open_questions // [] | .[] | .id // ""' "$f" 2>/dev/null)"
 [ -n "$idx" ] || { echo "resolve-question: no question '$qid' in $f" >&2; exit 1; }
 st="$(yq -r ".open_questions[$idx].status // \"\"" "$f")"
 [ "$st" = "open" ] || { echo "resolve-question: '$qid' is not open (status: ${st:-unset}) — refusing a no-op closure" >&2; exit 1; }
-. "$SELF/store-lock"
-lock_store "$f" || exit 1
-trap 'unlock_store "$f"' EXIT
 cp "$f" "$f.tmp.$$"
 TS="$(date -u +%Y-%m-%d)" N="$note" \
   yq -i ".open_questions[$idx].status = \"answered\" | .open_questions[$idx].resolution = strenv(TS) + \" — \" + strenv(N)" "$f.tmp.$$" \

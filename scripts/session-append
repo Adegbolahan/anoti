@@ -23,6 +23,10 @@ trap 'unlock_store "$sf"' EXIT
 if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp.$$" && mv "$sf.tmp.$$" "$sf"
 fi
+if [ -f "$sf" ] && ! yq -e '.' "$sf" >/dev/null 2>&1; then
+  echo "session-append: session state unreadable ($sf) — repair or remove it" >&2
+  exit 1
+fi
 if [ -n "$am" ] && [ "$key" = "frames" ]; then
   # exact comparison in shell — yq's == pattern-matches wildcards
   found=""

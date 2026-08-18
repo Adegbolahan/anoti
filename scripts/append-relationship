@@ -1,0 +1,43 @@
+#!/bin/bash
+# append-relationship <store.yaml> <record-id> <refines|contradicts> <target-id> <note...>
+# The relationship half of consolidate's dedupe step (TODOS helper-sweep,
+# the #10/#12/#14 class): a near-duplicate becomes a refines relationship,
+# a contradiction is flagged — mechanically, never by hand-edit. Both ids
+# resolve by exact comparison (G002); self-reference and unknown ids
+# refuse loudly. Appends {type, target, date} to the record's
+# relationships plus the audit event. Full write contract: lock,
+# validate, mode-preserve, regen-index, re-trust (global warns).
+# A contradicts relationship still needs its open question — the
+# consolidate skill's step, not this helper's.
+# Deliberately no post-mv read-back (unlike set-*): array += cannot be
+# half-applied the way a scalar = can; the lock serializes writers.
+set -u
+f="${1:?usage: append-relationship <store> <record-id> <refines|contradicts> <target-id> <note...>}"
+rid="${2:?record id required}"
+typ="${3:?relationship type required}"
+tgt="${4:?target id required}"
+shift 4
+note="${*:?note required}"
+case "$typ" in refines|contradicts) ;;
+  *) echo "append-relationship: type must be refines|contradicts" >&2; exit 1 ;; esac
+[ "$rid" = "$tgt" ] && { echo "append-relationship: '$rid' cannot relate to itself" >&2; exit 1; }
+SELF="$(cd "$(dirname "$0")" && pwd)"
+idx="$("$SELF/record-index" "$f" "$rid")" \
+  || { echo "append-relationship: no record '$rid' in $f" >&2; exit 1; }
+"$SELF/record-index" "$f" "$tgt" >/dev/null \
+  || { echo "append-relationship: no target '$tgt' in $f" >&2; exit 1; }
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+cp "$f" "$f.tmp.$$"
+TS="$(date -u +%Y-%m-%d)" T="$typ" G="$tgt" N="$note" \
+  yq -i ".records[$idx].relationships += [{\"type\": strenv(T), \"target\": strenv(G), \"date\": strenv(TS)}] | .records[$idx].events += [{\"date\": strenv(TS), \"action\": strenv(T), \"by\": \"session\", \"note\": strenv(N)}]" "$f.tmp.$$" \
+  || { rm -f "$f.tmp.$$"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp.$$" >/dev/null 2>&1 || { rm -f "$f.tmp.$$"; echo "append-relationship: result failed validation; store untouched" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
+"$SELF/regen-index" "$f"
+"$SELF/trust" "$f" >/dev/null 2>&1 \
+  || echo "append-relationship: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+exit 0

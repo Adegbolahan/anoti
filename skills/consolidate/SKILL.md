@@ -19,8 +19,11 @@ scripts/append-classification <session-id> <fast|slow> <reason...>
 scripts/session-append <session-id> <frames|hypotheses|in_flight|candidates>  # JSON on stdin
 scripts/append-question <store.yaml>            # question JSON on stdin
 scripts/resolve-question <store.yaml> <id> <note...>  # retire an answered question — dated resolution, never deletes
+scripts/reopen-question <store.yaml> <id> <note...>   # a named reopen condition fired — answered back to open, history kept
+scripts/append-relationship <store.yaml> <id> <refines|contradicts> <target-id> <note...>  # dedupe/contradiction links
 scripts/append-todo <TODOS.md> <text...>        # dated unchecked item
 scripts/complete-todo <TODOS.md> <match> <note...>  # tick ONE matching item — DONE date + note; refuses ambiguity
+scripts/append-pending <text...>                # dated checkbox line on the single human-absent surface (D024)
 scripts/append-lesson <LESSONS-LEARNT.md> <text...>  # dated lesson entry
 scripts/set-episode <session-id> <idle|candidate-detected|awaiting-approval|committed>
 scripts/append-record <store.yaml>              # record as JSON on stdin
@@ -68,6 +71,10 @@ process violation the audit counts, not a technical impossibility.
    becomes an evidence entry or a `refines` relationship on the existing
    record, not a new record. A contradiction is flagged (`contradicts`
    relationship + new open question), never resolved by overwrite.
+   Relationships write mechanically:
+   `scripts/append-relationship <store> <id> <refines|contradicts>
+   <target-id> "<note>"` — the contradicts case still files its open
+   question via append-question.
 6. **Scope routing:** about-this-project → project store; about-the-user
    or about-how-agents-work → global store. A lesson whose applicability
    is agent-craft rather than this project (a tooling gotcha, a
@@ -110,7 +117,9 @@ process violation the audit counts, not a technical impossibility.
 10. **Questions:** promote surviving report doubts mechanically — and
     when a candidate ANSWERS an existing open question, retire it in the
     same breath: `scripts/resolve-question <store> <id> "<what answered
-    it>"` (issue #14) —
+    it>"` (issue #14). When a candidate shows a resolution's named
+    reopen condition has fired, flip it back:
+    `scripts/reopen-question <store> <id> "<which condition fired>"` —
     build `{id, date, question, raised_by, context, status, refs}` as
     JSON and `scripts/append-question <store> < q.json`.
 11. **Run the session retrospective** (policy-retrospect, universal):

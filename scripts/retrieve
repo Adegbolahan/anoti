@@ -140,7 +140,10 @@ fi
 # orientation line only where a workspace already speaks — never
 # manufacture a digest for an ungoverned directory
 [ -n "$lines" ] && try_emit "- orientation: the demo skill teaches the workflows — when to use what, why, and a safe hands-on tour"
-[ -f "$AD/pending.md" ] && emit "- pending human-absent escalations: $AD/pending.md"
+if [ -f "$AD/pending.md" ]; then
+  pu="$(grep -c '^- \[ \]\|^- [^[]' "$AD/pending.md" 2>/dev/null)"; pu="${pu:-0}"
+  [ "$pu" -gt 0 ] && emit "- pending human-absent escalations: $pu unresolved (see $AD/pending.md)"
+fi
 ab="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
 [ -n "$ab" ] && emit "- abandoned session state found: $ab (surfaced, not auto-loaded)"
 if [ -z "$lines" ]; then

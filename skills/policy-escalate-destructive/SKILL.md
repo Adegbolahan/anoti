@@ -20,7 +20,7 @@ description: Universal anoti operating policy — destructive or outward-facing 
    "nobody answered" is never authorization. Queue and defer.
 
 **Binds:** the PreToolUse inhibition decision table; the human-absent
-operation queue (`.anoti/pending.md`, written by the main session).
+operation queue (`<state-dir>/pending.md`, written by the main session via `scripts/append-pending` (dated checkbox entries; `complete-todo` ticks them when the human rules)).
 
 **Violation handling:** a destructive action taken without escalation is a
 critical report finding regardless of outcome.

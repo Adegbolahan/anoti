@@ -1,0 +1,41 @@
+#!/bin/bash
+# reopen-question <store.yaml> <question-id> <note...>
+# The inverse of resolve-question (TODOS helper-sweep): flips exactly
+# ONE answered entry back to status: open with a dated reopened note —
+# resolution texts name their reopen conditions (Q001: "reopen on a
+# scaled comprehension test") and this is the mechanical path when one
+# fires. The prior resolution string is kept as history, never deleted.
+# Refuses unknown ids and entries that are not answered. Exact-id
+# comparison per G002; resolve-question's full write contract.
+set -u
+f="${1:?usage: reopen-question <store> <question-id> <note...>}"
+qid="${2:?question id required}"
+shift 2
+note="${*:?note required}"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+# precondition and index resolve UNDER the lock — check-then-lock let
+# two racers both pass the answered check (skeptic-reproduced)
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+idx=""
+i=0
+while IFS= read -r cur; do
+  [ "$cur" = "$qid" ] && idx="$i"
+  i=$((i+1))
+done <<< "$(yq -r '.open_questions // [] | .[] | .id // ""' "$f" 2>/dev/null)"
+[ -n "$idx" ] || { echo "reopen-question: no question '$qid' in $f" >&2; exit 1; }
+st="$(yq -r ".open_questions[$idx].status // \"\"" "$f")"
+[ "$st" = "answered" ] || { echo "reopen-question: '$qid' is not answered (status: ${st:-unset}) — nothing to reopen" >&2; exit 1; }
+cp "$f" "$f.tmp.$$"
+TS="$(date -u +%Y-%m-%d)" N="$note" \
+  yq -i ".open_questions[$idx].status = \"open\" | .open_questions[$idx].reopened = strenv(TS) + \" — \" + strenv(N)" "$f.tmp.$$" \
+  || { rm -f "$f.tmp.$$"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp.$$" >/dev/null 2>&1 || { rm -f "$f.tmp.$$"; echo "reopen-question: result failed validation; store untouched" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
+"$SELF/regen-index" "$f"
+"$SELF/trust" "$f" >/dev/null 2>&1 \
+  || echo "reopen-question: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+exit 0

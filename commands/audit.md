@@ -40,7 +40,8 @@ out-of-cadence deviation, never silently normalized.
    - open questions the trail shows answered (a shipped fix, a closed
      issue, a ratified record) → retire mechanically with
      `scripts/resolve-question <store> <id> "<resolver ref>"` inside
-     the episode flow.
+     the episode flow; answered questions whose recorded reopen
+     condition the trail shows fired → `scripts/reopen-question`.
 4. **Apply the frozen decision rules** — incidents produce evidence
    events + mandatory lessons; four clean audits may append one
    observational supporting event (probable-cap); ratification-integrity

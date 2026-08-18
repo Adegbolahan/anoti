@@ -52,12 +52,15 @@ nobody gets. Two field-report batches produced releases 0.5.2 and 0.5.4
    `mkdir -p "<state-dir>/feedback"` then write it to
    `<state-dir>/feedback/YYYY-MM-DD-<slug>.md` (the state dir is
    gitignored; cleanup-session touches only session files, so the queue
-   survives), and append one pointer line to `<state-dir>/pending.md`
-   (`- queued feedback draft: <path> — propose when a human is
-present`). pending.md is the **single** human-absent surface — the
-   SessionStart digest already announces it — so queued drafts resurface
-   every session until proposed; `feedback/` only stores the documents.
-   The gate is deferred, never skipped.
+   survives), then point at it:
+   `scripts/append-pending "queued feedback draft: <path> — propose
+   when a human is present"` — which writes a dated checkbox entry to
+   `<state-dir>/pending.md`; when the human rules, tick it with
+   `complete-todo` on the same file. pending.md is the **single**
+   human-absent surface (D024) — the SessionStart digest announces its
+   unresolved count — so queued drafts resurface every session until
+   proposed; `feedback/` only stores the documents. The gate is
+   deferred, never skipped.
 
 ## Binds
 

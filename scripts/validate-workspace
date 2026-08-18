@@ -8,6 +8,7 @@ yq -e '.' "$f" >/dev/null 2>&1 || { echo "invalid: not parseable YAML" >&2; exit
 [ "$(yq -r '.meta.schema_version // ""' "$f")" = "3" ] || fail "meta.schema_version must be 3"
 [ "$(yq -r '.records | type' "$f" 2>/dev/null)" = "!!seq" ] || fail "records must be a list"
 n="$(yq -r '.records | length' "$f")"
+all_ids_cache="$(yq -r '.records[].id // ""' "$f" 2>/dev/null)"
 i=0
 while [ "$i" -lt "$n" ]; do
   id="$(yq -r ".records[$i].id // \"\"" "$f")"
@@ -29,6 +30,14 @@ while [ "$i" -lt "$n" ]; do
   [ -z "$bad" ] || fail "records[$i]: event has unexpected key(s): $bad(unquoted scalar split?)"
   bad="$(yq -r ".records[$i].evidence // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(date|type|note|refs)$' | sort -u | head -3 | tr '\n' ' ')"
   [ -z "$bad" ] || fail "records[$i]: evidence has unexpected key(s): $bad(unquoted scalar split?)"
+  bad="$(yq -r ".records[$i].relationships // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(type|target|date|note)$' | sort -u | head -3 | tr '\n' ' ')"
+  [ -z "$bad" ] || fail "records[$i]: relationship has unexpected key(s): $bad"
+  bad="$(yq -r ".records[$i].relationships // [] | .[] | .type // \"\"" "$f" 2>/dev/null | grep -vE '^(refines|contradicts|compares)$' | sort -u | head -3 | tr '\n' ' ')"
+  [ -z "$bad" ] || fail "records[$i]: relationship type must be refines|contradicts|compares (got: $bad)"
+  while IFS= read -r rt; do
+    [ -n "$rt" ] || continue
+    printf '%s\n' "$all_ids_cache" | grep -qxF "$rt" || fail "records[$i]: relationship target '$rt' is not a record in this store"
+  done <<< "$(yq -r ".records[$i].relationships // [] | .[] | .target // \"\"" "$f" 2>/dev/null)"
   i=$((i+1))
 done
 dups="$(yq -r '.records[].id' "$f" 2>/dev/null | sort | uniq -d)"

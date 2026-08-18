@@ -3,5 +3,8 @@
 set -u
 f="${1:?usage: append-lesson <LESSONS-LEARNT.md> <text>}"; shift
 t="${*:?text required}"
+# embedded newlines would orphan continuation lines invisible to the
+# count regex and the tick matcher — flatten to spaces
+t="$(printf '%s' "$t" | tr '\n' ' ')"
 [ -f "$f" ] || { echo "append-lesson: no such file: $f" >&2; exit 1; }
 printf -- '\n- %s — %s\n' "$(date -u +%Y-%m-%d)" "$t" >> "$f"

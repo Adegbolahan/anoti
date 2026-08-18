@@ -1,0 +1,23 @@
+#!/bin/bash
+# append-pending <text...>
+# The write half of the single human-absent surface (D024): appends one
+# dated checkbox pointer line to <state-dir>/pending.md, which the
+# SessionStart digest announces until resolved. Resolution is
+# complete-todo on the same file — one mechanism, no parallel queue.
+# Requires an anchored workspace (#13): pending state in an ungoverned
+# dir would be a stray store.
+set -u
+t="${*:?usage: append-pending <text...>}"
+# embedded newlines would orphan continuation lines invisible to the
+# count regex and the tick matcher — flatten to spaces
+t="$(printf '%s' "$t" | tr '\n' ' ')"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
+mkdir -p "$AD"
+[ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore"
+f="$AD/pending.md"
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+printf -- '- [ ] %s — %s\n' "$(date -u +%Y-%m-%d)" "$t" >> "$f"
+exit 0

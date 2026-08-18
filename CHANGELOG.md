@@ -3,6 +3,24 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.19] — 2026-08-18
+
+- TODOS-closure batch (per-item adversarial review, human-raised spawn
+  budget): `append-relationship` (dedupe/contradiction links with
+  exact ids, validator gains relationships schema + referential
+  integrity, vocabulary widened to observed reality incl. `compares`),
+  `reopen-question` (answered → open when a named reopen condition
+  fires; the check-before-lock race the skeptic reproduced is fixed in
+  BOTH question helpers — preconditions now resolve under the lock,
+  race test pinned), `append-pending` (the D024 surface gets its
+  contract: dated checkbox entries, resolution is complete-todo on the
+  same file, digest counts unresolved only and goes silent at zero,
+  newline flattening across all prose appenders). The line-41
+  session-state item verified satisfied and closed — with the 0.5.12
+  direction-branch unreadable-state regression the verification
+  skeptic caught, fixed and pinned. Multi-valued spec_dir remains
+  deferred (evidence-gated).
+
 ## [0.5.18] — 2026-08-18
 
 - Tenth field-report fix (issue #18, AmFam Backstage — relayed via the

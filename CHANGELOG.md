@@ -3,6 +3,40 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.26] — 2026-08-19
+
+- **Adaptive suppression** (ratified spec
+  docs/specs/2026-08-19-adaptive-suppression-design.md): a project-level
+  feedback cache (`<state-dir>/presence-feedback.tsv`, 30-day soft TTL)
+  lets the presence hook learn which `(record, trigger)` pairs the
+  retrospective has named irrelevant three times and stop injecting
+  exactly those pairs — visibly (`anoti feedback list`, a digest line
+  when any are active, a `presence suppressed <id>:<trigger>` telemetry
+  line per firing) and reversibly (`anoti feedback clear <id> [trigger]`,
+  which also purges the record's dedupe entry; `remove-trigger` stays the
+  permanent fix) — while every other trigger on the same record keeps
+  firing. `mark-retrospect` grows an additive grammar to name pairs
+  (`irrelevant-injections N [<id>[:<trigger>] …]`, split on the first
+  colon so `edit:`-scoped cues survive); malformed or lesson ids are
+  rejected with a warning, never written; threshold overridable via
+  `feedback_threshold:` in `.claude/anoti.local.md`. Warn-once on a
+  corrupt feedback file persists across invocations. The longitudinal
+  spec's Q006 re-ranker gate now requires adaptive suppression to have
+  shipped plus two audited weeks, and gains its own pre-registered KEEP
+  (≥15-point precision gain) / telemetry-only / REVERT (≥10-point fall)
+  rule with an honest fallback baseline.
+- Build trail: two builders in isolated worktrees kept alive through
+  review (the 0.5.22 lesson applied); the backend found and fixed three
+  bugs in the plan's own illustrative code (a subshell mutation that
+  silently dropped every suppressed-telemetry line, an awk -v crash on
+  multi-line lists, a premature truncation breaking cut handles); the
+  reviewer's execution pass found the TTL-expiry purge was not
+  transition-gated — it would have defeated the N=10 dedupe permanently
+  for any expired-but-uncleared pair — now gated on a persisted
+  `.suppressed_prev` diff, mutation-pinned (TEST A/B/C), and the spec's
+  illustrative text corrected by dated amendment; byte-exact wording
+  assertions guard against a prettier hook that strips list indents.
+
 ## [0.5.25] — 2026-08-19
 
 - Codag-research ideas, deliberated and adopted (the contrast was more

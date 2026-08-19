@@ -1,5 +1,11 @@
 # Adaptive Suppression — Design Spec
 
+**Status:** RATIFIED 2026-08-19 ("proceed") — adversarial review
+COMPLIANT-WITH-RESIDUE after two cycles (13 findings fixed round 1; two
+polish items + an acknowledged coupling closed round 2). Implementation
+cascade commissioned; Q006's ranker gate opens only after this ships and
+two audited weeks pass.
+
 **Date:** 2026-08-19
 **Status:** DESIGN, filed 2026-08-19 — not yet reviewed. Per
 `skills/spec/SKILL.md:84-86` ("specs of consequence get adversarial

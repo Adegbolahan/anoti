@@ -776,3 +776,15 @@ assert_ok $? "anoti recall dispatches to scripts/recall"
 # --- anoti dispatcher lists presence as a hook (spec §4.1) ---
 "$ROOT/scripts/anoti" help | grep -q "presence.*hook — the harness runs it"
 assert_ok $? "anoti help lists presence as a hook, not a general action"
+
+# --- session-append frame telemetry (spec §4.8 gap 1) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+printf '%s' '{"id":"F9","status":"active","goal":"g","scope":{"in":[],"out":[]},"success_criteria":[],"constraints":[],"risks":[],"open_questions":[],"evidence_plan":"e","roadmap_ref":"none","story_ref":"none"}' \
+  | "$ROOT/scripts/session-append" sX frames
+grep -qE $'frame\tF9' .anoti/telemetry.log
+assert_ok $? "session-append emits a frame telemetry line on frames appends"
+printf '%s' '{"h":"some hypothesis"}' | "$ROOT/scripts/session-append" sX hypotheses
+c="$(grep -c 'frame' .anoti/telemetry.log)"
+assert_eq "$c" "1" "session-append does NOT emit a frame line for hypotheses/in_flight/candidates"
+); rm -rf "$tmp"

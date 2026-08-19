@@ -7,14 +7,15 @@
 
 ## Entry points (roots)
 
-| Root                                             | Fires                                             | Leads to                                                                                              |
-| ------------------------------------------------ | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge        |
-| UserPromptSubmit hook (`classify`)               | every prompt                                      | fast path (silence) or **attend**                                                                     |
-| PreToolUse hook (`inhibit`)                      | matched tools                                     | allow / ask / deny; deny message routes to `/anoti:consolidate`                                       |
-| Stop hook (`consolidation-gate`)                 | candidate episodes                                | `/anoti:consolidate`                                                                                  |
-| PostToolUse/PostToolUseFailure hook (`presence`) | matched tool calls (Bash/Write/Edit/NotebookEdit) | JIT recall; periodic frame re-anchor; evidence-kind nudge; telemetry                                  |
-| Human commands                                   | on demand                                         | new, implement, review-work, update, review, recall, consolidate; anoti recall (mechanical pre-check) |
+| Root                                             | Fires                                             | Leads to                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge          |
+| UserPromptSubmit hook (`classify`)               | every prompt                                      | fast path (silence) or **attend**                                                                       |
+| PreToolUse hook (`inhibit`)                      | matched tools                                     | allow / ask / deny; deny message routes to `/anoti:consolidate`                                         |
+| Stop hook (`consolidation-gate`)                 | candidate episodes                                | `/anoti:consolidate`                                                                                    |
+| PostToolUse/PostToolUseFailure hook (`presence`) | matched tool calls (Bash/Write/Edit/NotebookEdit) | JIT recall (filtered by adaptive suppression); periodic frame re-anchor; evidence-kind nudge; telemetry |
+| `scripts/feedback` (list/clear)                  | on demand, or via `mark-retrospect`'s named pairs | inspect/undo adaptive suppression — presence-feedback.tsv (project-level, gitignored)                   |
+| Human commands                                   | on demand                                         | new, implement, review-work, update, review, recall, consolidate; anoti recall (mechanical pre-check)   |
 
 ## The spine (explicitly chained, never description-luck)
 
@@ -40,7 +41,7 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | plan        | deliberate lifetime rule; conductor role; skillify maintenance map                                              |
 | direction   | visionary, product-manager, requirements-analyst roles; skillify                                                |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |
-| git         | implement (commit time); deliberate (execution step); every builder role before committing                   |
+| git         | implement (commit time); deliberate (execution step); every builder role before committing                      |
 | demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents   |
 
 ## Policies — inbound paths (role stacks use bare names)

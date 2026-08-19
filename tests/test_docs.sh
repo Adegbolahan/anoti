@@ -78,3 +78,13 @@ grep -qi "fail open\|fails open\|fail-open" "$ROOT/README.md" && grep -qi "never
 assert_ok $? "README states the fail-open guarantee in one sentence"
 grep -qi "fail open\|fails open\|fail-open" "$ROOT/skills/demo/SKILL.md"
 assert_ok $? "demo states the fail-open guarantee"
+
+# --- adaptive-suppression spec §9: SKILL-MAP entry-point row for scripts/feedback ---
+grep -qF "filtered by adaptive suppression" "$ROOT/docs/SKILL-MAP.md"
+assert_ok $? "SKILL-MAP presence-hook row names adaptive-suppression filtering"
+grep -qF '`scripts/feedback` (list/clear)' "$ROOT/docs/SKILL-MAP.md"
+assert_ok $? "SKILL-MAP gains a scripts/feedback entry-point row"
+sma="$(grep -n 'PostToolUse/PostToolUseFailure hook' "$ROOT/docs/SKILL-MAP.md" | head -1 | cut -d: -f1)"
+smb="$(grep -n '\`scripts/feedback\` (list/clear)' "$ROOT/docs/SKILL-MAP.md" | head -1 | cut -d: -f1)"
+[ -n "$sma" ] && [ -n "$smb" ] && [ "$sma" -lt "$smb" ]
+assert_ok $? "scripts/feedback row sits directly after the presence-hook row it extends"

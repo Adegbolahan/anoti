@@ -18,7 +18,8 @@ jobs:
       - name: Install yq and jq
         run: |
           sudo apt-get update && sudo apt-get install -y jq
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          # pinned: yq v4.53.4 (2026-08-19) started wrapping long flow-style lines at 80 cols (dependency bump, undocumented) — see TODOS
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
       - name: Run suite
         run: bash tests/run.sh

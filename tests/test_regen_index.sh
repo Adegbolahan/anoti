@@ -37,7 +37,10 @@ before_rec="$(sed -n '/^records:/,/^open_questions:/p' "$tmp/tricky.yaml")"
 "$ROOT/scripts/regen-index" "$tmp/tricky.yaml"
 assert_ok $? "regen-index handles colon/comma scalars"
 after_rec="$(sed -n '/^records:/,/^open_questions:/p' "$tmp/tricky.yaml")"
-assert_eq "$after_rec" "$before_rec" "records section byte-identical after regen"
+# semantic identity, not byte identity: yq >=4.53.4 re-wraps long flow
+# lines at 80 cols (formatting only); the contract is that regen-index
+# never changes record CONTENT
+assert_eq "$(printf '%s\n' "$after_rec" | yq -o=json '.records')" "$(printf '%s\n' "$before_rec" | yq -o=json '.records')" "records content identical after regen (semantic)"
 assert_eq "$(yq -r '.index | length' "$tmp/tricky.yaml")" "1" "tricky index regenerated"
 assert_eq "$(yq -r '.index[0].statement' "$tmp/tricky.yaml")" "Statement with: colon, and comma" "index statement survives intact"
 rm -rf "$tmp"

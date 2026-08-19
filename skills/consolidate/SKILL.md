@@ -69,7 +69,14 @@ process violation the audit counts, not a technical impossibility.
    error string — to be reminded of this at the moment it mattered?" If
    the answer names concrete text, capture it as `triggers:` on the
    record the moment it is appended: `scripts/append-trigger <store>
-<id> <keyword>...`. Skip silently for candidates with no natural
+<id> <keyword>...`. **Cue quality (precision):** prefer
+   situation-specific multi-word phrases over tokens common in tool
+   output (a bare file name fires on every `grep` that mentions it);
+   scope a cue to the tool class when the intent is "when editing X" —
+   `edit:CHANGELOG.md` matches only Edit/Write firings, `bash:git push`
+   only Bash; unscoped cues match any tool. A cue that proves noisy is
+   removed with `scripts/remove-trigger` and re-cued. Skip silently for
+   candidates with no natural
    tool-use-time cue (e.g. a `preference` about communication style) —
    not every record needs triggers, and forcing the question onto every
    candidate would just produce noise triggers that degrade the hook's

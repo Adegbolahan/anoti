@@ -40,6 +40,7 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | plan        | deliberate lifetime rule; conductor role; skillify maintenance map                                              |
 | direction   | visionary, product-manager, requirements-analyst roles; skillify                                                |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |
+| git         | implement (commit time); deliberate (execution step); every builder role before committing                   |
 | demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents   |
 
 ## Policies — inbound paths (role stacks use bare names)

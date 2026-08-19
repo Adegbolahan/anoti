@@ -78,6 +78,7 @@ lstore="$(resolve_lessons)" || lstore=""
 
 # --- duty (a): JIT recall ---
 p_matches=""; g_matches=""
+case "$tool" in Bash) export MT_EVENT=bash ;; Edit|Write|NotebookEdit) export MT_EVENT=edit ;; *) export MT_EVENT="" ;; esac
 [ -n "$pstore" ] && p_matches="$(match_triggers "$pstore" "$haystack" "")"
 [ -n "$gstore" ] && g_matches="$(match_triggers "$gstore" "$haystack" "[global] ")"
 
@@ -202,10 +203,10 @@ if [ -f "$sf" ]; then
 fi
 last_reanchor="$(yq -r '.last_frame_reanchor // 0' "$pf" 2>/dev/null || echo 0)"
 if [ "$slow_classified" = "true" ] && [ $((tool_calls - last_reanchor)) -ge "$N" ] && [ -f "$sf" ]; then
-  fid="$(yq -r '[.frames // [] | .[] | select(.status == "active")] | .[0].id // ""' "$sf" 2>/dev/null)"
+  fid="$(yq -r '[.frames // [] | .[] | select(.status == "active")] | .[-1].id // ""' "$sf" 2>/dev/null)"
   if [ -n "$fid" ]; then
-    goal="$(yq -r '[.frames // [] | .[] | select(.status == "active")] | .[0].goal // ""' "$sf" 2>/dev/null)"
-    scopein="$(yq -r '[.frames // [] | .[] | select(.status == "active")] | .[0].scope.in // [] | join(", ")' "$sf" 2>/dev/null)"
+    goal="$(yq -r '[.frames // [] | .[] | select(.status == "active")] | .[-1].goal // ""' "$sf" 2>/dev/null)"
+    scopein="$(yq -r '[.frames // [] | .[] | select(.status == "active")] | .[-1].scope.in // [] | join(", ")' "$sf" 2>/dev/null)"
     txt="- frame re-anchor: ${goal} — scope: ${scopein}"
     txt="$(printf '%s' "$txt" | cut -c1-"$FRAME_CAP")"
     if try_emit "$txt"; then

@@ -16,7 +16,31 @@ SELF="$(cd "$(dirname "$0")" && pwd)"
 # #13: no governed workspace, no attention tax — silence matches the
 # retrieval hook's contract and US-002; classification writes here would
 # only mint the stray stores the resolver now refuses to create
-"$SELF/anoti-dir" --require >/dev/null 2>&1 || exit 0
+AD="$("$SELF/anoti-dir" --require 2>/dev/null)" || exit 0
+# Field review 2026-08-19: the rubric on "hi" is pure overhead (US-002).
+# Shape pre-filter — slash commands (/word, optionally with args; never a
+# path) and replies of <=2 words / <=24 chars (hi, ok, proceed, yes
+# please) get no injection. Deliberate trade: a two-word destructive ask
+# ("delete main") loses the rubric too — inhibit's deny/ask rows catch
+# the catastrophic classes (rm -rf root/home/repo, force-push, remote
+# destructive SQL) and ask on pushes, rm -r*, default-branch deletes —
+# not every destructive verb.
+pt="$(printf '%s' "$p" | tr -s '[:space:]' ' ' | sed 's/^ //;s/ $//')"
+printf '%s' "$pt" | grep -qE '^/[A-Za-z][A-Za-z0-9:_-]*( |$)' && exit 0
+wc_="$(printf '%s' "$pt" | wc -w | tr -d ' ')"
+[ "${wc_:-0}" -le 2 ] && [ "${#pt}" -le 24 ] && exit 0
+# Compact rubric after the first classification of a session: the full
+# criteria once, a one-liner thereafter — the log instruction never drops.
+sf="$AD/sessions/$sid.yaml"
+nclass=0
+[ -f "$sf" ] && nclass="$(yq -r '.classifications // [] | length' "$sf" 2>/dev/null || echo 0)"
+if [ "${nclass:-0}" -gt 0 ]; then
+  ctx="<anoti-attend>
+Classify fast|slow before acting (slow: decisions/conventions, ground rules, multi-file, ambiguous, destructive/outward → attend skill). Log: $SELF/append-classification $sid fast|slow \"reason\"
+</anoti-attend>"
+  jq -n --arg c "$ctx" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$c}}'
+  exit 0
+fi
 ctx="<anoti-attend>
 Classify this prompt BEFORE exploring or answering. SLOW if any apply: it establishes or changes project decisions/conventions; it touches a stated ground rule or multiple files; its goal is ambiguous; it is destructive or outward-facing. Otherwise FAST (small, unambiguous, low-consequence). Slow-path: invoke the anoti attend skill first and build a frame. Headless sessions classify identically — slow still frames; escalations queue per human-absent rules. Log the verdict mechanically — never hand-edit session YAML:
 $SELF/append-classification $sid fast|slow \"one-line reason\"

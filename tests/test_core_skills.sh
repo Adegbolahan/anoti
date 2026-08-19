@@ -100,7 +100,7 @@ f="$ROOT/skills/demo/SKILL.md"
 assert_eq "$(sed -n 's/^name: //p' "$f" | head -1)" "demo" "demo skill name matches"
 grep -qi "when to use what" "$f"
 assert_ok $? "demo: routing promise in the body"
-for w in attend deliberate consolidate feedback skillify "review-work" recall audit direction; do grep -q "$w" "$f" || { echo "demo missing route: $w" >&2; false; break; }; done
+ok=1; for w in attend deliberate consolidate feedback skillify "review-work" recall audit direction; do grep -q "$w" "$f" || { echo "demo missing route: $w" >&2; ok=0; }; done; [ "$ok" = 1 ]
 assert_ok $? "demo: routes cover the cycle and commands"
 grep -q "ANOTI_DIR" "$f" && grep -qi "scratch\|temp" "$f"
 assert_ok $? "demo: hands-on tour runs against scratch state only"

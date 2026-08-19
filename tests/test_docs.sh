@@ -56,18 +56,21 @@ awk '/Mechanical pre-check/{a=NR} /^1\. Query both stores/{b=NR} END{exit !(a &&
 assert_ok $? "step 0 precedes the existing step 1"
 
 # --- D025 orientation currency: every command is routed in the demo; every skill is mapped ---
-for c in "$ROOT"/commands/*.md; do
+# (skeptic 2026-08-19: `false; break` is swallowed — break's own status is 0 — so these
+# gates were dead; a flag variable makes them real)
+ok=1; for c in "$ROOT"/commands/*.md; do
   n="$(basename "$c" .md)"
-  grep -q -- "$n" "$ROOT/skills/demo/SKILL.md" || { echo "demo routing table missing command: $n" >&2; false; break; }
-done
+  grep -q -- "$n" "$ROOT/skills/demo/SKILL.md" || { echo "demo routing table missing command: $n" >&2; ok=0; }
+done; [ "$ok" = 1 ]
 assert_ok $? "D025: every /anoti command appears in the demo's routing table"
-for d in "$ROOT"/skills/*/; do
-  n="$(basename "$d")"
-  grep -q -- "$n" "$ROOT/docs/SKILL-MAP.md" || { echo "SKILL-MAP missing skill: $n" >&2; false; break; }
-done
+ok=1; for d in "$ROOT"/skills/*/; do
+  n="$(basename "$d")"; bare="${n#policy-}"   # SKILL-MAP's policy table uses bare names (its own stated convention)
+  grep -qE -- "\| *($n|$bare) *\|" "$ROOT/docs/SKILL-MAP.md" || { echo "SKILL-MAP missing skill: $n" >&2; ok=0; }
+done; [ "$ok" = 1 ]
 assert_ok $? "D025: every skill appears in SKILL-MAP"
+ok=1; help_out="$("$ROOT/scripts/anoti" help)"
 for s in "$ROOT"/scripts/*; do
   n="$(basename "$s")"; [ -x "$s" ] && [ "$n" != "anoti" ] || continue
-  "$ROOT/scripts/anoti" help | grep -q -- "$n" || { echo "anoti help missing: $n" >&2; false; break; }
-done
+  printf '%s' "$help_out" | grep -q -- "$n" || { echo "anoti help missing: $n" >&2; ok=0; }
+done; [ "$ok" = 1 ]
 assert_ok $? "D025: every helper is listed by anoti help"

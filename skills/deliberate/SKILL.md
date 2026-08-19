@@ -23,7 +23,10 @@ attend first).
   reviewer spawn (policy-adversarial-handoff).
 - **Spawn budget:** ≤ 3 concurrent subagents, ≤ 8 per session, raised only
   by explicit human instruction. Every spawn carries a one-line
-  justification against the frame. A one-file fix never convenes a
+  justification against the frame. Parallelism buys breadth, never
+  coherence: synthesis over many items (clustering findings, holding one
+  structure in mind) is a single-context job — the entry test routes it
+  there, and that is the design working. A one-file fix never convenes a
   committee.
 
 ## The cascade (multi-step, multi-agent work)

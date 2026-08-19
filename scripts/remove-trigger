@@ -1,0 +1,33 @@
+#!/bin/bash
+# remove-trigger <store.yaml> <record-id> <trigger>
+# Symmetric to append-trigger: removes exactly ONE occurrence of a trigger
+# string (first exact match) from a record and logs the audit event. Needed to re-cue a record
+# whose broad trigger produced irrelevant injections (field review
+# 2026-08-19, precision). Exact ids per G002; append-trigger's contract.
+set -u
+f="${1:?usage: remove-trigger <store> <record-id> <trigger>}"
+rid="${2:?record id required}"
+trg="${3:?trigger required}"
+SELF="$(cd "$(dirname "$0")" && pwd)"
+idx="$("$SELF/record-index" "$f" "$rid")" || { echo "remove-trigger: no record '$rid' in $f" >&2; exit 1; }
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+# find the FIRST exact occurrence's index by shell comparison (yq ==
+# pattern-matches, G002) — one removal per call even if the string was
+# appended twice (append-trigger does not dedupe)
+ti=""; i=0
+while IFS= read -r cur; do [ -z "$ti" ] && [ "$cur" = "$trg" ] && ti="$i"; i=$((i+1)); done <<< "$(yq -r ".records[$idx].triggers // [] | .[]" "$f" 2>/dev/null)"
+[ -n "$ti" ] || { echo "remove-trigger: '$rid' has no trigger '$trg'" >&2; exit 1; }
+cp "$f" "$f.tmp.$$"
+T="$trg" TS="$(date -u +%Y-%m-%d)" \
+  yq -i "del(.records[$idx].triggers[$ti]) | .records[$idx].events += [{\"date\": strenv(TS), \"action\": \"trigger-removed\", \"by\": \"session\", \"note\": strenv(T)}]" "$f.tmp.$$" \
+  || { rm -f "$f.tmp.$$"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp.$$" >/dev/null 2>&1 || { rm -f "$f.tmp.$$"; echo "remove-trigger: result failed validation; store untouched" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
+"$SELF/regen-index" "$f"
+"$SELF/trust" "$f" >/dev/null 2>&1 \
+  || echo "remove-trigger: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+exit 0

@@ -95,7 +95,7 @@ case "$tool" in
       decide deny "catastrophic: destructive SQL against non-local target"
     fi
     # ask row: consequential commands
-    if printf '%s' "$c" | grep -qE '(^|[;&| ])(git push|npm publish|terraform (apply|destroy)|kubectl (delete|apply)|gh release|rm -r )'; then
+    if printf '%s' "$c" | grep -qE '(^|[;&| ])(git push|npm publish|terraform (apply|destroy)|kubectl (delete|apply)|gh release|rm -r[a-zA-Z]* |git branch -[dD] +(main|master)([[:space:]]|$))'; then
       decide ask "consequential action — confirm it traces to the current goal"
     fi
     ;;

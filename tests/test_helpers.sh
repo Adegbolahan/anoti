@@ -854,3 +854,67 @@ yq -i '.records[0].triggers = ["alpha"] | .records[1].triggers = ["beta"]' GROUN
 out="$("$ROOT/scripts/anoti" digest)"
 printf '%s' "$out" | grep -q "recall coverage"; assert_eq "$?" "1" "#20 coverage line silent once coverage is healthy"
 ); rm -rf "$tmp"
+
+# --- 0.5.24 review batch: classifier tax, event-scoped triggers, latest-frame re-anchor ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cl() { printf '{"session_id":"ct","prompt":%s}' "$(printf '%s' "$1" | jq -Rs .)" | "$ROOT/scripts/classify"; }
+[ -z "$(cl 'hi')" ]; assert_ok $? "classifier: 'hi' gets no injection (US-002)"
+[ -z "$(cl 'proceed')" ]; assert_ok $? "classifier: one-word reply gets no injection"
+[ -z "$(cl '/anoti:update')" ]; assert_ok $? "classifier: slash commands get no injection"
+out="$(cl 'refactor the auth module and change the session policy')"
+printf '%s' "$out" | grep -q "SLOW if any apply"; assert_ok $? "classifier: first real prompt gets the full rubric"
+"$ROOT/scripts/append-classification" ct slow "seed" >/dev/null 2>&1
+out="$(cl 'now also migrate the database')"
+printf '%s' "$out" | grep -q "append-classification"; assert_ok $? "classifier: later prompts still get the log instruction"
+printf '%s' "$out" | grep -q "SLOW if any apply"; assert_eq "$?" "1" "classifier: later prompts get the compact rubric, not the full one"
+); rm -rf "$tmp"
+
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+"$ROOT/scripts/append-trigger" GROUNDING.yaml D001 "edit:CHANGELOG.md" "bash:git push" "plainword" >/dev/null 2>&1
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+ev() { printf '{"session_id":"es%s","hook_event_name":"PostToolUse","tool_name":"%s","tool_input":%s,"tool_response":"ok"}' "$3" "$1" "$2" | HOME="$tmp/nohome" "$ROOT/scripts/presence"; }  # $3 = per-case sid: dedupe is per-session (and $(...) forks, so no counter)
+out="$(ev Edit '{"file_path":"CHANGELOG.md","old_string":"a","new_string":"b"}' 1)"
+printf '%s' "$out" | grep -q "D001"; assert_ok $? "edit:-scoped trigger fires on an Edit of that file"
+out="$(ev Bash '{"command":"grep -n foo CHANGELOG.md"}' 2)"
+printf '%s' "$out" | grep -q "D001"; assert_eq "$?" "1" "edit:-scoped trigger stays silent on a Bash read mentioning the file"
+out="$(ev Bash '{"command":"git push origin main"}' 3)"
+printf '%s' "$out" | grep -q "D001"; assert_ok $? "bash:-scoped trigger fires on a Bash command"
+out="$(ev Edit '{"file_path":"notes.md","old_string":"git push","new_string":"x"}' 4)"
+printf '%s' "$out" | grep -q "D001"; assert_eq "$?" "1" "bash:-scoped trigger stays silent on an Edit"
+out="$(ev Bash '{"command":"echo plainword"}' 5)"
+printf '%s' "$out" | grep -q "D001"; assert_ok $? "unscoped trigger still matches any tool"
+"$ROOT/scripts/remove-trigger" GROUNDING.yaml D001 "plainword"
+assert_ok $? "remove-trigger exits 0"
+assert_eq "$(yq -r '.records[] | select(.id=="D001") | .triggers | length' GROUNDING.yaml)" "2" "remove-trigger removed exactly one"
+"$ROOT/scripts/remove-trigger" GROUNDING.yaml D001 "nope" 2>/dev/null
+assert_eq "$?" "1" "remove-trigger refuses an absent trigger"
+"$ROOT/scripts/validate-workspace" GROUNDING.yaml >/dev/null 2>&1; assert_ok $? "store valid after remove-trigger"
+); rm -rf "$tmp"
+
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+"$ROOT/scripts/append-classification" fr slow "seed" >/dev/null 2>&1
+printf '%s' '{"id":"F-old","goal":"OLD WORK","status":"active"}' | "$ROOT/scripts/session-append" fr frames
+printf '%s' '{"id":"F-new","goal":"NEW WORK","status":"active"}' | "$ROOT/scripts/session-append" fr frames
+printf 'tool_calls: 10\nlast_frame_reanchor: 0\nrecall_cache: {}\nwarned: { global: false, project: false }\n' > .anoti/sessions/fr.presence.yaml
+out="$(printf '{"session_id":"fr","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"ls"},"tool_response":"ok"}' | HOME="$tmp/nohome" "$ROOT/scripts/presence")"
+printf '%s' "$out" | grep -q "NEW WORK"; assert_ok $? "frame re-anchor uses the LATEST active frame, not the first"
+); rm -rf "$tmp"
+"$ROOT/scripts/mark-retrospect" --help 2>/dev/null; grep -q "irrelevant" "$ROOT/scripts/mark-retrospect"
+assert_ok $? "mark-retrospect carries the presence-irrelevant count"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti; cp "$ROOT/tests/fixtures/store_valid.yaml" s.yaml
+"$ROOT/scripts/append-trigger" s.yaml D001 "dup" "dup" "other" >/dev/null 2>&1
+"$ROOT/scripts/remove-trigger" s.yaml D001 "dup" >/dev/null
+assert_eq "$(yq -r '.records[0].triggers | join(",")' s.yaml)" "dup,other" "remove-trigger removes ONE occurrence, not all"
+cl() { printf '{"session_id":"cx","prompt":%s}' "$(printf '%s' "$1" | jq -Rs .)" | "$ROOT/scripts/classify"; }
+[ -n "$(cl '/Users/x/repo please wipe this entire directory tree now')" ]; assert_ok $? "classifier: a path-prefixed prompt is NOT a slash command"
+[ -z "$(cl '/anoti:consolidate --now')" ]; assert_ok $? "classifier: slash command with args still exempt"
+out="$(printf '{"session_id":"ib","tool_name":"Bash","tool_input":{"command":"rm -rf /Users/x/somewhere"}}' | "$ROOT/scripts/inhibit")"
+printf '%s' "$out" | grep -q '"ask"'; assert_ok $? "inhibit asks on rm -rf <path> (the rm -r ask row covers -rf)"
+out="$(printf '{"session_id":"ib","tool_name":"Bash","tool_input":{"command":"git branch -D main"}}' | "$ROOT/scripts/inhibit")"
+printf '%s' "$out" | grep -q '"ask"'; assert_ok $? "inhibit asks on deleting the default branch"
+); rm -rf "$tmp"

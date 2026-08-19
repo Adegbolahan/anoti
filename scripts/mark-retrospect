@@ -1,11 +1,21 @@
 #!/bin/bash
-# mark-retrospect <session-id> <empty|filed> -- mechanical, one durable
+# mark-retrospect <session-id> <empty|filed> [irrelevant-injections N] -- mechanical, one durable
 # telemetry line. Closes "did the retrospective run" (spec §4.8 gap 2).
+# The optional count is the retrospective's answer to "how many presence
+# injections this session were irrelevant?" — the precision metric's source.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir" --require)" || exit 1
 sid="${1:?usage: mark-retrospect <session-id> <empty|filed>}"
 state="${2:?state required (empty|filed)}"
 case "$state" in empty|filed) ;; *) echo "mark-retrospect: state must be empty|filed" >&2; exit 1 ;; esac
-printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" >> "$AD/telemetry.log" 2>/dev/null || true
+irr=""
+if [ "${3:-}" = "irrelevant-injections" ]; then
+  irr="${4:?count required}"; case "$irr" in ''|*[!0-9]*) echo "mark-retrospect: count must be numeric" >&2; exit 1 ;; esac
+fi
+if [ -n "$irr" ]; then
+  printf '%s\t%s\t%s\t%s\tirrelevant=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" "$irr" >> "$AD/telemetry.log" 2>/dev/null || true
+else
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" >> "$AD/telemetry.log" 2>/dev/null || true
+fi
 exit 0

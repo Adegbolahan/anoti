@@ -16,10 +16,10 @@ grep -qi "newest" "$ROOT/agents/practitioner.md" && grep -qi "bare role name" "$
 assert_ok $? "practitioner resolves bare role names from the newest plugin root"
 
 # --- #19: dispatch vocabulary visible at dispatch time ---
-for r in "$ROOT"/roles/*.md; do
+ok=1; for r in "$ROOT"/roles/*.md; do
   n="$(basename "$r" .md)"
-  sed -n 's/^description: //p' "$ROOT/agents/practitioner.md" | grep -q -- "$n" || { echo "practitioner description missing role: $n" >&2; false; break; }
-done
+  sed -n 's/^description: //p' "$ROOT/agents/practitioner.md" | grep -q -- "$n" || { echo "practitioner description missing role: $n" >&2; ok=0; }
+done; [ "$ok" = 1 ]
 assert_ok $? "#19 practitioner description enumerates every role in roles/ (invariant)"
 grep -q "skills/policy-<name>" "$ROOT/agents/practitioner.md" && grep -qi "bare" "$ROOT/agents/practitioner.md"
 assert_ok $? "#19 practitioner states the bare-name -> policy-<name> convention"

@@ -35,9 +35,14 @@ match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
   yq -r '.records[] | .id as $id | .statement as $s |
       (.triggers // [])[] | [$id, ., $s] | @tsv' "$f" 2>/dev/null |
   awk -F'\t' -v label="$label" '
-    BEGIN { h = tolower(ENVIRON["MT_HAY"]) }
+    BEGIN { h = tolower(ENVIRON["MT_HAY"]); ev = ENVIRON["MT_EVENT"] }
     {
       trig = tolower($2)
+      # event-scoped triggers (precision, field review 2026-08-19):
+      # "edit:X" matches only Edit/Write/NotebookEdit firings, "bash:X"
+      # only Bash; MT_EVENT="" (recall CLI) matches all, prefix stripped
+      if (substr(trig, 1, 5) == "edit:") { if (ev != "" && ev != "edit") next; trig = substr(trig, 6) }
+      else if (substr(trig, 1, 5) == "bash:") { if (ev != "" && ev != "bash") next; trig = substr(trig, 6) }
       if (trig != "" && index(h, trig) > 0) { cnt[$1]++; stmt[$1] = $3 }
     }
     END {
@@ -58,8 +63,13 @@ matched_triggers() {  # $1=store $2=haystack -- distinct matched trigger STRINGS
   export MT_HAY="$2"
   yq -r '.records[] | (.triggers // [])[]' "$f" 2>/dev/null |
   awk '
-    BEGIN { h = tolower(ENVIRON["MT_HAY"]) }
-    { trig = tolower($0); if (trig != "" && index(h, trig) > 0 && !seen[$0]++) print }
+    BEGIN { h = tolower(ENVIRON["MT_HAY"]); ev = ENVIRON["MT_EVENT"] }
+    {
+      trig = tolower($0)
+      if (substr(trig, 1, 5) == "edit:") { if (ev != "" && ev != "edit") next; trig = substr(trig, 6) }
+      else if (substr(trig, 1, 5) == "bash:") { if (ev != "" && ev != "bash") next; trig = substr(trig, 6) }
+      if (trig != "" && index(h, trig) > 0 && !seen[$0]++) print
+    }
   '
   unset MT_HAY
 }

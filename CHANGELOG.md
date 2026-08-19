@@ -3,6 +3,35 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.24] — 2026-08-19
+
+- Field-review batch (classifier tax, presence precision, cascade fit):
+  - The classifier no longer injects its rubric on trivial prompts —
+    slash commands and replies of ≤2 words (hi, ok, proceed) get nothing
+    (US-002) — a deliberate trade: a two-word destructive ask loses the
+    rubric too, while inhibit's rows still catch the catastrophic classes
+    and now also ask on `rm -r* <path>` and deleting the default branch;
+    after a session's first classification the rubric is a one-liner.
+    The skeptic pass on this batch found the D025 currency gate itself
+    was dead (`false; break` — break's own status is 0) — fixed, and the
+    live gate immediately surfaced that the git skill had never been in
+    SKILL-MAP; remove-trigger now removes one occurrence, not all.
+  - Presence precision: triggers can be event-scoped — `edit:X` matches
+    only Edit/Write/NotebookEdit firings, `bash:X` only Bash, unscoped
+    any tool; new `remove-trigger` (exact, audited) re-cues a noisy
+    record; consolidate 2b gains cue-quality guidance; D025 re-cued
+    edit-scoped. The frame re-anchor now uses the LATEST active frame
+    (it was re-anchoring to the first, i.e. stale work). The longitudinal
+    protocol gains a pre-registered Presence-precision metric (source:
+    the retrospective's irrelevant-injection count via
+    `mark-retrospect … irrelevant-injections N`) and a re-ranker gate —
+    Q006: a small local cross-encoder as a precision FILTER over keyword
+    candidates, fail-open, justified only if precision stays <50% for
+    two audited weeks after these mechanical measures ship.
+  - Deliberate states the single-mind principle: parallelism buys
+    breadth, never coherence — synthesis is a single-context job by
+    design.
+
 ## [0.5.23] — 2026-08-19
 
 - Field-report batch (issues #20-#21, livingsyncs, met while upgrading to

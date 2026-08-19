@@ -87,6 +87,15 @@ not a commitment to build either.
   `triggers:` coverage — a pattern per-call matching structurally cannot
   catch (no single call is the offender) but a periodic broader sweep
   over session state and trail could.
+- **Presence precision (added 2026-08-19, field review):** relevant
+  injections / total injections per audited week, where "irrelevant" is
+  the retrospective's own count (`mark-retrospect … irrelevant-injections
+  N` telemetry) over the `presence recall` lines. **Re-ranker filter
+  justified** (Q006: a small cross-encoder scoring keyword candidates,
+  local, fail-open, only when candidates exist) when precision stays
+  below 50% across two consecutive audited weeks AFTER the mechanical
+  precision measures (event-scoped triggers, cue-quality guidance,
+  remove-trigger) have shipped — never before them.
 - **Tier 3 justified** when ≥2 audited weeks show recurring
   advisory-pattern telemetry lines (a drift pattern the hook can match
   but not judge, per §4.11) that the main session did not act on within
@@ -119,6 +128,11 @@ spot-audit.
 - 2026-08-13 — amended per the ratified global-tier spec: seventh source
   added (cross-project global-record citations); counts zero until a
   second governed project exists.
+- 2026-08-19 (later) — field review: presence injections were mostly
+  irrelevant at one site; added the Presence-precision metric (source:
+  retrospect count via mark-retrospect) and the pre-registered re-ranker
+  gate (Q006), deliberately ordered after the mechanical precision
+  measures ship.
 - 2026-08-19 — amended per `docs/specs/2026-08-19-jit-recall-design.md`
   (ratified Phase 4 deliverable, `docs/ROADMAP.md:96-105`): three new
   metrics (Recall MISS, Frame adherence, Retrospect adherence), two new

@@ -6,49 +6,86 @@ err=0
 fail() { echo "invalid: $1" >&2; err=1; }
 yq -e '.' "$f" >/dev/null 2>&1 || { echo "invalid: not parseable YAML" >&2; exit 1; }
 [ "$(yq -r '.meta.schema_version // ""' "$f")" = "3" ] || fail "meta.schema_version must be 3"
-[ "$(yq -r '.records | type' "$f" 2>/dev/null)" = "!!seq" ] || fail "records must be a list"
+rtype="$(yq -r '.records | type' "$f" 2>/dev/null)"
+[ "$rtype" = "!!seq" ] || fail "records must be a list"
 n="$(yq -r '.records | length' "$f")"
-all_ids_cache="$(yq -r '.records[].id // ""' "$f" 2>/dev/null)"
-i=0
-while [ "$i" -lt "$n" ]; do
-  id="$(yq -r ".records[$i].id // \"\"" "$f")"
-  [ -n "$id" ] || fail "records[$i]: missing id"
-  t="$(yq -r ".records[$i].type // \"\"" "$f")"
-  case "$t" in claim|preference|decision|goal|policy) ;; *) fail "records[$i]: bad type '$t'" ;; esac
-  [ -n "$(yq -r ".records[$i].statement // \"\"" "$f")" ] || fail "records[$i]: missing statement"
-  r="$(yq -r ".records[$i].ratification // \"\"" "$f")"
-  case "$r" in pending|approved|rejected) ;; *) fail "records[$i]: bad ratification '$r'" ;; esac
-  if [ "$t" = "claim" ]; then
-    e="$(yq -r ".records[$i].epistemic_status // \"\"" "$f")"
-    case "$e" in speculative|probable|established) ;; *) fail "records[$i]: claim missing/bad epistemic_status" ;; esac
+# (relationship-target existence now checked inside the jq filter below,
+# which computes its own $all_ids from the same extracted records JSON --
+# no separate bash-side id cache needed.)
+# Per-record checks used to be ~10 separate yq calls PER RECORD (each a
+# full-file re-parse) -- O(records) subprocess spawns made this the
+# dominant cost of scripts/presence's every-tool-call firing (measured:
+# ~26s on a 300-record store, well over the JIT-recall spec's 1s hook
+# budget -- docs/specs/2026-08-19-jit-recall-design.md's own perf
+# requirement, verified via tests/test_presence.sh item 12). Rewritten as
+# ONE yq JSON extraction + ONE jq pass over all records (measured: ~44ms
+# on the same 300-record fixture), matching the house idiom already used
+# by scripts/store-resolve's match_triggers (one extraction, no
+# per-record subprocess). Same checks, same fail() call sites; only the
+# subprocess count changed.
+if [ "$rtype" = "!!seq" ] && [ "$n" -gt 0 ] 2>/dev/null; then
+  errs="$(yq -o=json '.records' "$f" 2>/dev/null | jq -r "$(cat <<'JQ'
+. as $recs
+| ([$recs[] | (.id // "")]) as $all_ids
+| [ range(0; ($recs | length)) as $i
+    | $recs[$i] as $r
+    | (
+        (if (($r.id // "") == "") then ["records[\($i)]: missing id"] else [] end)
+        + (if (["claim","preference","decision","goal","policy"] | index($r.type // "")) then [] else ["records[\($i)]: bad type '\($r.type // "")'"] end)
+        + (if (($r.statement // "") == "") then ["records[\($i)]: missing statement"] else [] end)
+        + (if (["pending","approved","rejected"] | index($r.ratification // "")) then [] else ["records[\($i)]: bad ratification '\($r.ratification // "")'"] end)
+        + (if (($r.type // "") == "claim") then (if (["speculative","probable","established"] | index($r.epistemic_status // "")) then [] else ["records[\($i)]: claim missing/bad epistemic_status"] end) else [] end)
+        + (
+            ($r.triggers) as $trg
+            | if ($trg == null) then []
+              elif ($trg | type) == "array" then
+                ( [$trg[] | select((type != "string") or (. == ""))] | length ) as $bad
+                | if $bad == 0 then [] else ["records[\($i)]: triggers must be a list of non-empty strings (\($bad) bad element(s))"] end
+              else ["records[\($i)]: triggers must be a list (got \($trg | type))"]
+              end
+          )
+        + (
+            (($r.source // {}) | keys) as $ks
+            | ($ks - ["type","context","participants"]) as $bad
+            | if ($bad | length) == 0 then [] else ["records[\($i)]: source has unexpected key(s): \($bad | join(" ")) (unquoted scalar split?)"] end
+          )
+        + (
+            (($r.events // []) | map(keys) | add // []) as $ks
+            | ($ks - ["date","action","by","note"] | unique) as $bad
+            | if ($bad | length) == 0 then [] else ["records[\($i)]: event has unexpected key(s): \($bad | join(" ")) (unquoted scalar split?)"] end
+          )
+        + (
+            (($r.evidence // []) | map(keys) | add // []) as $ks
+            | ($ks - ["date","type","note","refs"] | unique) as $bad
+            | if ($bad | length) == 0 then [] else ["records[\($i)]: evidence has unexpected key(s): \($bad | join(" ")) (unquoted scalar split?)"] end
+          )
+        + (
+            (($r.relationships // []) | map(keys) | add // []) as $ks
+            | ($ks - ["type","target","date","note"] | unique) as $bad
+            | if ($bad | length) == 0 then [] else ["records[\($i)]: relationship has unexpected key(s): \($bad | join(" "))"] end
+          )
+        + (
+            (($r.relationships // []) | map(.type // "") | unique) as $ts
+            | ($ts - ["refines","contradicts","compares"]) as $bad
+            | if ($bad | length) == 0 then [] else ["records[\($i)]: relationship type must be refines|contradicts|compares (got: \($bad | join(" ")))"] end
+          )
+        + (
+            [ ($r.relationships // [])[] | (.target // "") | select(. != "") | select(. as $t | ($all_ids | index($t)) == null) ]
+            | map("records[\($i)]: relationship target '\(.)' is not a record in this store")
+          )
+      )
+  ] | flatten | .[]
+JQ
+)" 2>/dev/null)"
+  if [ -n "$errs" ]; then
+    while IFS= read -r eline; do
+      [ -n "$eline" ] || continue
+      fail "$eline"
+    done <<EOF
+$errs
+EOF
   fi
-  tt="$(yq -r ".records[$i].triggers | type" "$f" 2>/dev/null)"
-  case "$tt" in
-    "!!null") ;;  # absent -- optional field, valid
-    "!!seq")
-      bad="$(yq -r "[.records[$i].triggers[] | select((. | type) != \"!!str\" or . == \"\")] | length" "$f" 2>/dev/null)"
-      [ "$bad" = "0" ] || fail "records[$i]: triggers must be a list of non-empty strings ($bad bad element(s))"
-      ;;
-    *) fail "records[$i]: triggers must be a list (got $tt)" ;;
-  esac
-  # unknown keys in source/events/evidence usually mean an unquoted flow
-  # scalar containing ", " or ": " split into spurious keys at write time
-  bad="$(yq -r ".records[$i].source // {} | keys | .[]" "$f" 2>/dev/null | grep -vE '^(type|context|participants)$' | head -3 | tr '\n' ' ')"
-  [ -z "$bad" ] || fail "records[$i]: source has unexpected key(s): $bad(unquoted scalar split?)"
-  bad="$(yq -r ".records[$i].events // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(date|action|by|note)$' | sort -u | head -3 | tr '\n' ' ')"
-  [ -z "$bad" ] || fail "records[$i]: event has unexpected key(s): $bad(unquoted scalar split?)"
-  bad="$(yq -r ".records[$i].evidence // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(date|type|note|refs)$' | sort -u | head -3 | tr '\n' ' ')"
-  [ -z "$bad" ] || fail "records[$i]: evidence has unexpected key(s): $bad(unquoted scalar split?)"
-  bad="$(yq -r ".records[$i].relationships // [] | .[] | keys | .[]" "$f" 2>/dev/null | grep -vE '^(type|target|date|note)$' | sort -u | head -3 | tr '\n' ' ')"
-  [ -z "$bad" ] || fail "records[$i]: relationship has unexpected key(s): $bad"
-  bad="$(yq -r ".records[$i].relationships // [] | .[] | .type // \"\"" "$f" 2>/dev/null | grep -vE '^(refines|contradicts|compares)$' | sort -u | head -3 | tr '\n' ' ')"
-  [ -z "$bad" ] || fail "records[$i]: relationship type must be refines|contradicts|compares (got: $bad)"
-  while IFS= read -r rt; do
-    [ -n "$rt" ] || continue
-    printf '%s\n' "$all_ids_cache" | grep -qxF "$rt" || fail "records[$i]: relationship target '$rt' is not a record in this store"
-  done <<< "$(yq -r ".records[$i].relationships // [] | .[] | .target // \"\"" "$f" 2>/dev/null)"
-  i=$((i+1))
-done
+fi
 dups="$(yq -r '.records[].id' "$f" 2>/dev/null | sort | uniq -d)"
 [ -z "$dups" ] || fail "duplicate ids: $(printf '%s' "$dups" | tr '\n' ' ')"
 sc="$(yq -r '.meta.scope // ""' "$f" 2>/dev/null)"

@@ -192,20 +192,79 @@ out3="$("$F" list)"; printf '%s' "$out3" | grep -qE $'^T001\tcd chain\t5\t.*\tye
 assert_ok $? "item 12: 5 marks under threshold=5 -- now suppressed=yes"
 ); rm -rf "$tmp"
 
-# --- item 5 (extended, MINOR 13): recall_cache purge on natural TTL expiry, at read time ---
+# --- FIX (IMPORTANT, D011 fix round, reviewer Task 12): TTL-expiry
+# recall_cache purge was not transition-gated -- expired_ids was
+# recomputed fresh from the TSV on EVERY firing and purged
+# unconditionally, permanently defeating the N=10 dedupe window for any
+# record with a soft-expired feedback row (spec §7: expired rows are
+# never auto-deleted, so this was the PERMANENT steady state for any
+# pair not manually cleared). Replaces the item-5 (extended) block that
+# stood here: that block's own scenario (recall BEFORE any feedback row
+# existed, then a row created ALREADY expired) never actually observed
+# a genuine "was suppressed, now isn't" transition -- its final
+# assertion ("the NEXT firing re-injects T001") is FALSE under the
+# corrected model below, because a row that reads as
+# count>=threshold+expired from the moment it is created never made any
+# recall_cache entry stale in the first place; ordinary N=10 dedup
+# already handles it correctly. That is exactly TEST A below.
+# --- TEST A: a row already-expired from birth (never actively
+# suppressing within this session) must behave EXACTLY like ordinary,
+# never-suppressed N=10 dedup -- inject once, then dedupe (reviewer's
+# own reproduction: "T001 row backdated 40 days (count=3), same trigger
+# fired 3x in one session") ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
 fb_mkfx "$tmp"
-# inject once, unsuppressed, so recall_cache holds a pre-suppression entry
-printf '{"session_id":"sttl","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain first time"},"tool_response":{}}' | "$ROOT/scripts/presence" >/dev/null
-yq -e '.recall_cache | has("T001")' .anoti/sessions/sttl.presence.yaml >/dev/null 2>&1
-assert_ok $? "TTL setup: recall_cache holds a pre-expiry entry for T001"
 old="$(date -v-40d +%F 2>/dev/null || date -d '40 days ago' +%F 2>/dev/null)"
-printf 'T001\tcd chain\t3\t%s\t%s\n' "$old" "$old" > .anoti/presence-feedback.tsv   # at/above threshold, but last_marked is EXPIRED
-out="$(printf '{"session_id":"sttl","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"anything else"},"tool_response":{}}' | "$ROOT/scripts/presence")"
-yq -e '.recall_cache | has("T001")' .anoti/sessions/sttl.presence.yaml >/dev/null 2>&1
-assert_eq "$?" "1" "TTL expiry: the stale recall_cache entry is purged at the firing that finds it expired (§4.5.2 point 2)"
-out2="$(printf '{"session_id":"sttl","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain again"},"tool_response":{}}' | "$ROOT/scripts/presence")"
-printf '%s' "$out2" | jq -r '.hookSpecificOutput.additionalContext' | grep -q "T001"
-assert_ok $? "TTL expiry: the NEXT firing re-injects T001 (the purge actually restores reversibility)"
+printf 'T001\tcd chain\t3\t%s\t%s\n' "$old" "$old" > .anoti/presence-feedback.tsv
+fireA() { printf '{"session_id":"sA","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain again"},"tool_response":{}}' | "$ROOT/scripts/presence"; }
+out1="$(fireA)"
+printf '%s' "$out1" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_ok $? "TEST A fire 1: expired-from-birth row still injects once (cache empty, ordinary first-touch)"
+out2="$(fireA)"
+printf '%s' "$out2" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST A fire 2: MUST be deduped (ABSENT) -- no real transition ever occurred, so nothing should purge the cache set on fire 1 (the bug: the old unconditional-every-firing purge wiped it, re-injecting every time)"
+out3="$(fireA)"
+printf '%s' "$out3" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST A fire 3: reviewer's own required assertion -- third firing after expiry must be deduped (ABSENT)"
+); rm -rf "$tmp"
+
+# --- TEST A control: identical 3-firing sequence with NO feedback file
+# at all -- proves the expired-from-birth path (above) now matches
+# ordinary dedup exactly, not merely "happens to pass" (reviewer's own
+# framing: "control without a feedback file dedupes correctly") ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+fb_mkfx "$tmp"
+fireActl() { printf '{"session_id":"sActl","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain again"},"tool_response":{}}' | "$ROOT/scripts/presence"; }
+out1="$(fireActl)"
+printf '%s' "$out1" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_ok $? "TEST A control fire 1: injects (no feedback file at all)"
+out2="$(fireActl)"
+printf '%s' "$out2" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST A control fire 2: deduped (ABSENT) -- ordinary N=10 dedup, matches TEST A's now-fixed behavior"
+out3="$(fireActl)"
+printf '%s' "$out3" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST A control fire 3: deduped (ABSENT)"
+); rm -rf "$tmp"
+
+# --- TEST B: a GENUINE mid-session transition (actively suppressed,
+# THEN ages past the 30-day cutoff) -- reviewer's other required
+# assertion: "a fresh-expiry first firing must still purge+inject" ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+fb_mkfx "$tmp"
+"$F" mark T001 "cd chain" >/dev/null; "$F" mark T001 "cd chain" >/dev/null; "$F" mark T001 "cd chain" >/dev/null
+fireB() { printf '{"session_id":"sB","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain again"},"tool_response":{}}' | "$ROOT/scripts/presence"; }
+out1="$(fireB)"
+printf '%s' "$out1" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST B fire 1: T001 actively suppressed (recent marks) -- absent, establishing a real suppression episode"
+old="$(date -v-40d +%F 2>/dev/null || date -d '40 days ago' +%F 2>/dev/null)"
+printf 'T001\tcd chain\t3\t%s\t%s\n' "$old" "$old" > .anoti/presence-feedback.tsv
+out2="$(fireB)"
+printf '%s' "$out2" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_ok $? "TEST B fire 2 (the transition firing): purge+inject -- T001 re-appears the moment the pair ages out of suppression"
+out3="$(fireB)"
+printf '%s' "$out3" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST B fire 3: reviewer's own required assertion -- deduped (ABSENT), proving the purge fired ONCE (at the transition), not every firing thereafter"
 ); rm -rf "$tmp"

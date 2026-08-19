@@ -63,13 +63,37 @@ warned_f="$(yq -r '.warned.feedback // false' "$pf" 2>/dev/null || echo false)"
 threshold="$(cfgk feedback_threshold)"; [ -n "$threshold" ] || threshold=3
 cutoff="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"
 ff="$AD/presence-feedback.tsv"
-suppressed=""; expired_ids=""
+suppressed=""
+# FIX (IMPORTANT, D011 fix round, reviewer Task 12): this used to also
+# compute expired_ids fresh from the TSV every firing, then purge
+# recall_cache unconditionally whenever it was non-empty (below, near
+# persist). That purged EVERY firing forever once a row aged past the
+# 30-day cutoff (spec §7: expired rows are never auto-deleted), because
+# a fully-unsuppressed id's own rc_set (made during THIS firing's normal
+# recall loop) got wiped again by the VERY NEXT firing's identical,
+# stateless recheck -- permanently defeating the N=10 dedupe window,
+# never just once at the actual transition. Per spec §4.5.2 point 2's
+# own contract ("a recall_cache entry never outlives the suppression
+# episode that made it stale"), the purge must fire only at an OBSERVED
+# transition out of suppression, not merely whenever a row happens to
+# currently read as "count>=threshold and expired" -- a row that reads
+# that way from the moment it is created was never actively suppressing
+# within this session and never made any cache entry stale to begin
+# with; ordinary N=10 dedup is already correct for it (confirmed by
+# direct reproduction: TEST A in tests/test_feedback.sh). Fixed by
+# tracking THIS session's own previously-suppressed (id,trigger) set
+# (persisted below as .suppressed_prev) and diffing it against this
+# firing's freshly-computed $suppressed -- a pair present in the
+# former but absent from the latter is a genuine, once-only transition
+# (TEST B in tests/test_feedback.sh). The purge itself now runs where
+# recall_cache_local is populated (below), BEFORE the recall loop --
+# not after it as before -- so a same-firing rc_set for a
+# newly-unsuppressed id survives, instead of being wiped by the very
+# purge that was meant to un-stick it.
 if fx "$ff"; then
   if feedback_shape_ok "$ff"; then
     suppressed="$(awk -F'\t' -v th="$threshold" -v cutoff="$cutoff" \
       'NF==5 && $3+0>=th && $4>=cutoff {print $1"\t"$2}' "$ff" 2>/dev/null)"
-    expired_ids="$(awk -F'\t' -v th="$threshold" -v cutoff="$cutoff" \
-      'NF==5 && $3+0>=th && $4<cutoff {print $1}' "$ff" 2>/dev/null | sort -u)"
   else
     if [ "$warned_f" != "true" ]; then
       try_emit "- presence-feedback.tsv: present but not parseable; suppression disabled this session (fix or remove it)" \
@@ -77,6 +101,7 @@ if fx "$ff"; then
     fi
   fi
 fi
+prev_suppressed="$(yq -r '(.suppressed_prev // [])[]' "$pf" 2>/dev/null)"
 gstore=""; pstore=""; lstore=""
 if fx "$HOME/.claude/anoti/GROUNDING.yaml"; then
   if gstore="$(resolve_global)"; then :; else
@@ -194,6 +219,36 @@ $1	$2"
   recall_cache_local="$(printf '%s\n' "$recall_cache_local" | sed '/^[[:space:]]*$/d')"
 }
 
+# FIX (IMPORTANT, D011 fix round): purge stale recall_cache entries for
+# any id whose (id,trigger) pair fell OUT of suppression between the
+# previous firing and this one (present in prev_suppressed, absent from
+# this firing's own $suppressed) -- MUST run here, before the recall
+# loop below, not after it. Moving it after the loop (the prior
+# committed version's placement) is exactly what caused the purge to
+# repeat every subsequent firing once triggered: the loop's own fresh
+# rc_set for a newly-unsuppressed id would get wiped again by that
+# stale placement. Multi-line $suppressed/$prev_suppressed go through
+# ENVIRON, never awk -v (house contract) -- a multi-line -v value
+# already crashed macOS's shipped awk once in this file (see the
+# suppression_filtered_matches DEVIATION note above, item 7).
+export CUR_SUPP="$suppressed"
+purge_ids="$(printf '%s\n' "$prev_suppressed" | awk -F'\t' '
+  BEGIN {
+    n = split(ENVIRON["CUR_SUPP"], clines, "\n")
+    for (i = 1; i <= n; i++) { split(clines[i], f, "\t"); if (f[1] != "") curset[f[1] SUBSEP f[2]] = 1 }
+  }
+  NF >= 2 { if (!(($1,$2) in curset)) print $1 }
+' | sort -u)"
+unset CUR_SUPP
+if [ -n "$purge_ids" ]; then
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    recall_cache_local="$(printf '%s\n' "$recall_cache_local" | awk -F'\t' -v id="$pid" '$1!=id')"
+  done <<EOF
+$purge_ids
+EOF
+fi
+
 n_picked=0; skipped_more=0; recall_detail=""
 # FIX (CRITICAL #1, jit-recall fix round): NEVER `IFS=<tab> read` a TSV
 # row here. Tab is IFS *whitespace*, so consecutive tabs collapse into
@@ -291,15 +346,6 @@ if [ "$slow_classified" = "true" ] && [ $((tool_calls - last_reanchor)) -ge "$N"
   fi
 fi
 
-if [ -n "$expired_ids" ]; then
-  while IFS= read -r eid; do
-    [ -n "$eid" ] || continue
-    recall_cache_local="$(printf '%s\n' "$recall_cache_local" | awk -F'\t' -v id="$eid" '$1!=id')"
-  done <<EOF
-$expired_ids
-EOF
-fi
-
 # --- persist presence-state ---
 # same rc_get/rc_set TSV substitute (see the DEVIATION note above): build
 # the JSON object with one awk pass instead of iterating array keys.
@@ -309,8 +355,16 @@ rc_json="$(printf '%s\n' "$recall_cache_local" | sed '/^[[:space:]]*$/d' | awk -
   END { printf "}" }
 ')"
 [ -n "$rc_json" ] || rc_json="{}"
-TC="$((tool_calls + 1))" LR="$last_reanchor" RC="$rc_json" WG="$warned_g" WP="$warned_p" WF="$warned_f" \
-  yq ".tool_calls = strenv(TC) | .last_frame_reanchor = strenv(LR) | .recall_cache = (strenv(RC) | fromjson) | .warned.global = (strenv(WG) == \"true\") | .warned.project = (strenv(WP) == \"true\") | .warned.feedback = (strenv(WF) == \"true\")" "$pf" > "$pf.tmp.$$" \
+# persist THIS firing's own $suppressed set as .suppressed_prev, for the
+# NEXT firing's transition-diff (see the FIX note near recall_cache_local
+# above). jq -- not awk -- builds this JSON array so trigger text needing
+# escaping (a quote or backslash a human typed into a trigger) is handled
+# correctly rather than hand-rolled; jq is an already-required dependency
+# (tests/run.sh:16).
+sp_json="$(printf '%s\n' "$suppressed" | sed '/^[[:space:]]*$/d' | jq -R -s -c 'split("\n") | map(select(length > 0))' 2>/dev/null)"
+[ -n "$sp_json" ] || sp_json="[]"
+TC="$((tool_calls + 1))" LR="$last_reanchor" RC="$rc_json" WG="$warned_g" WP="$warned_p" WF="$warned_f" SP="$sp_json" \
+  yq ".tool_calls = strenv(TC) | .last_frame_reanchor = strenv(LR) | .recall_cache = (strenv(RC) | fromjson) | .warned.global = (strenv(WG) == \"true\") | .warned.project = (strenv(WP) == \"true\") | .warned.feedback = (strenv(WF) == \"true\") | .suppressed_prev = (strenv(SP) | fromjson)" "$pf" > "$pf.tmp.$$" \
   && mv "$pf.tmp.$$" "$pf"
 
 if [ -n "$lines" ]; then

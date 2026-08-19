@@ -1,5 +1,13 @@
 # Just-in-Time Recall — the Presence Hook
 
+**Status:** RATIFIED 2026-08-19 ("3" — commission the implementation
+cascade) — adversarial review COMPLIANT-WITH-RESIDUE after three cycles
+(1C+3M+7m fixed round 1; a round-1-introduced matcher no-op and a
+self-caught yq-dialect bug fixed round 2). Named residue for the builder
+under RED-first tests: `match_topic_statement` and retrieve's compaction
+frame-filter are prose-only; awk portability verified on macOS only (CI
+covers Linux at implementation).
+
 **Spec:** this document. **Authority:** `docs/ROADMAP.md:96-105` (Phase 4
 deliverable, "design spec is the next step, ratified 2026-08-19",
 `docs/ROADMAP.md:97`, fix-round-2 residual correction to N1 — the earlier

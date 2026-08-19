@@ -50,3 +50,17 @@ audit section supersedes any older cell it contradicts.
 - **US-008** — As a maintainer, I need methodology failures to become
   fixes. Done means: retrospectives file lessons; recurring lessons
   become skills.
+
+## Audit — 2026-08-19
+
+US-001's ✅ 2026-08-13 status verifies SessionStart digest delivery — still
+true. The field review (docs/plans/2026-08-18-jit-recall-cascade.md:17-22)
+shows the same knowledge does not arrive at tool-use time: global
+G004/G005/G008 existed and never surfaced during three concrete mid-task
+failures (cd-chain, stale Vite modules, popover z-index). This audit does
+not change US-001's status cell — the SessionStart claim is unaffected —
+it notes the gap the Phase 4 "Just-in-time recall" deliverable
+(docs/ROADMAP.md) is scoped to close. Re-verify this note once that
+deliverable ships and tool-use-time delivery has live evidence.
+(Human ruling 2026-08-19: option A over a new story, per the
+product-manager draft.)

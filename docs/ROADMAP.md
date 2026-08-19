@@ -93,6 +93,16 @@ evidence.
 - [ ] v1.1 roles validated at working scale
 - [ ] Longitudinal audits (weekly from 2026-08-20) accumulating evidence
       per the pre-registered protocol
+- [ ] Just-in-time recall (presence hook) — planned, not yet built:
+      design spec is the next step, ratified 2026-08-19
+      (docs/plans/2026-08-18-jit-recall-cascade.md). PostToolUse
+      presence hook with four duties (JIT recall + frame re-anchoring +
+      evidence-kind nudge + telemetry), querying global + project +
+      LESSONS-LEARNT per tool call; `anoti recall` CLI (same matcher,
+      second entry point); append-only `triggers:` field; recall-miss +
+      adherence metrics added to the longitudinal protocol; three-tier
+      wake architecture (Tier 1 built by this deliverable; Tiers 2-3
+      evidence-gated on Tier 1's own telemetry, not built now)
 
 **Dependencies:** Phase 3's verdict.
 
@@ -114,4 +124,4 @@ status against live evidence, and the plugin's value claims are
 | Self-report bias in dogfood evidence         | Medium     | High   | Pre-registration, blinded graders, independence rule at promotion        |
 | Direction-doc status decay                   | Medium     | Medium | Dated statuses mandatory; audit sections supersede stale cells           |
 
-**Last Updated:** 2026-08-13 (takeover)
+**Last Updated:** 2026-08-19 (Phase 4 deliverable added: just-in-time recall, human-ratified from the product-manager draft)

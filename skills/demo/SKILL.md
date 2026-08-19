@@ -38,6 +38,7 @@ procedures the hooks point you into.
 | Discovery worth remembering            | consolidate skill                   | typed candidates, helpers only, human ratifies                                                          |
 | Need memory mid-task                   | /anoti:recall                       | query the stores instead of re-deriving                                                                 |
 | Memory should fire by itself next time | append-trigger (consolidate step 2b) | encode the cue at consolidation — "what would I have needed to see?" — and the presence hook surfaces the record at tool-use time |
+| See what the session-start digest says | `scripts/anoti digest`              | the SessionStart hook's output as plain text — stores, organs, recall coverage, drift                  |
 | Quick keyword search, both stores      | `scripts/anoti recall <keywords>`   | the pull-side twin of the presence hook: same matcher, ranked, [global]-labelled                       |
 | Implementation ready to ship           | /anoti:review-work                  | pre-ship drift check (not an adversarial control — that is policy-adversarial-handoff's reviewer spawn) |
 | Drafting or amending ROADMAP / stories | direction skill                     | both direction organs are human-owned; format + freshness rules                                         |

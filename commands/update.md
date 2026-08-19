@@ -27,6 +27,17 @@ workspace documents and memory store.
    Schema migrations follow the grandfathering rule (evidence-less
    `established` claims demote to `probable` with a dated event).
 4. **Verify:** `scripts/validate-workspace`, `regen-index`, `trust` on
-   the store; run the digest once and show the result.
+   the store; then run the digest once and show it —
+   `scripts/anoti digest` (the operator-runnable form of the SessionStart
+   hook; plain text, no envelope).
+4b. **Recall coverage (0.5.22+):** JIT recall surfaces only records that
+   carry `triggers:`, and a store written before 0.5.22 has none — report
+   `N/M project records carry triggers` (and the global store's count)
+   every run, and when a migration crosses 0.5.22 say plainly that the
+   feature is inert until triggers exist. Backfilling is a judgment
+   task, never mechanical: consolidate step 2b's encoding-time question
+   ("what would a future session need to see to be reminded of this?"),
+   applied record by record via `scripts/anoti append-trigger`, ideally
+   starting with the records the audit shows were missed.
 5. **Report** what moved, what was backed up, and anything queued for
    `/anoti:review`.

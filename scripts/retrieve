@@ -85,6 +85,16 @@ fi
 # lessons is deliberately an enrichment (try_emit): unlike the count-only
 # core lines it carries content (the truncated latest entry), so it yields
 # under budget pressure rather than crowding the always-emit lines
+# #20: JIT recall can only surface records that carry triggers — a
+# store upgraded across 0.5.22 has none, silently. Loud while coverage
+# is low (fewer than half the records); silent once the store is cued.
+if [ -n "$PSTORE" ]; then
+  rt="$(yq -r '.records | length' GROUNDING.yaml 2>/dev/null || echo 0)"; rt="${rt:-0}"
+  rw="$(yq -r '[.records[] | select((.triggers // []) | length > 0)] | length' GROUNDING.yaml 2>/dev/null || echo 0)"; rw="${rw:-0}"
+  if [ "$rt" -gt 0 ] && [ $(( rw * 2 )) -lt "$rt" ]; then
+    try_emit "- recall coverage: $rw/$rt project records carry triggers — the presence hook surfaces only cued records; consolidate step 2b (the encoding-time question) adds them"
+  fi
+fi
 LL="$(cfgk lessons_path)"; [ -n "$LL" ] || LL=LESSONS-LEARNT.md
 if fx "$LL"; then
   lc="$(grep -c '^- ' "$LL" 2>/dev/null)"; lc="${lc:-0}"

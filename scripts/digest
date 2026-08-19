@@ -1,0 +1,13 @@
+#!/bin/bash
+# digest [session-id] — print the SessionStart memory digest as plain text (operator-runnable retrieve).
+# Issue #21: /anoti:update's "run the digest" step named a hook the
+# harness runs; this is the same resolution (stores, organs, coverage,
+# drift) rendered without the hook envelope. Read-only.
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+sid="${1:-digest}"
+printf '{"session_id":"%s","cwd":"%s","hook_event_name":"SessionStart"}' "$sid" "$PWD" \
+  | "$SELF/retrieve" \
+  | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null \
+  | sed -e '/^<anoti-memory-digest>$/d' -e '/^<\/anoti-memory-digest>$/d'
+exit 0

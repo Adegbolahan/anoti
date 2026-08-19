@@ -3,6 +3,20 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.23] — 2026-08-19
+
+- Field-report batch (issues #20-#21, livingsyncs, met while upgrading to
+  0.5.22): the flagship recall feature was silently inert over a
+  68-record store — no pre-0.5.22 record carries `triggers:` and nothing
+  said so. Visibility, not automation (backfilling cues is a judgment,
+  not a migration): the digest now emits `recall coverage: N/M project
+  records carry triggers` while fewer than half are cued, and
+  `/anoti:update` reports coverage every run and names the 0.5.22
+  crossing plainly, pointing at consolidate step 2b + `append-trigger`
+  (#20). New `scripts/anoti digest` action prints the SessionStart
+  digest as plain text — the operator-runnable twin of the hook — and
+  update's verify step names it (#21). Demo routing row added (D025).
+
 ## [0.5.22] — 2026-08-19
 
 - **Just-in-time recall — the presence hook** (ratified Phase 4

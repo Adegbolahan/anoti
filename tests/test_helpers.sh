@@ -839,3 +839,18 @@ printf '{"session_id":"sZ2"}' | "$ROOT/scripts/cleanup-session"
 grep -qE 'sZ2.*summary.*retrospect_ran=false' .anoti/telemetry.log  # DEVIATION: plan's RED regex checked "summary" before the session id, but the plan's own GREEN printf (and the established telemetry convention: timestamp<TAB>session_id<TAB>category<TAB>...) puts sid before "summary" -- fixed the field order in the assertion, not the implementation, which correctly follows the house convention (matches this same test's own first, already-passing assertion)
 assert_ok $? "no retrospect telemetry -> retrospect_ran=false"
 ); rm -rf "$tmp"
+
+# --- #21 anoti digest: the operator-runnable digest ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+git init -q -b main .
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$("$ROOT/scripts/anoti" digest)"
+printf '%s' "$out" | grep -q "project memory: 2 records"; assert_ok $? "#21 anoti digest prints the digest as plain text"
+printf '%s' "$out" | grep -q "hookSpecificOutput"; assert_eq "$?" "1" "#21 digest output is not the raw hook envelope"
+"$ROOT/scripts/anoti" help | grep "digest" | grep -qi "hook"; assert_eq "$?" "1" "#21 digest is listed as an action, not a hook"
+printf '%s' "$out" | grep -q "recall coverage: 0/2"; assert_ok $? "#20 coverage line shows when few records carry triggers"
+yq -i '.records[0].triggers = ["alpha"] | .records[1].triggers = ["beta"]' GROUNDING.yaml && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$("$ROOT/scripts/anoti" digest)"
+printf '%s' "$out" | grep -q "recall coverage"; assert_eq "$?" "1" "#20 coverage line silent once coverage is healthy"
+); rm -rf "$tmp"

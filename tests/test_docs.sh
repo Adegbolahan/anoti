@@ -39,3 +39,9 @@ grep -q "## Execution routing" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
 assert_ok $? "backfilled Execution routing section present"
 awk '/^## Decision rules/{a=NR} /^## Tier-1 gate/{b=NR} /^## Cadence/{c=NR} END{exit !(a && b && c && a<b && b<c)}' "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
 assert_ok $? "Tier-1 gate sits between Decision rules and Cadence, per spec"
+
+# --- jit-recall spec §4.1 / §7 (SKILL-MAP currency deferred to this plan's follow-on pass) ---
+grep -q "presence" "$ROOT/docs/SKILL-MAP.md"
+assert_ok $? "SKILL-MAP names the presence hook as an entry point"
+grep -q "anoti recall" "$ROOT/docs/SKILL-MAP.md"
+assert_ok $? "SKILL-MAP names the anoti recall CLI"

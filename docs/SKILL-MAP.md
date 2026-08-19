@@ -7,13 +7,14 @@
 
 ## Entry points (roots)
 
-| Root                               | Fires              | Leads to                                                          |
-| ---------------------------------- | ------------------ | ----------------------------------------------------------------- |
-| SessionStart hook (`retrieve`)     | every session      | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge |
-| UserPromptSubmit hook (`classify`) | every prompt       | fast path (silence) or **attend**                                 |
-| PreToolUse hook (`inhibit`)        | matched tools      | allow / ask / deny; deny message routes to `/anoti:consolidate`   |
-| Stop hook (`consolidation-gate`)   | candidate episodes | `/anoti:consolidate`                                              |
-| Human commands                     | on demand          | new, implement, review-work, update, review, recall, consolidate  |
+| Root                                             | Fires                                             | Leads to                                                                                              |
+| ------------------------------------------------ | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge        |
+| UserPromptSubmit hook (`classify`)               | every prompt                                      | fast path (silence) or **attend**                                                                     |
+| PreToolUse hook (`inhibit`)                      | matched tools                                     | allow / ask / deny; deny message routes to `/anoti:consolidate`                                       |
+| Stop hook (`consolidation-gate`)                 | candidate episodes                                | `/anoti:consolidate`                                                                                  |
+| PostToolUse/PostToolUseFailure hook (`presence`) | matched tool calls (Bash/Write/Edit/NotebookEdit) | JIT recall; periodic frame re-anchor; evidence-kind nudge; telemetry                                  |
+| Human commands                                   | on demand                                         | new, implement, review-work, update, review, recall, consolidate; anoti recall (mechanical pre-check) |
 
 ## The spine (explicitly chained, never description-luck)
 
@@ -38,8 +39,8 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | spec        | implement (spec gate); skillify maintenance map; **architect role**                                             |
 | plan        | deliberate lifetime rule; conductor role; skillify maintenance map                                              |
 | direction   | visionary, product-manager, requirements-analyst roles; skillify                                                |
-| feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)            |
-| demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents  |
+| feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |
+| demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents   |
 
 ## Policies — inbound paths (role stacks use bare names)
 

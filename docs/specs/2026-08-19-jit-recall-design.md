@@ -2,9 +2,13 @@
 
 **Spec:** this document. **Authority:** `docs/ROADMAP.md:96-105` (Phase 4
 deliverable, "design spec is the next step, ratified 2026-08-19",
-`docs/ROADMAP.md:97`, fix-round correction — N1: the line reads "ratified",
-not "blocked on this ratification", which was this section's earlier,
-now-superseded draft state before the human's 2026-08-19 ratification);
+`docs/ROADMAP.md:97`, fix-round-2 residual correction to N1 — the earlier
+fix-round-1 correction wrongly implied "blocked on this ratification" was
+`docs/ROADMAP.md`'s own earlier draft state; git history shows that text
+never appeared in `docs/ROADMAP.md` at any point. Its actual source is
+`docs/plans/2026-08-18-roadmap-amendment-draft.md:57` — the
+product-manager's proposed bullet text, written before the human's
+2026-08-19 ratification substituted the wording that actually landed);
 `docs/HIGH-LEVEL-STORIES.md:54-66`
 (Audit — 2026-08-19, human-ratified Option A, "Human ruling 2026-08-19:
 option A over a new story", `docs/HIGH-LEVEL-STORIES.md:65-66`);
@@ -232,7 +236,8 @@ match_topic_statement() { ... }
 #   shift. label is always "" (LESSONS-LEARNT resolves project-local only,
 #   scripts/retrieve:86-93 — no global-tier lessons file exists in this
 #   design). statement is the matched line, `sed 's/^- //'` then
-#   `cut -c1-220`.
+#   `cut -c1-220`. Deliberately plain grep, no awk/ENVIRON at all — full
+#   literal code + verification in §4.3.3 (fix-round 2, cycle-2 finding).
 match_lessons() { ... }
 ```
 
@@ -371,11 +376,43 @@ user 0.77s system 92% cpu 1.944 total"}`) — still too slow across two
 stores; the `grep`-subprocess-per-trigger cost (≈600 spawns for 300
 records ×~2 triggers) dominated. Redesigned again to push the matching
 itself **into a single `awk` pass** reading the same one-`yq`-call TSV
-output — verified: **0.032s for two 300-record stores combined**
-(`{command: "two-store combined timing loop", output: "0.04s user 0.02s
-system 171% cpu 0.032 total"}`), a ~60x improvement over the grep-loop
-attempt and comfortably inside the 5s budget with room for the other
-three duties:
+output.
+
+**Fix-round-2 correction (NEW-C1, CRITICAL, reviewer cycle 2 — the
+0.032s figure below was NOT measured against the literal code that ended
+up in the fix-round-1 spec text):** that literal text used a shell
+_prefix_ variable assignment, `MT_HAY="$2" \` immediately before the `yq`
+invocation it shares a line-continuation with. Per POSIX §2.9.1, a
+prefix assignment scopes only to the one simple command it prefixes — it
+never crosses a pipe to reach `awk`, so `ENVIRON["MT_HAY"]` inside `awk`
+was always empty. Verified by executing that exact function against a
+fixture with the trigger literally present in the haystack: zero output
+on every case (multi-word, plain, and a regex-metacharacter trigger),
+exit 0 — silent, clean, wrong; the `G004` shape (a confident pass that
+never actually checked anything). The interactive shell commands I ran
+during fix round 1 to produce the 0.032s figure used `export
+MT_HAY="$2"` as its own statement, a form that does propagate across the
+pipe — **the benchmark measured the corrected form, not the broken form
+that was actually written into the spec's code block.** Re-verified this
+round two ways, both against the fixed form: first, a hand-typed copy in
+a scratch harness (0.049s: `{command: "match_triggers store_300.yaml
+...; match_triggers store_300b.yaml ..." (function sourced from a file,
+called twice, timed as one block), output: "0.04s user 0.02s system 118%
+cpu 0.049 total"}`); second — the decisive check — the exact bytes of the
+code block below, `sed`-extracted straight from this file into a scratch
+script and sourced, re-run against the same fixture: **0.032s for two
+300-record stores combined** (`{command: "sed -n '<block-range>p'
+docs/specs/2026-08-19-jit-recall-design.md > script.sh; . ./script.sh;
+match_triggers store_300.yaml ...; match_triggers store_300b.yaml ...",
+output: "0.04s user 0.01s system 158% cpu 0.032 total"}`) — this is what
+now ships, verified as itself, not as a paraphrase of itself. Both runs
+land in the same range as the reviewer's own reproduction (~0.033s), a
+~40-60x improvement over the grep-loop attempt, comfortably inside the 5s
+budget with room for the other three duties. Every correctness property
+claimed below (multi-word substring, metacharacter-as-literal, hit
+counting, silence on no match) was likewise re-verified this round
+against the exact extracted bytes below, not merely assumed to carry
+over from the earlier, differently-shaped test:
 
 ```sh
 match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
@@ -384,8 +421,18 @@ match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
   # emits zero rows for a triggerless record automatically. Piped into
   # ONE awk pass doing the matching itself (index()/tolower() are POSIX
   # awk, no extension needed) instead of a grep subprocess per trigger --
-  # this is the change that took the design from 1.944s to 0.032s.
+  # this is the change that took the design from 1.944s to ~0.03s (exact
+  # figures + provenance in the prose above, fix-round 2 correction).
   #
+  # export as its OWN statement, never a prefix assignment on the yq
+  # command (fix-round-2 CRITICAL, NEW-C1): `MT_HAY="$2" yq ... | awk`
+  # scopes the assignment to yq alone (POSIX 2.9.1, simple-command
+  # scope) -- it never crosses the pipe, so ENVIRON["MT_HAY"] inside awk
+  # is always empty and every match silently fails (verified: zero
+  # output on every case, exit 0 -- the G004 shape, a confident pass
+  # that checked nothing). `export` makes it a real environment
+  # variable inherited by every subsequently exec'd child, awk included.
+  export MT_HAY="$2"
   # Haystack passed via ENVIRON, NEVER awk -v: verified empirically that
   # -v processes backslash escapes in its value (a literal backslash-n /
   # backslash-backslash / backslash-t typed in the shell string becomes a
@@ -397,8 +444,7 @@ match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
   # before matching while triggers (read as awk fields, not via -v) would
   # not undergo the same corruption — an asymmetry that could cause real
   # misses. ENVIRON is the safe channel, used here.
-  MT_HAY="$2" \
-    yq -r '.records[] | .id as $id | .statement as $s |
+  yq -r '.records[] | .id as $id | .statement as $s |
       (.triggers // [])[] | [$id, ., $s] | @tsv' "$f" 2>/dev/null |
   awk -F'\t' -v label="$label" '
     BEGIN { h = tolower(ENVIRON["MT_HAY"]) }
@@ -413,6 +459,7 @@ match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
       }
     }
   '
+  unset MT_HAY
 }
 ```
 
@@ -503,6 +550,52 @@ Triggers are deliberately short, curated keywords authored _for_ this
 purpose (§4.5); the CLI's broader statement/topic search is safe because
 a human or agent explicitly invoked it and reads the ranked output
 critically, rather than having it silently injected into working context.
+
+**Literal code — `match_lessons` (fix-round 2, cycle-2 finding — the
+original draft described this function only in prose/comments, §4.2; no
+executable text existed to check for the same env-into-awk pitfall NEW-C1
+found in `match_triggers`). Deliberately does NOT use `awk`/`ENVIRON` at
+all** — a plain `grep`-based design, sidestepping that whole pitfall
+class rather than repeating the export discipline it requires:
+
+```sh
+match_lessons() {  # $1=lessons-file $2=keyword; prints "hits\tid\tlabel\tstatement" lines
+  lf="$1"; kw="$2"
+  [ -n "$kw" ] || return 0
+  [ -f "$lf" ] || return 0
+  grep -iF -- "$kw" "$lf" 2>/dev/null | grep '^- ' | while IFS= read -r line; do
+    stmt="$(printf '%s' "$line" | sed 's/^- //' | cut -c1-220)"
+    hash="$(printf '%s' "$line" | shasum -a 256 | cut -c1-8)"
+    printf '1\tL:%s\t\t%s\n' "$hash" "$stmt"
+  done
+}
+```
+
+`kw` reaches `grep -iF -- "$kw"` as a normal quoted shell argument, not
+through an environment/`-v` channel at all — there is no prefix-assignment
+or backslash-escaping hazard here because `grep`'s pattern argument is
+taken literally, byte-for-byte, from argv (unlike `awk -v`, which
+processes C-style escapes in its value, per NEW-C1's finding). Two `grep`
+calls total regardless of file size (search, then re-filter to `^- `
+lines only — mirroring `scripts/retrieve:87-92`'s own existing lessons
+pattern of restricting to `^- ` lines); `shasum` runs only per actual
+match, not per line scanned, so cost scales with hits, not file size.
+
+Verified this round, literal text, sourced and run against a constructed
+`LESSONS-LEARNT.md` fixture: a keyword present in one lesson line
+matches and returns `1\tL:<8-hex>\t\t<line text, "- " stripped>`; an
+absent keyword returns nothing, exit 0; and — the specific property the
+design's own reasoning depends on — the **same line produces the same
+`L:<hash>` id whether or not an unrelated earlier line is inserted before
+it in the file** (`{command: "match_lessons lessons.md 'z-index'" run
+against two fixtures differing only by an extra line prepended, output:
+identical "L:20613d34" id both times}`), confirming the content-hash
+choice actually delivers the position-independence the design argues for,
+not merely asserting it. Multi-line lesson entries (a `^- ` line
+continuing onto indented follow-on lines, the format
+`LESSONS-LEARNT.md` itself already uses) are captured only by their
+first line — the same limitation `scripts/retrieve:87-92`'s existing
+lessons handling already has, not a new one introduced here.
 
 #### 4.3.4 Duty (b): frame re-anchoring
 
@@ -793,9 +886,41 @@ fails (non-string element). Suggested check shape (implementation
 guidance for the backend builder, not mandated literal code — the
 _contract_ above is what's required):
 
+**Self-discovered fix (fix-round 2's mandatory execution pass, not a
+reviewer-relayed finding): the first draft's suggested shape used
+`if (. | type) == "!!seq" then ... else ... end`, jq syntax that
+`mikefarah/yq` — the actual binary this whole codebase runs (`yq
+(https://github.com/mikefarah/yq/) version v4.53.2` in this
+environment) — does not support at all.** Verified: even the minimal
+`yq -r 'if .x == 5 then "yes" else "no" end'` fails with `Error: 1:1:
+lexer: invalid input text "if .x == 5 then..."`, identical to the error
+the full expression produced. Because the failure was piped through
+`2>/dev/null` and captured into `$bad` via `$(...)`, a lexer error
+produces empty stdout — indistinguishable from "no bad elements found"
+without checking the exit code, so the broken check would have silently
+never flagged anything, ever: the exact non-falsifiable-predicate shape
+`G004` itself warns against. Rebuilt using this codebase's own idiom —
+`case` on a `type` extraction for the enum check (already this file's
+pattern at `scripts/validate-workspace:17`) and a `select()` **wrapped in
+`[...] | length`**, never a bare `select()`, because a bare `select()`
+matching an empty-string element also prints nothing in `-r` mode —
+the identical non-falsifiability trap one level down, caught only by
+checking that a `select()` on a deliberately-empty-string fixture in
+this sandbox returned a count, not by trusting the pattern on sight.
+Every branch (absent, empty list, good list, empty-string element, bare
+scalar, non-string element) was executed against a constructed fixture
+this round and produced the contractually-required pass/fail:
+
 ```sh
-bad="$(yq -r ".records[$i].triggers // [] | if (. | type) == \"!!seq\" then (.[] | select((. | type) != \"!!str\" or . == \"\")) else \"NOTALIST\" end" "$f" 2>/dev/null | head -3 | tr '\n' ' ')"
-[ -z "$bad" ] || fail "records[$i]: triggers must be a list of non-empty strings"
+tt="$(yq -r ".records[$i].triggers | type" "$f" 2>/dev/null)"
+case "$tt" in
+  "!!null") ;;  # absent — optional field, valid
+  "!!seq")
+    bad="$(yq -r "[.records[$i].triggers[] | select((. | type) != \"!!str\" or . == \"\")] | length" "$f" 2>/dev/null)"
+    [ "$bad" = "0" ] || fail "records[$i]: triggers must be a list of non-empty strings ($bad bad element(s))"
+    ;;
+  *) fail "records[$i]: triggers must be a list (got $tt)" ;;
+esac
 ```
 
 ### 4.6 Consolidate skill: the encoding-time question
@@ -1202,10 +1327,13 @@ scripts/presence` → `assert_eq "$out" "" "no match, no output"` — and
 12. **Perf pass condition (fix-round M2 — the original draft's `match_triggers`
     design was benchmarked by the reviewer at ~3.4s for two ~300-record
     stores, exceeding the 5s timeout with no room left for the hook's
-    other work; the redesign was verified in this fix round at 0.032s for
-    the same scale, `{command: "yq ... | awk ..." against a synthetic
-300-record fixture, two stores combined, output: "0.04s user 0.02s
-system 171% cpu 0.032 total"}`):** a generated 300-record fixture per
+    other work; the redesign, **after fix-round 2's `export`-scoping
+    correction (NEW-C1)**, was re-verified against the exact literal
+    code block (§4.3.3) at **0.032s** for the same scale — `{command:
+"sed-extracted match_triggers, sourced, called against two 300-record
+fixtures", output: "0.04s user 0.01s system 158% cpu 0.032 total"}`,
+    not the pre-fix number, which measured a differently-shaped test, per
+    §4.3.3's own honesty note):** a generated 300-record fixture per
     store (not checked into the repo — generated by the test itself, to
     avoid bloating the tree with a large static fixture), both project
     and global paths populated, one firing → wall-clock time **< 1s**
@@ -1242,7 +1370,8 @@ block):
 - `append-trigger` **global-path fixture (fix-round N7b — the missing
   case that would have caught C1):** a store constructed under a
   `HOME`-overridden `$HOME/.claude/anoti/GROUNDING.yaml` path (mirroring
-  `tests/test_retrieve.sh:3`'s hermetic-`HOME` pattern), trusted via
+  `tests/test_retrieve.sh:2`'s hermetic-`HOME` pattern, fix-round-2
+  citation fix — the line is 2, not 3), trusted via
   `scripts/trust --global` first — `append-trigger` against it must (a)
   exit 0, (b) leave the triggers written and the store `validate-workspace`-clean,
   (c) print the "NOT re-trusted — machine-wide scope requires explicit
@@ -1472,7 +1601,7 @@ fourth attempt.
   `docs/ROADMAP.md:97` line's own date and the filename this spawn was
   explicitly instructed to produce, and I have no basis to second-guess
   either.
-- **New doubts from this fix round (fix-round self-review):**
+- **New doubts from fix round 1 (superseded in places by fix round 2 below — kept for the trail, not deleted):**
   - **The `match_lessons` invocation-shape rule I added to close M1**
     ("piggyback on already-matched record triggers; never fire on the
     haystack cold," §4.3.3) is my own judgment call, made under this fix
@@ -1496,3 +1625,48 @@ ENVIRON does not}`), not against whatever `awk` this plugin's CI
     am not aware of any common implementation (gawk, mawk, nawk) lacking
     — a knowledge-based claim, not one I independently verified on
     Linux in this pass).
+- **New doubts from fix round 2 (this round — every literal block in §4
+  that could be executed was executed, per the coordinator's explicit
+  instruction; results below are what that pass actually found, not
+  what it assumed):**
+  - **A "suggested code" block that was never run is not evidence, only a
+    claim about code — the lesson this whole round is an instance of.**
+    Fix round 1's validate-workspace snippet (`if (. | type) == "!!seq"
+then ... else ... end`) does not parse under `mikefarah/yq
+v4.53.2` — the actual binary this repo's entire helper suite runs
+    (confirmed: even `yq -r 'if .x == 5 then "yes" else "no" end'` fails
+    identically) — and I filed it labeled "implementation guidance... not
+    mandated literal code," which in practice meant it went unverified
+    for a full review cycle. I have since executed every `sh` code fence
+    in §4 against constructed fixtures (`match_triggers`,
+    `match_lessons`, the §4.3.2 input-contract parsing block, this
+    corrected shape check, and `append-trigger`'s trust step against the
+    real `scripts/trust`/`scripts/regen-index` — six blocks, six pass) —
+    but I did not go back and add equivalent literal, executed code for
+    every OTHER prose-described mechanism in this spec (e.g. `retrieve`'s
+    compaction-recovery frame filtering, §4.7, described only in prose).
+    Those remain design-level, unverified-by-execution — labeled as such
+    now, not implied to carry the same weight as the six blocks above.
+  - **`match_topic_statement` (§4.2, §4.4) still has no literal code and
+    was not executed this round.** It was not named in the reviewer's
+    cycle-2 findings, and — being the third cycle under the 3-cycle cap —
+    I chose not to speculatively add and self-verify new code for a
+    function outside the named findings, on the reasoning that doing so
+    late in the last cycle adds fresh, unreviewed surface rather than
+    closing named ones. It uses the same `grep -qiF` primitive already
+    verified safe elsewhere in this spec (no `awk`/`ENVIRON`, so NEW-C1's
+    specific bug class cannot apply to it), which lowers but does not
+    eliminate the risk. Flagged as named residue for the human, per this
+    round's own instruction, rather than left silently implicit.
+  - **This codebase's hard dependency on `mikefarah/yq`'s specific
+    dialect (as opposed to `jq`, or the `kislyuk/yq` Python wrapper
+    around `jq` that installs under the same command name on some
+    systems) is pre-existing, not something this fix introduces.**
+    `strenv()` — used throughout `scripts/append-record`,
+    `scripts/set-ratification`, and others — is a `mikefarah/yq`-specific
+    function with no `jq` equivalent, so the codebase already commits to
+    this exact binary; my corrected shape check (`select()` + `length`,
+    no `if/then/else`) is consistent with that existing, if undocumented,
+    commitment rather than adding a new one. Whether that dependency
+    should be documented explicitly somewhere (a `README`/`CLAUDE.md`
+    prerequisites note) is outside this spec's scope to decide.

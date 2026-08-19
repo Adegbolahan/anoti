@@ -3,6 +3,42 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.22] — 2026-08-19
+
+- **Just-in-time recall — the presence hook** (ratified Phase 4
+  deliverable; spec docs/specs/2026-08-19-jit-recall-design.md, plan
+  docs/plans/2026-08-19-jit-recall-implementation.md). Memory now acts at
+  the moment of use: a PostToolUse + PostToolUseFailure hook (matcher
+  Bash|Write|Edit|NotebookEdit, 5s, fail-open, silent by default) with
+  four duties — JIT recall matching tool input/output/error text against
+  an append-only `triggers:` field across the global store, the project
+  store, and LESSONS-LEARNT (labelled, trust-checked); frame re-anchoring
+  after compaction and every 10 tool calls in a slow session; an
+  evidence-kind nudge when a fetch is piped into text inspection
+  (G004/G008); one telemetry line per firing. `scripts/anoti recall
+  <keywords>` is the pull-side twin (same matcher, both stores, ranked).
+  New helpers: `append-trigger` (full write contract; global refusal warns
+  loudly, never overrides `--global` consent), `mark-retrospect`;
+  `session-append` frames now hit telemetry; `cleanup-session` writes a
+  durable summary line; `persist-session` stamps compaction. Consolidate
+  asks the encoding-time question ("what would you have needed to see to
+  be reminded of this?"); policy-epistemic rule 6, review-work, and the
+  reviewer role carry the evidence-kind ordering (screenshot < DOM query <
+  DB query). The longitudinal protocol gains recall MISS + adherence
+  metrics and a pre-registered Tier-1 gate (dated amendment); Tiers 2–3
+  (`/anoti:presence` on `/loop`; hook-advised examiner spawn) are sketched
+  and evidence-gated, not built. `validate-workspace` gains a triggers
+  shape check and a ~600x faster record loop; the inhibit organ gate
+  exempts only the plugin's own templates dir (real files, not symlinks).
+- Build trail: two builders in isolated worktrees, one reviewer over the
+  whole diff across three cycles — critical IFS-tab collapse (rendered
+  recall lines corrupted while substring tests stayed green), nudge
+  pattern deviating from spec, perf margin, unscoped templates exemption,
+  jq false positive, symlink-leaf bypass — all fixed and pinned; awk
+  portability verified under gawk and mawk in docker; the two named
+  residues (nudge chain-looseness, no `ln -s` row) judged acceptable.
+  Global records G004/G005/G008 carry triggers (human-gated re-trust).
+
 ## [0.5.21] — 2026-08-19
 
 - Eleventh field-report fix (issue #19, livingsyncs — dispatch-time

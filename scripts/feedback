@@ -1,0 +1,80 @@
+#!/bin/bash
+# feedback mark|list|clear -- the single reader/writer of
+# <state-dir>/presence-feedback.tsv (project-level adaptive suppression
+# ledger). Spec: docs/specs/2026-08-19-adaptive-suppression-design.md §4.4
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+. "$SELF/store-resolve"
+. "$SELF/store-lock"
+usage() { echo "feedback: usage: feedback mark <id> <trigger> | feedback list | feedback clear <id> [trigger]" >&2; exit 1; }
+sub="${1:-}"; [ "$#" -gt 0 ] && shift
+
+case "$sub" in
+  mark)
+    id="${1:?record id required}"; trig="${2:?trigger required}"
+    AD="$("$SELF/anoti-dir" --require)" || exit 1   # writers require anchoring (G003), scripts/anoti-dir:10
+    ff="$AD/presence-feedback.tsv"
+    lock_store "$ff" || exit 1
+    trap 'unlock_store "$ff"' EXIT
+    [ -f "$ff" ] || : > "$ff"
+    today="$(date -u +%F)"
+    awk -F'\t' -v id="$id" -v trig="$trig" -v today="$today" '
+      BEGIN { found = 0 }
+      { if ($1 == id && $2 == trig) { $3 = $3 + 1; $4 = today; found = 1 }; print }
+      END { if (!found) print id "\t" trig "\t1\t" today "\t" today }
+    ' OFS='\t' "$ff" > "$ff.tmp.$$"
+    feedback_shape_ok "$ff.tmp.$$" || { rm -f "$ff.tmp.$$"; echo "feedback: result failed shape validation; store untouched" >&2; exit 1; }
+    pm="$(stat -c %a "$ff" 2>/dev/null || stat -f %Lp "$ff" 2>/dev/null || echo "")"
+    [ -n "$pm" ] && chmod "$pm" "$ff.tmp.$$" 2>/dev/null
+    mv "$ff.tmp.$$" "$ff"
+    exit 0 ;;
+  list)
+    AD="$("$SELF/anoti-dir" 2>/dev/null)" || AD=".anoti"   # readers degrade gracefully, no --require
+    ff="$AD/presence-feedback.tsv"
+    if ! fx "$ff"; then echo "feedback: no presence-feedback.tsv yet (nothing suppressed)"; exit 0; fi
+    feedback_shape_ok "$ff" || { echo "feedback: presence-feedback.tsv is present but not parseable" >&2; exit 1; }
+    th="$(cfgk feedback_threshold)"; [ -n "$th" ] || th=3
+    cutoff="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"
+    printf 'record_id\ttrigger\tcount\tlast_marked\tfirst_marked\tsuppressed\n'
+    awk -F'\t' -v th="$th" -v cutoff="$cutoff" '
+      NF==5 { sup = ($3+0>=th && $4>=cutoff) ? "yes" : "no"
+        printf "%s\t%s\t%s\t%s\t%s\t%s\n", $1, $2, $3, $4, $5, sup }
+    ' "$ff" | sort -t "$(printf '\t')" -k3,3nr -k1,1
+    exit 0 ;;
+  clear)
+    id="${1:?record id required}"; trig="${2:-}"
+    AD="$("$SELF/anoti-dir" --require)" || exit 1
+    ff="$AD/presence-feedback.tsv"
+    lock_store "$ff" || exit 1
+    trap 'unlock_store "$ff"' EXIT
+    [ -f "$ff" ] || { echo "feedback: no presence-feedback.tsv; nothing to clear" >&2; exit 1; }
+    if [ -n "$trig" ]; then
+      matched="$(awk -F'\t' -v id="$id" -v trig="$trig" 'NF==5 && $1==id && $2==trig' "$ff")"
+      awk -F'\t' -v id="$id" -v trig="$trig" '!(NF==5 && $1==id && $2==trig)' "$ff" > "$ff.tmp.$$"
+    else
+      matched="$(awk -F'\t' -v id="$id" 'NF==5 && $1==id' "$ff")"
+      awk -F'\t' -v id="$id" '!(NF==5 && $1==id)' "$ff" > "$ff.tmp.$$"
+    fi
+    [ -n "$matched" ] || { rm -f "$ff.tmp.$$"; echo "feedback: no row for '$id'${trig:+ / '$trig'}" >&2; exit 1; }
+    feedback_shape_ok "$ff.tmp.$$" || { rm -f "$ff.tmp.$$"; echo "feedback: result failed shape validation; store untouched" >&2; exit 1; }
+    pm="$(stat -c %a "$ff" 2>/dev/null || stat -f %Lp "$ff" 2>/dev/null || echo "")"
+    [ -n "$pm" ] && chmod "$pm" "$ff.tmp.$$" 2>/dev/null
+    mv "$ff.tmp.$$" "$ff"
+    # purge the matching recall_cache entry from every live session's presence-state file (spec §4.5.2 point 1).
+    # DEVIATION from the spec's own illustrative code (spec:744-754): a bare
+    # `trap 'unlock_store "$sf"' EXIT` inside this loop would REPLACE the
+    # outer `trap 'unlock_store "$ff"' EXIT` already set above, so an early
+    # exit mid-loop would leak the feedback-file lock. Restore the outer
+    # trap after each inner iteration instead of clearing it.
+    for sf in "$AD"/sessions/*.presence.yaml; do
+      [ -f "$sf" ] || continue
+      lock_store "$sf" || continue
+      trap 'unlock_store "$sf"' EXIT
+      yq -e ".recall_cache | has(\"$id\")" "$sf" >/dev/null 2>&1 \
+        && yq -i "del(.recall_cache[\"$id\"])" "$sf" 2>/dev/null
+      unlock_store "$sf"
+      trap 'unlock_store "$ff"' EXIT
+    done
+    exit 0 ;;
+  *) usage ;;
+esac

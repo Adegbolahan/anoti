@@ -85,7 +85,7 @@ assert_ok $? "SKILL-MAP presence-hook row names adaptive-suppression filtering"
 grep -qF '`scripts/feedback` (list/clear)' "$ROOT/docs/SKILL-MAP.md"
 assert_ok $? "SKILL-MAP gains a scripts/feedback entry-point row"
 sma="$(grep -n 'PostToolUse/PostToolUseFailure hook' "$ROOT/docs/SKILL-MAP.md" | head -1 | cut -d: -f1)"
-smb="$(grep -n '\`scripts/feedback\` (list/clear)' "$ROOT/docs/SKILL-MAP.md" | head -1 | cut -d: -f1)"
+smb="$(grep -nF '`scripts/feedback` (list/clear)' "$ROOT/docs/SKILL-MAP.md" | head -1 | cut -d: -f1)"  # -F: GNU grep reads \` as start-of-buffer
 [ -n "$sma" ] && [ -n "$smb" ] && [ "$sma" -lt "$smb" ]
 assert_ok $? "scripts/feedback row sits directly after the presence-hook row it extends"
 

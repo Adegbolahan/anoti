@@ -752,3 +752,23 @@ grep -qs "$h1" "$HOME/.claude/anoti/trust"; assert_eq "$?" "1" "global store rea
 "$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
 grep -qs "$h1" "$HOME/.claude/anoti/trust"; assert_ok $? "a follow-up trust --global re-trusts it"
 ); rm -rf "$tmp"
+
+# --- scripts/recall CLI (spec §4.4) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_triggers.yaml" GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+cp "$ROOT/tests/fixtures/store_valid.yaml" "$HOME/.claude/anoti/GROUNDING.yaml"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
+printf -- '- 2026-08-19 — cd chain caused a stray write once\n' > LESSONS-LEARNT.md
+out="$("$ROOT/scripts/recall" "cd chain")"
+printf '%s' "$out" | grep -q "T001"; assert_ok $? "recall CLI finds a project trigger match"
+printf '%s' "$out" | grep -qi "stray write"; assert_ok $? "recall CLI also matches lessons"
+out2="$("$ROOT/scripts/recall" "webpack-config-drift")"
+printf '%s' "$out2" | grep -q "T002"; assert_ok $? "recall CLI's broader net finds a statement-only keyword (match_topic_statement)"
+out3="$("$ROOT/scripts/recall" "falsifiable")"  # DEVIATION: plan queried "D001", but store_valid.yaml's D001 record has that string in neither topic/statement/triggers (id is never a searched field) -- "falsifiable" (from D001's own statement) exercises the identical global-labeling behavior against text the fixture actually contains
+printf '%s' "$out3" | grep -q "\[global\]"; assert_ok $? "recall CLI labels global hits"
+"$ROOT/scripts/anoti" recall "cd chain" | grep -q "T001"
+assert_ok $? "anoti recall dispatches to scripts/recall"
+); rm -rf "$tmp"

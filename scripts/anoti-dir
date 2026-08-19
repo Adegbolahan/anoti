@@ -1,5 +1,5 @@
 #!/bin/bash
-# anoti-dir [--require] — print the resolved state dir (root-marker walk-up).
+# anoti-dir [--require] [--root] — print the resolved state dir (root-marker walk-up); --root prints the anchoring project dir instead (the dir holding the marker; with ANOTI_DIR set it still walks up; unanchored -> pwd, or exit 1 with --require).
 # Issue #13: a helper run from a subdirectory must hit the project's
 # store, never mint a stray one; --require fails loudly when unanchored.
 # Markers, checked case-exactly per #11, nearest directory wins:
@@ -9,21 +9,23 @@
 # back-compat cwd-relative ".anoti" — unless --require, which fails
 # loudly instead. Writers pass --require so a wrong cwd is a loud error.
 set -u
-req=""
-[ "${1:-}" = "--require" ] && req=1
-if [ -n "${ANOTI_DIR:-}" ]; then printf '%s\n' "$ANOTI_DIR"; exit 0; fi
+req=""; root=""
+for a in "$@"; do case "$a" in --require) req=1 ;; --root) root=1 ;; esac; done
+if [ -n "${ANOTI_DIR:-}" ] && [ -z "$root" ]; then printf '%s\n' "$ANOTI_DIR"; exit 0; fi
 has() { command ls -1a "$1" 2>/dev/null | grep -qxF "$2"; }
 d="$(pwd -P)"
 while :; do
   if [ -f "$d/.claude/anoti.local.md" ] && has "$d/.claude" "anoti.local.md"; then
     v="$(sed -n '/^---$/,/^---$/{ /^state_dir:/{ s/state_dir: *//; s/[[:space:]]*$//; p; }; }' "$d/.claude/anoti.local.md" | head -1)"
     if [ -n "$v" ]; then
+      [ -n "$root" ] && { printf '%s\n' "$d"; exit 0; }
       case "$v" in /*) printf '%s\n' "$v" ;; *) printf '%s\n' "$d/$v" ;; esac
       exit 0
     fi
   fi
   if { [ -f "$d/GROUNDING.yaml" ] && has "$d" "GROUNDING.yaml"; } \
     || { [ -d "$d/.anoti" ] && has "$d" ".anoti"; }; then
+    [ -n "$root" ] && { printf '%s\n' "$d"; exit 0; }
     printf '%s\n' "$d/.anoti"
     exit 0
   fi
@@ -34,4 +36,5 @@ if [ -n "$req" ]; then
   echo "anoti-dir: no anoti workspace found walking up from $PWD — run inside a governed project or set ANOTI_DIR" >&2
   exit 1
 fi
+if [ -n "$root" ]; then pwd -P; exit 0; fi
 printf '.anoti\n'

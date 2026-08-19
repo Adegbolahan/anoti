@@ -18,9 +18,12 @@ review_debt_block() {
   [ -f "$rd" ] || return 0
   mk="$AD/sessions/$sid.review-debt-blocked"
   [ -f "$mk" ] && return 0
-  rows="$(awk -F'\t' -v s="$sid" 'NF==7 && $3==s && $5=="open" { printf "%s %s; ", $1, $4 }' "$rd" 2>/dev/null)"
+  # whole-file shape check inside the awk: any malformed non-empty line ->
+  # the ledger is treated as empty (fail-open; the helpers refuse to write
+  # through it too, so the two surfaces agree)
+  rows="$(awk -F'\t' -v s="$sid" 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $3==s && $5=="open" { r=r $1 " " $4 "; "; i=i sep $1; sep="," } END { if (!bad && r!="") printf "%s\t%s", r, i }' "$rd" 2>/dev/null)"
   [ -n "$rows" ] || return 0
-  ids="$(awk -F'\t' -v s="$sid" 'NF==7 && $3==s && $5=="open" { printf "%s%s", sep, $1; sep="," }' "$rd" 2>/dev/null)"
+  tab="$(printf '\t')"; ids="${rows##*"$tab"}"; rows="${rows%"$tab"*}"
   mkdir -p "$AD/sessions" 2>/dev/null; : > "$mk" 2>/dev/null
   printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "review-debt" "block" "$ids" >> "$AD/telemetry.log" 2>/dev/null || true
   jq -n --arg r "anoti: adversarial review owed for work this session opened: ${rows%; } — run the reviewer and close the row (anoti review-debt close <id> \"<verdict>\"), or defer it with a written reason (anoti review-debt defer <id> \"<reason>\"). Silent skipping is the failure mode this gate exists to prevent (D026)." '{decision:"block",reason:$r}'

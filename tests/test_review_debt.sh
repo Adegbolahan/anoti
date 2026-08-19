@@ -31,9 +31,14 @@ grep -q $'^R1\t.*\tclosed\t[0-9-]*\tskeptic: COMPLIANT, two minors fixed$' .anot
 id="$("$RD" add s1 "batch: feedback helper")"; assert_eq "$id" "R3" "a closed subject can be re-opened as a NEW row (ids never reused)"
 c="$(grep -c $'\treview-debt\t' .anoti/telemetry.log)"; assert_eq "$c" "5" "telemetry: one row per add/defer/close (5 writes)"
 grep -q $'\ts1\treview-debt\tadd\tR1 batch: feedback helper$' .anoti/telemetry.log; assert_ok $? "telemetry add row carries the caller session, id and subject"
+grep -q $'\treview-debt\tdefer\tR2 ' .anoti/telemetry.log && grep -q $'\treview-debt\tclose\tR1 ' .anoti/telemetry.log; assert_ok $? "telemetry verbs are the subcommands (close/defer), not the statuses"
+"$RD" add 'C:\temp\new' 'C:\temp\new' >/dev/null; id="$("$RD" add 'C:\temp\new' 'C:\temp\new')"
+c="$(grep -c $'\tC:\\\\temp\\\\new\topen' .anoti/review-debt.tsv)"; assert_eq "$c" "1" "backslash subjects dedupe (ENVIRON, not awk -v)"
+"$RD" add "$(printf 's\t1')" "tabbed sid" 2>/dev/null; assert_eq "$?" "1" "post-write shape check refuses a row that would break the 7-column shape (tab in sid)"
+c="$(grep -c 'tabbed sid' .anoti/review-debt.tsv)"; assert_eq "$c" "0" "…and the ledger is untouched"
 "$RD" add s1 "a
 b	c" >/dev/null
-grep -q $'^R4\t.*\ta b c\topen' .anoti/review-debt.tsv; assert_ok $? "newlines/tabs in a subject are flattened to spaces"
+grep -q $'\ta b c\topen' .anoti/review-debt.tsv; assert_ok $? "newlines/tabs in a subject are flattened to spaces"
 # shape check: a corrupt ledger is refused and untouched
 cp .anoti/review-debt.tsv "$tmp/before"; printf 'garbage line\n' >> .anoti/review-debt.tsv; cp .anoti/review-debt.tsv "$tmp/corrupt"
 "$RD" add s1 "new" 2>/dev/null; assert_eq "$?" "1" "add refuses to write through a malformed ledger"
@@ -41,6 +46,22 @@ cmp -s .anoti/review-debt.tsv "$tmp/corrupt"; assert_ok $? "refused write left t
 "$RD" list >/dev/null 2>&1; assert_eq "$?" "1" "list reports a malformed ledger (exit 1)"
 cp "$tmp/before" .anoti/review-debt.tsv
 und="$(mktemp -d)"; ( cd "$und" && "$RD" add s1 "x" 2>/dev/null ); assert_eq "$?" "1" "add refuses outside a governed workspace (anchoring)"; rm -rf "$und"
+); rm -rf "$tmp"
+
+# --- 1b. fresh clone: no state dir yet (reviewer: lock_store spun ~60s) + anoti-dir --root ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+t0="$(date +%s)"; id="$(timeout 8 "$RD" add s1 "fresh" 2>/dev/null || "$RD" add s1 "fresh")"; t1="$(date +%s)"
+assert_eq "$id" "R1" "add creates the state dir on a fresh clone instead of spinning"
+[ $((t1 - t0)) -lt 5 ]; assert_ok $? "…and returns promptly"
+assert_eq "$("$ROOT/scripts/anoti-dir" --root)" "$(pwd -P)" "anoti-dir --root prints the marker dir"
+mkdir -p sub/deeper; assert_eq "$(cd sub/deeper && "$ROOT/scripts/anoti-dir" --root)" "$(pwd -P)" "anoti-dir --root walks up from a subdir"
+mkdir -p .claude .state/anoti; printf -- '---\nstate_dir: .state/anoti\n---\n' > .claude/anoti.local.md
+assert_eq "$("$ROOT/scripts/anoti-dir" --root)" "$(pwd -P)" "anoti-dir --root with a configured state_dir is still the marker dir"
+assert_eq "$("$ROOT/scripts/anoti-dir")" "$(pwd -P)/.state/anoti" "anoti-dir (no flag) unchanged: the configured state dir"
+assert_eq "$(ANOTI_DIR=/elsewhere "$ROOT/scripts/anoti-dir" --root)" "$(pwd -P)" "anoti-dir --root ignores ANOTI_DIR and walks up"
+und="$(mktemp -d)"; ( cd "$und" && "$ROOT/scripts/anoti-dir" --root --require >/dev/null 2>&1 ); assert_eq "$?" "1" "anoti-dir --root --require fails loudly when unanchored"; rm -rf "$und"
 ); rm -rf "$tmp"
 
 # --- 2. observe: mechanical add on spec filing (§4.3) ---
@@ -55,7 +76,7 @@ c="$(grep -c . .anoti/review-debt.tsv)"; assert_eq "$c" "1" "re-Write of an open
 obs s1 Edit "$tmp/docs/specs/us-8-y.md"; obs s1 Write "$tmp/docs/plans/p.md"; obs s1 Write "$tmp/docs/specs/notes.txt"; obs s1 Write "$tmp/docs/specs/sub/deep.md"
 c="$(grep -c . .anoti/review-debt.tsv)"; assert_eq "$c" "1" "Edit on a spec, Write elsewhere, non-.md, and nested dirs do not open rows"
 out="$(printf '{"tool_name":"Write","tool_input":{"file_path":"%s/docs/specs/q.md"}}' "$tmp" | "$RD" observe)"; assert_eq "$out" "" "observe is silent (no stdout)"
-grep -q $'review-debt\tadd\tR1 docs/specs/us-9-x.md$' .anoti/telemetry.log; assert_ok $? "observe's add is telemetered like a hand add"
+grep -q $'review-debt\tobserve\tR1 docs/specs/us-9-x.md$' .anoti/telemetry.log; assert_ok $? "observe's add is telemetered with the verb observe"
 # custom spec_dir honoured; resolved from the project root, not the hook's cwd
 mkdir -p .claude specs/design; printf -- '---\nspec_dir: specs/design\n---\n' > .claude/anoti.local.md
 ( cd docs && obs s1 Write "$tmp/specs/design/d1.md" )
@@ -63,6 +84,24 @@ grep -q $'\tspecs/design/d1.md\topen' .anoti/review-debt.tsv; assert_ok $? "cust
 obs s1 Write "$tmp/docs/specs/now-not-spec.md"
 c="$(grep -c 'now-not-spec' .anoti/review-debt.tsv)"; assert_eq "$c" "0" "with a custom spec_dir the default dir no longer counts"
 ( cd "$tmp/home" && printf '{"tool_name":"Write","tool_input":{"file_path":"%s/home/docs/specs/a.md"}}' "$tmp" | "$RD" observe ); assert_ok $? "observe outside a governed dir exits 0 silently"
+printf -- '---\nspec_dir: ./docs/specs/\n---\n' > .claude/anoti.local.md
+obs s1 Write "$tmp/docs/specs/dotslash.md"
+grep -q $'\tdocs/specs/dotslash.md\topen' .anoti/review-debt.tsv; assert_ok $? "spec_dir with ./ prefix and trailing / normalises the subject"
+); rm -rf "$tmp"
+
+# --- 2b. observe in a state_dir-configured project (reviewer finding 1: dirname of the state dir is not the root) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME" docs/specs .claude .state/anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+printf -- '---\nstate_dir: .state/anoti\n---\n' > .claude/anoti.local.md
+printf '{"session_id":"s1","tool_name":"Write","tool_input":{"file_path":"%s/docs/specs/x.md"}}' "$tmp" | "$RD" observe
+grep -q $'\tdocs/specs/x.md\topen' .state/anoti/review-debt.tsv; assert_ok $? "observe fires with a configured state_dir (root from anoti-dir --root)"
+abs="$tmp/.abs-state"; printf -- '---\nstate_dir: %s\n---\n' "$abs" > .claude/anoti.local.md
+printf '{"session_id":"s1","tool_name":"Write","tool_input":{"file_path":"%s/docs/specs/y.md"}}' "$tmp" | "$RD" observe
+grep -q $'\tdocs/specs/y.md\topen' "$abs/review-debt.tsv"; assert_ok $? "observe fires with an ABSOLUTE state_dir"
+rm .claude/anoti.local.md; mkdir -p .envdir
+ANOTI_DIR="$tmp/.envdir" bash -c 'printf "{\"session_id\":\"s1\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"%s/docs/specs/z.md\"}}" "$1" | "$2" observe' _ "$tmp" "$RD"
+grep -q $'\tdocs/specs/z.md\topen' .envdir/review-debt.tsv; assert_ok $? "observe fires under ANOTI_DIR"
 ); rm -rf "$tmp"
 
 # --- 3. Stop gate: block once while this session's debt is open (§4.4) ---
@@ -96,6 +135,8 @@ out="$(printf '{"session_id":"s1"}' | "$G")"
 printf '%s' "$out" | jq -r .reason | grep -q "R1 batch: x"; assert_ok $? "next Stop: the debt block fires"
 printf 'garbage\n' > .anoti/review-debt.tsv; rm -f .anoti/sessions/s1.review-debt-blocked
 out="$(printf '{"session_id":"s1"}' | "$G")"; assert_eq "$out" "" "malformed ledger: Stop gate fails open"
+printf 'R1\t2026-08-19\ts1\tvalid row\topen\t2026-08-19\t\nstray line\n' > .anoti/review-debt.tsv
+out="$(printf '{"session_id":"s1"}' | "$G")"; assert_eq "$out" "" "PARTIALLY malformed ledger: whole file treated as empty (helpers refuse it too)"
 ); rm -rf "$tmp"
 
 # --- 4. inhibit: ask at integration while debt is open (§4.5) ---
@@ -120,6 +161,11 @@ out="$(inh 'git merge feat')"; assert_eq "$out" "" "deferred/closed only: no deb
 out="$(inh 'git push origin feat')"
 printf '%s' "$out" | jq -r .hookSpecificOutput.permissionDecisionReason | grep -q "consequential action"; assert_ok $? "deferred/closed only: git push falls through to the generic ask row"
 out="$(inh 'git log --oneline')"; assert_eq "$out" "" "non-integration git with open ledger file: no decision"
+"$RD" add s1 "again" >/dev/null; git checkout -q feat
+out="$(inh 'gh pr merge 12 --squash')"; assert_eq "$(printf '%s' "$out" | jq -r .hookSpecificOutput.permissionDecision)" "ask" "gh pr merge from a FEATURE branch asks (a PR merges into its base wherever you stand)"
+git checkout -q main
+printf 'R1\t2026-08-19\ts1\tvalid row\topen\t2026-08-19\t\nstray line\n' > .anoti/review-debt.tsv
+out="$(inh 'git merge feat')"; assert_eq "$out" "" "partially malformed ledger: no debt ask (fail-open, whole file)"
 ); rm -rf "$tmp"
 
 # --- 5. digest line (§4.7) ---
@@ -135,6 +181,8 @@ printf '%s' "$out" | grep -qE -- "- review debt: 1 open, 1 deferred — oldest [
 out="$("$ROOT/scripts/digest")"; printf '%s' "$out" | grep -q "review debt"; assert_eq "$?" "1" "digest: silent once every row is closed"
 printf 'garbage\n' > .anoti/review-debt.tsv
 out="$("$ROOT/scripts/digest")"; printf '%s' "$out" | grep -q "review debt"; assert_eq "$?" "1" "digest: malformed ledger is silent (fail-open)"
+printf 'R1\t2026-08-19\ts1\tvalid row\topen\t2026-08-19\t\nstray line\n' > .anoti/review-debt.tsv
+out="$("$ROOT/scripts/digest")"; printf '%s' "$out" | grep -q "review debt"; assert_eq "$?" "1" "digest: partially malformed ledger is silent (whole file)"
 ); rm -rf "$tmp"
 
 # --- 6. wiring + orientation currency (§4.3, §4.6, D025) ---

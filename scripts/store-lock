@@ -36,7 +36,9 @@ lock_store() {
       continue
     fi
     _tries=$(( _tries + 1 ))
-    if [ "$_tries" -gt 1200 ]; then
+    # STORE_LOCK_MAX_TRIES: hook-side writers (review-debt observe) run
+    # under a 5s harness budget and set a small bound; default ~60s
+    if [ "$_tries" -gt "${STORE_LOCK_MAX_TRIES:-1200}" ]; then
       echo "store-lock: timed out waiting for $_lf — a concurrent writer holds it; retry, or remove the dir if its owner crashed" >&2
       return 1
     fi

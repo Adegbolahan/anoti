@@ -202,7 +202,7 @@ fi
 # deferred rows with the oldest creation date; silent when none (US-002);
 # malformed ledger -> silent (fail-open)
 if [ -f "$AD/review-debt.tsv" ]; then
-  rdl="$(awk -F'\t' 'NF==7 && ($5=="open"||$5=="deferred") { if ($5=="open") o++; else d++; if (old=="" || $2<old) old=$2 } END { if (o+d>0) printf "%d open, %d deferred — oldest %s", o, d, old }' "$AD/review-debt.tsv" 2>/dev/null)"
+  rdl="$(awk -F'\t' 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} ($5=="open"||$5=="deferred") { if ($5=="open") o++; else d++; if (old=="" || $2<old) old=$2 } END { if (!bad && o+d>0) printf "%d open, %d deferred — oldest %s", o, d, old }' "$AD/review-debt.tsv" 2>/dev/null)"
   [ -n "$rdl" ] && emit "- review debt: $rdl (anoti review-debt list)"
 fi
 if [ -f "$AD/pending.md" ]; then

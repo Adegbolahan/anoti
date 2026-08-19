@@ -35,21 +35,27 @@ commit_tmp() { # file tmp
 }
 # add_row <sid> <subject> -> prints id (existing id when an open/deferred row already names the subject)
 add_row() {
+  # state dir may not exist yet (fresh clone before trust) -- create it
+  # BEFORE locking, or lock_store spins on an uncreatable lock dir
+  [ -d "$AD" ] || mkdir -p "$AD" 2>/dev/null || { echo "review-debt: cannot create state dir $AD" >&2; return 1; }
   lock_store "$ff" || return 1
   trap 'unlock_store "$ff"' EXIT
   [ -f "$ff" ] || : > "$ff"
   rd_shape_ok "$ff" || { echo "review-debt: review-debt.tsv is present but not parseable; refusing to write" >&2; return 1; }
-  ex="$(awk -F'\t' -v s="$2" '($5=="open"||$5=="deferred") && $4==s {print $1; exit}' "$ff")"
+  # ENVIRON, not -v: awk -v processes backslash escapes (C:\temp\new would never match itself)
+  export RD_SUBJ="$2"
+  ex="$(awk -F'\t' '($5=="open"||$5=="deferred") && $4==ENVIRON["RD_SUBJ"] {print $1; exit}' "$ff")"
   if [ -n "$ex" ]; then printf '%s\n' "$ex"; return 0; fi
   n="$(awk -F'\t' 'NF==7 { sub(/^R/,"",$1); if ($1+0>m) m=$1+0 } END { print m+1 }' "$ff")"
   today="$(date -u +%F)"
   { cat "$ff"; printf 'R%s\t%s\t%s\t%s\topen\t%s\t\n' "$n" "$today" "$1" "$2" "$today"; } > "$ff.tmp.$$"
   commit_tmp "$ff" "$ff.tmp.$$" || return 1
-  TSID="$1"; tel add "R$n" "$2"
+  TSID="$1"; tel "${TEL_ACTION:-add}" "R$n" "$2"
   printf 'R%s\n' "$n"
 }
 # set_status <id> <status> <note> -- refuses unknown ids and closed rows
 set_status() {
+  [ -d "$AD" ] || { echo "review-debt: no state dir; nothing to $2" >&2; return 1; }
   lock_store "$ff" || return 1
   trap 'unlock_store "$ff"' EXIT
   [ -f "$ff" ] || { echo "review-debt: no review-debt.tsv; nothing to $2" >&2; return 1; }
@@ -62,7 +68,7 @@ set_status() {
   awk -F'\t' -v id="$1" -v st="$2" -v today="$today" 'BEGIN{OFS="\t"} $1==id { $5=st; $6=today; $7=ENVIRON["RD_NOTE"] } {print}' "$ff" > "$ff.tmp.$$"
   commit_tmp "$ff" "$ff.tmp.$$" || return 1
   subj="$(awk -F'\t' -v id="$1" '$1==id {print $4; exit}' "$ff")"
-  TSID="$(awk -F'\t' -v id="$1" '$1==id {print $3; exit}' "$ff")"; tel "$2" "$1" "$subj"
+  TSID="$(awk -F'\t' -v id="$1" '$1==id {print $3; exit}' "$ff")"; tel "$sub" "$1" "$subj"
   printf '%s\n' "$1"
 }
 
@@ -100,17 +106,20 @@ case "$sub" in
     case "$p" in *.md) ;; *) exit 0 ;; esac
     AD="$("$SELF/anoti-dir" --require 2>/dev/null)" || exit 0
     # the written path resolves from the hook's cwd (Write paths are absolute in
-    # practice); the spec dir resolves from the PROJECT ROOT — both physical
+    # practice); the spec dir resolves from the PROJECT ROOT (anoti-dir --root:
+    # the marker dir, never dirname of a configurable state_dir — D016)
     pd="$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)" || exit 0
-    root="$(dirname "$AD")"
+    root="$("$SELF/anoti-dir" --root --require 2>/dev/null)" || exit 0
     cd "$root" 2>/dev/null || exit 0
     sd="$(cfgk spec_dir)"; [ -n "$sd" ] || sd=docs/specs
-    sd="${sd%/}"
+    sd="${sd%/}"; sd="${sd#./}"
     sdp="$(cd "$sd" 2>/dev/null && pwd -P)" || exit 0
     [ "$pd" = "$sdp" ] || exit 0
     sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"; [ -n "$sid" ] || sid="?"
     ff="$AD/review-debt.tsv"
     rel="$sd/$(basename "$p")"
+    # hook budget is 5s: wait at most ~2s for a concurrent writer, then drop silently (fail-open)
+    export STORE_LOCK_MAX_TRIES=40; TEL_ACTION=observe
     add_row "$sid" "$rel" >/dev/null 2>&1 || true
     exit 0 ;;
   *) usage ;;

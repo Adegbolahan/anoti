@@ -24,7 +24,14 @@ their message (CI enforces the section exists and is non-empty).
   refuses unknown and already-closed rows. Skills updated: handoff
   policy, spec, deliberate step 8, policy-retrospect, demo routing row,
   SKILL-MAP root row, README; longitudinal spec gains three
-  telemetry-only metrics (dated amendment).
+  telemetry-only metrics (dated amendment). Skeptic round 1 (REFUTED →
+  fixed, spec changelog): `anoti-dir --root` (additive) resolves the
+  project root for `observe` so `state_dir`-configured projects fire;
+  state dir created before locking (a fresh clone spun ~60 s);
+  hook readers treat a *partially* malformed ledger as empty, matching
+  the helpers' refusal; dedupe via ENVIRON (backslash subjects);
+  telemetry verbs are the subcommands; `gh pr merge` asks from any
+  branch; `STORE_LOCK_MAX_TRIES` bounds the hook-side writer's wait.
 
 ## [0.5.26] — 2026-08-19
 

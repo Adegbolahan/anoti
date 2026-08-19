@@ -98,16 +98,21 @@ review-debt observe                           # hook mode: PostToolUse JSON on s
 --require`, G003) and print the affected id on success. `list` degrades
 gracefully (prints a one-line "no review-debt.tsv yet" and exits 0).
 Telemetry: `review-debt  add|close|defer|observe  <id> <subject>` rows
-in `<state-dir>/telemetry.log`, same five-column shape as every other
-writer. Reachable as `anoti review-debt …` through the dispatcher.
+in `<state-dir>/telemetry.log` (the verb is the subcommand that ran —
+`observe` for the mechanical add), same five-column shape as every
+other writer; the Stop gate adds `review-debt  block  <ids>`. Reachable as `anoti review-debt …` through the dispatcher.
 
 ### 4.3 Mechanical add on spec filing (`observe`)
 
 A second PostToolUse hook entry, matcher `Write`, command
 `scripts/review-debt observe`. When the written path is a `.md` file
 directly under the project's spec dir (`cfgk spec_dir`, default
-`docs/specs`) it opens a row with subject = the path as written (a
-re-Write of a spec whose row is open/deferred is a no-op). Why Write
+`docs/specs`) it opens a row with subject = `<spec_dir as configured, minus any
+leading ./ and trailing />/<basename>` (so `docs/specs/us-172-x.md` by
+default; absolute when `spec_dir` is absolute); a re-Write of a spec
+whose row is open/deferred is a no-op. The project root is the
+anchoring marker directory (`anoti-dir --root`), never the parent of a
+configurable `state_dir` (D016). Why Write
 only: Write is how a spec is filed or rewritten wholesale; Edit is how
 it is touched — the field report's failure mode is "spec filed, never
 reviewed", and an Edit-triggered add would re-open debt on every
@@ -135,8 +140,9 @@ open rows never block this session (they surface in the digest).
 ### 4.5 The inhibition hook: `ask` at integration while debt is open
 
 In `scripts/inhibit`'s Bash branch, before the generic ask row: if the
-command contains `git merge` or `gh pr merge` (any segment) while the
-current branch is the default branch, or contains `git push`, **and**
+command contains `git merge` (any segment) while the current branch is
+the default branch, or contains `git push` or `gh pr merge` on any
+branch (a PR merges into its base wherever you stand), **and**
 the ledger has ≥ 1 `open` row (any session — the project's debt) →
 `ask` with reason `N adversarial review(s) owed: R1 <subject>; R2 … —
 review (anoti review-debt close) or defer with a reason (anoti
@@ -146,7 +152,7 @@ the digest); `deny` is deliberately not used — inhibit cannot reliably
 know that a given push is _the_ integration of _that_ work, and a
 guardrail whose predicate cannot discriminate is worse than none (G004).
 
-### 4.6 Skills — exact wording changes
+### 4.6 Skills — wording changes (the semantics bind; the text may be extended)
 
 - `policy-adversarial-handoff` step 1: "…report it as _ready-for-review_,
   not done, **and open the row: `anoti review-debt add <session-id>
@@ -184,7 +190,13 @@ Missing ledger → every surface silent. Malformed ledger → helper writes
 refuse (shape check) and say so; hooks treat it as empty and stay
 silent (fail-open) — `list` prints the parse warning. Lock contention →
 the writer waits up to the store-lock timeout then exits 1 with a
-message; hooks never take the lock (read-only). A hook crash or timeout
+message; the read-only hook paths (Stop gate, inhibit, digest) never
+take the lock; the one hook-side writer, `observe`, waits at most ~2 s
+(`STORE_LOCK_MAX_TRIES=40`) and then drops the add silently inside the
+5 s budget. A malformed ledger means _any_ non-empty line failing the
+shape rule: the hooks then treat the whole file as empty, and the
+helpers refuse to write through it — both surfaces agree. A hook crash
+or timeout
 never blocks a tool call or a stop (exit 0 / no decision). What never
 breaks: the Stop gate can block at most once per session for debt; the
 consolidation block keeps precedence.
@@ -243,3 +255,16 @@ Builder: main session (single-file-class changes across helper, two
 hooks, digest, skills, docs, tests). Reviewer: `anoti:skeptic` against
 the branch diff with the spec as the contract; fix rounds resume the
 builder (D011). Integration: human-gated merge of branch `review-debt`.
+
+## Changelog
+
+- 2026-08-19 (review round 1, skeptic REFUTED → fixed): §4.3 subject
+  normalisation and project-root resolution via `anoti-dir --root`
+  (state_dir-configured projects never fired); §4.2 telemetry verbs are
+  the subcommand names; §4.5 `gh pr merge` integrates from any branch;
+  §4.6 heading honesty (wording extended, not verbatim); §5 whole-file
+  malformed-ledger rule stated for hooks AND helpers, and the one
+  hook-side writer's bounded lock wait. Also fixed in code: state dir
+  created before locking (fresh clone spun ~60 s), `awk -v` escape
+  processing broke dedupe on backslash subjects (ENVIRON now).
+

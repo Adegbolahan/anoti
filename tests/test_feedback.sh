@@ -268,3 +268,27 @@ out3="$(fireB)"
 printf '%s' "$out3" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
 assert_eq "$?" "1" "TEST B fire 3: reviewer's own required assertion -- deduped (ABSENT), proving the purge fired ONCE (at the transition), not every firing thereafter"
 ); rm -rf "$tmp"
+
+# --- TEST C (D011 cycle 3, mutation-proven coverage hole): a STALE
+# recall_cache entry that PREDATES suppression must be REPLACED at the
+# transition, not merely left alone -- A/B never created such an entry. ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+fb_mkfx "$tmp"
+fireC() { printf '{"session_id":"sC","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain again"},"tool_response":{}}' | "$ROOT/scripts/presence"; }
+fireC >/dev/null   # inject once, unsuppressed -- cache holds T001 at the OLD (pre-suppression) tool_calls value
+old_cached="$(yq -r '.recall_cache.T001' .anoti/sessions/sC.presence.yaml)"
+"$F" mark T001 "cd chain" >/dev/null; "$F" mark T001 "cd chain" >/dev/null; "$F" mark T001 "cd chain" >/dev/null
+out_sup="$(fireC)"   # now suppressed -- excluded entirely; cache must stay untouched (still the stale entry)
+printf '%s' "$out_sup" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_eq "$?" "1" "TEST C: suppressed firing is silent"
+mid_cached="$(yq -r '.recall_cache.T001' .anoti/sessions/sC.presence.yaml)"
+assert_eq "$mid_cached" "$old_cached" "TEST C: cache entry untouched while suppressed (still stale)"
+old40="$(date -v-40d +%F 2>/dev/null || date -d '40 days ago' +%F 2>/dev/null)"
+printf 'T001\tcd chain\t3\t%s\t%s\n' "$old40" "$old40" > .anoti/presence-feedback.tsv
+out_trans="$(fireC)"   # transition firing: must inject AND replace the stale entry
+printf '%s' "$out_trans" | jq -r '.hookSpecificOutput.additionalContext // ""' | grep -q "T001"
+assert_ok $? "TEST C: transition firing injects T001"
+new_cached="$(yq -r '.recall_cache.T001' .anoti/sessions/sC.presence.yaml)"
+[ "$new_cached" != "$old_cached" ]; assert_ok $? "TEST C: stale pre-suppression cache entry REPLACED with the new tool_calls value (old=$old_cached new=$new_cached)"
+); rm -rf "$tmp"

@@ -53,3 +53,20 @@ err="$("$v" s.yaml 2>&1 >/dev/null)"; rc=$?
 assert_eq "$rc" "0" "scope mismatch alone does not fail validation"
 printf '%s' "$err" | grep -qi "warning: meta.scope"; assert_ok $? "scope mismatch warned on stderr"
 ); rm -rf "$tmpg"
+
+# triggers shape check (spec: jit-recall §4.5)
+tmpt="$(mktemp -d)"
+mk() { printf 'meta: { schema_version: 3 }\nrecords:\n  - { id: X, date: 2026-08-19, type: claim, topic: t, statement: s, epistemic_status: established, ratification: approved, triggers: %s }\nopen_questions: []\n' "$1" > "$tmpt/f.yaml"; }
+mk '[]'
+"$v" "$tmpt/f.yaml" >/dev/null 2>&1; assert_ok $? "triggers: [] passes"
+mk '["a", "b"]'
+"$v" "$tmpt/f.yaml" >/dev/null 2>&1; assert_ok $? "triggers: [a,b] passes"
+mk '[""]'
+"$v" "$tmpt/f.yaml" >/dev/null 2>&1; assert_eq "$?" "1" "triggers: [\"\"] fails"
+mk '"x"'
+"$v" "$tmpt/f.yaml" >/dev/null 2>&1; assert_eq "$?" "1" "triggers: bare scalar fails"
+mk '[1]'
+"$v" "$tmpt/f.yaml" >/dev/null 2>&1; assert_eq "$?" "1" "triggers: [1] fails (non-string element)"
+printf 'meta: { schema_version: 3 }\nrecords:\n  - { id: X, date: 2026-08-19, type: claim, topic: t, statement: s, epistemic_status: established, ratification: approved }\nopen_questions: []\n' > "$tmpt/f.yaml"
+"$v" "$tmpt/f.yaml" >/dev/null 2>&1; assert_ok $? "absent triggers passes (optional field)"
+rm -rf "$tmpt"

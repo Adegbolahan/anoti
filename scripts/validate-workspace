@@ -22,6 +22,15 @@ while [ "$i" -lt "$n" ]; do
     e="$(yq -r ".records[$i].epistemic_status // \"\"" "$f")"
     case "$e" in speculative|probable|established) ;; *) fail "records[$i]: claim missing/bad epistemic_status" ;; esac
   fi
+  tt="$(yq -r ".records[$i].triggers | type" "$f" 2>/dev/null)"
+  case "$tt" in
+    "!!null") ;;  # absent -- optional field, valid
+    "!!seq")
+      bad="$(yq -r "[.records[$i].triggers[] | select((. | type) != \"!!str\" or . == \"\")] | length" "$f" 2>/dev/null)"
+      [ "$bad" = "0" ] || fail "records[$i]: triggers must be a list of non-empty strings ($bad bad element(s))"
+      ;;
+    *) fail "records[$i]: triggers must be a list (got $tt)" ;;
+  esac
   # unknown keys in source/events/evidence usually mean an unquoted flow
   # scalar containing ", " or ": " split into spurious keys at write time
   bad="$(yq -r ".records[$i].source // {} | keys | .[]" "$f" 2>/dev/null | grep -vE '^(type|context|participants)$' | head -3 | tr '\n' ' ')"

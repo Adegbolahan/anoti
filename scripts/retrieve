@@ -7,7 +7,9 @@
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
-cat >/dev/null 2>&1 || true # consume stdin; digest does not depend on it
+input="$(cat 2>/dev/null || true)"
+rsid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
+rsource="$(printf '%s' "$input" | jq -r '.source // empty' 2>/dev/null || true)"
 BUDGET=4000 # chars of digest content, ~1k tokens
 lines=""
 emit() { lines="${lines}${1}
@@ -136,6 +138,15 @@ if [ "$(basename "$(dirname "$(dirname "$SELF")")")" = "anoti" ] \
   newest="$(command ls -1 "$(dirname "$(dirname "$SELF")")" 2>/dev/null | grep -E '^[0-9]+(\.[0-9]+)+$' | sort -V | tail -1)"
   [ -n "$newest" ] && [ "$newest" != "$cur" ] \
     && [ -n "$lines" ] && try_emit "- plugin update installed ($newest) but this session runs $cur — restart to load it"
+fi
+# compaction re-anchor: OWNED here, not by presence (constraint 8, §4.7).
+if [ "$rsource" = "compact" ] && [ -n "$rsid" ] && [ -f "$AD/sessions/$rsid.yaml" ]; then
+  while IFS="$(printf '\t')" read -r fid fgoal fscope; do
+    [ -n "$fid" ] || continue
+    txt="- frame re-anchored (post-compaction): $(printf '%s' "$fgoal" | cut -c1-120) — scope: $(printf '%s' "$fscope" | cut -c1-80)"
+    try_emit "$txt"
+    printf '%s\t%s\tpresence\tframe-reanchor-compaction\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$rsid" "$fid" >> "$AD/telemetry.log" 2>/dev/null || true
+  done < <(yq -r '.frames // [] | .[] | select(.status == "active") | [.id, .goal, (.scope.in // [] | join(", "))] | @tsv' "$AD/sessions/$rsid.yaml" 2>/dev/null)
 fi
 # orientation line only where a workspace already speaks — never
 # manufacture a digest for an ungoverned directory

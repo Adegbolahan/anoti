@@ -252,3 +252,21 @@ out="$(printf '{"session_id":"o18b"}' | HOME="$tmp/fakehome" "$ROOT/scripts/retr
 printf '%s' "$out" | grep -qi "organ not found"
 assert_eq "$?" "1" "#18 no project store, no warnings — ungoverned dirs stay unnagged"
 ); rm -rf "$tmp"
+
+# --- compaction re-anchor (spec §4.7, RESIDUE CLOSURE) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+mkdir -p .anoti/sessions
+printf 'session:\n  id: rc1\nepisode: idle\nframes: [{id: F5, status: active, goal: "ship the recall hook", scope: {in: ["scripts/presence"], out: []}}, {id: F6, status: resolved, goal: "an old finished frame"}]\n' > .anoti/sessions/rc1.yaml
+ctx="$(printf '{"session_id":"rc1","source":"compact"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$ctx" | grep -q "frame re-anchored (post-compaction)"; assert_ok $? "compact source re-anchors active frames"
+printf '%s' "$ctx" | grep -q "ship the recall hook"; assert_ok $? "re-anchor line carries the active frame's goal"
+printf '%s' "$ctx" | grep -q "an old finished frame"; assert_eq "$?" "1" "resolved frames are not re-anchored"
+grep -qE "presence.frame-reanchor-compaction.F5" .anoti/telemetry.log; assert_ok $? "compaction re-anchor telemetry line"
+mkdir -p .anoti/sessions
+printf 'session:\n  id: rc2\nepisode: idle\nframes: []\n' > .anoti/sessions/rc2.yaml
+ctx2="$(printf '{"session_id":"rc2","source":"compact"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$ctx2" | grep -q "re-anchored"; assert_eq "$?" "1" "no active frames -> no re-anchor line"
+ctx3="$(printf '{"session_id":"rc1","source":"resume"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$ctx3" | grep -q "re-anchored"; assert_eq "$?" "1" "non-compact source does not re-anchor"
+); rm -rf "$tmp"

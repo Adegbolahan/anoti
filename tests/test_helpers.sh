@@ -772,3 +772,7 @@ printf '%s' "$out3" | grep -q "\[global\]"; assert_ok $? "recall CLI labels glob
 "$ROOT/scripts/anoti" recall "cd chain" | grep -q "T001"
 assert_ok $? "anoti recall dispatches to scripts/recall"
 ); rm -rf "$tmp"
+
+# --- anoti dispatcher lists presence as a hook (spec §4.1) ---
+"$ROOT/scripts/anoti" help | grep -q "presence.*hook — the harness runs it"
+assert_ok $? "anoti help lists presence as a hook, not a general action"

@@ -15,7 +15,7 @@ case "$a" in
       n="$(basename "$f")"
       [ -f "$f" ] && [ -x "$f" ] && [ "$n" != "anoti" ] || continue
       case "$n" in
-        retrieve|classify|inhibit|persist-session|consolidation-gate|cleanup-session)
+        retrieve|classify|inhibit|persist-session|consolidation-gate|cleanup-session|presence)
           out="$out
 $(printf '  %-22s %s' "$n" "(hook — the harness runs it; JSON event on stdin)")"; continue ;;
       esac

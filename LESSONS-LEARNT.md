@@ -67,3 +67,9 @@
   Read in every session.
 
 - 2026-08-13 — yq's string == does wildcard matching: 'select(.id == strenv(ID))' with ID='c*' matches c1, c2, and c*. Why: ids are freeform LLM-chosen strings, so pattern chars will eventually appear. How to apply: never let untrusted-format strings reach a yq ==; resolve to indices by exact shell comparison first (scripts/session-consume is the reference)
+
+- 2026-08-19 — Keep builder worktrees alive until the review cycle closes. Why: D011 says fix rounds resume the ORIGINAL builder, but a subagent whose worktree was removed at integration cannot be resumed — the fix round had to go to a fresh spawn that re-read everything at full cost (JIT-recall implementation, 2026-08-19). How to apply: after fast-forwarding a builder's branch, leave its worktree in place until the reviewer's verdict is COMPLIANT; remove worktrees at the end of the cascade, not at merge.
+
+- 2026-08-19 — IFS=<tab> read collapses consecutive tabs: tab is IFS whitespace, so an empty middle field bracketed by two tabs vanishes and later fields shift left; a bare grep -q <id> on the output still passes. Why: it silently corrupted every non-global JIT-recall line while 962 tests stayed green (2026-08-19). How to apply: split TSV with awk -F'\t' or cut -f, never IFS=tab read; assert the rendered line SHAPE, not a substring.
+
+- 2026-08-19 — Docker on Apple Silicon silently QEMU-emulates foreign-arch binaries: an x86_64 yq in an aarch64 container ran ~100x slower and made a perf test look like a regression. Why: wall-clock is meaningless unless the binary arch matches docker info's arch (2026-08-19, JIT-recall Task 15). How to apply: match the arch explicitly (yq_linux_arm64 on M-series hosts) before trusting any timing from a local container; CI's ubuntu-latest is x86_64 natively.

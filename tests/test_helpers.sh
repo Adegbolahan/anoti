@@ -672,3 +672,48 @@ mkdir -p .anoti
 line two smuggled"
 assert_eq "$(grep -c '^' .anoti/pending.md)" "1" "embedded newlines flattened — no orphan continuation lines"
 ); rm -rf "$tmp"
+
+# --- store-resolve library (spec: jit-recall §4.2/§4.3.3) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+SELF="$ROOT/scripts"; export SELF
+. "$ROOT/scripts/store-resolve"
+cp "$ROOT/tests/fixtures/store_triggers.yaml" GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+out="$(resolve_project)"; assert_eq "$out" "$PWD/GROUNDING.yaml" "resolve_project resolves a trusted store"
+rm -f .anoti/trust 2>/dev/null; rm -rf .anoti
+printf '\n# tamper\n' >> GROUNDING.yaml
+resolve_project >/dev/null 2>&1; assert_eq "$?" "1" "resolve_project refuses an untrusted/tampered store"
+# match_triggers: multi-word, metachar-as-literal, hit counting, silence
+out="$(match_triggers GROUNDING.yaml 'a cd chain happened here' '')"
+printf '%s' "$out" | grep -q "T001"; assert_ok $? "match_triggers finds a multi-word trigger"
+out="$(match_triggers GROUNDING.yaml 'nothing relevant here' '')"
+assert_eq "$out" "" "match_triggers silent on no match"
+out="$(match_triggers GROUNDING.yaml 'vite stale and cd chain both fire' '')"
+n="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+assert_eq "$n" "2" "match_triggers returns one row per matching record"
+# matched_triggers: the new export closing the lessons-piggyback wiring gap
+out="$(matched_triggers GROUNDING.yaml 'a cd chain happened here')"
+assert_eq "$out" "cd chain" "matched_triggers returns the matched trigger string, not the record id"
+out="$(matched_triggers GROUNDING.yaml 'nothing relevant')"
+assert_eq "$out" "" "matched_triggers silent on no match"
+# match_lessons
+printf -- '- 2026-08-19 — z-index popover bug fixed by raising stacking context\n' > LESSONS-LEARNT.md
+out="$(match_lessons LESSONS-LEARNT.md 'z-index')"
+printf '%s' "$out" | grep -q "^1\tL:"; assert_ok $? "match_lessons hits, synthetic L: id"
+id1="$(printf '%s' "$out" | cut -f2)"
+printf -- '- 2026-08-18 — unrelated earlier line\n' | cat - LESSONS-LEARNT.md > LESSONS-LEARNT.md.new && mv LESSONS-LEARNT.md.new LESSONS-LEARNT.md
+out2="$(match_lessons LESSONS-LEARNT.md 'z-index')"
+id2="$(printf '%s' "$out2" | cut -f2)"
+assert_eq "$id2" "$id1" "match_lessons id is position-independent (content hash)"
+out="$(match_lessons LESSONS-LEARNT.md 'no-such-keyword')"
+assert_eq "$out" "" "match_lessons silent on no match"
+# match_topic_statement: RESIDUE CLOSURE (spec §4.4/§4.2, no literal code existed)
+cp "$ROOT/tests/fixtures/store_triggers.yaml" store2.yaml
+out="$(match_topic_statement store2.yaml 'webpack-config-drift' '')"
+printf '%s' "$out" | grep -q "T002"; assert_ok $? "match_topic_statement finds a statement-only keyword (not in triggers)"
+out="$(match_topic_statement store2.yaml 'no-such-text' '')"
+assert_eq "$out" "" "match_topic_statement silent on no match"
+out="$(match_topic_statement store2.yaml 'cd chain' '')"
+printf '%s' "$out" | grep -q "T001"; assert_ok $? "match_topic_statement also finds a trigger's own keyword if it's also in statement/topic"
+); rm -rf "$tmp"

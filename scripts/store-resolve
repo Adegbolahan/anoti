@@ -1,0 +1,92 @@
+# shellcheck shell=bash
+# store-resolve — sourced. Store resolution (global/project/lessons) +
+# trigger/keyword matching, shared by scripts/presence and scripts/recall.
+# This file is deliberately NOT executable — it is a library, not an
+# action (mirrors scripts/store-lock:8). Spec: docs/specs/2026-08-19-jit-recall-design.md §4.2
+hash_of() { shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
+is_trusted() { [ -f "$2" ] && grep -qs "$(hash_of "$1")" "$2"; }
+fx() { [ -f "$1" ] && command ls -1 "$(dirname "$1")" 2>/dev/null | grep -qxF "$(basename "$1")"; }
+cfgk() {
+  [ -f .claude/anoti.local.md ] || return 0
+  sed -n "/^---$/,/^---$/{ /^$1:/{ s/^$1: *//; s/[[:space:]]*$//; p; }; }" .claude/anoti.local.md | head -1
+}
+resolve_global() {
+  local g="$HOME/.claude/anoti/GROUNDING.yaml"
+  fx "$g" || return 1
+  "$SELF/validate-workspace" "$g" >/dev/null 2>&1 || return 1
+  is_trusted "$g" "$HOME/.claude/anoti/trust" || return 1
+  printf '%s\n' "$g"
+}
+resolve_project() {
+  fx GROUNDING.yaml || return 1
+  "$SELF/validate-workspace" GROUNDING.yaml >/dev/null 2>&1 || return 1
+  local ad; ad="$("$SELF/anoti-dir" 2>/dev/null)" || return 1
+  is_trusted GROUNDING.yaml "$ad/trust" || return 1
+  printf '%s\n' "$PWD/GROUNDING.yaml"
+}
+resolve_lessons() {
+  local ll; ll="$(cfgk lessons_path)"; [ -n "$ll" ] || ll=LESSONS-LEARNT.md
+  fx "$ll" || return 1
+  printf '%s\n' "$ll"
+}
+match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
+  f="$1"; label="$3"
+  export MT_HAY="$2"
+  yq -r '.records[] | .id as $id | .statement as $s |
+      (.triggers // [])[] | [$id, ., $s] | @tsv' "$f" 2>/dev/null |
+  awk -F'\t' -v label="$label" '
+    BEGIN { h = tolower(ENVIRON["MT_HAY"]) }
+    {
+      trig = tolower($2)
+      if (trig != "" && index(h, trig) > 0) { cnt[$1]++; stmt[$1] = $3 }
+    }
+    END {
+      for (id in cnt) {
+        s = stmt[id]; if (length(s) > 220) s = substr(s, 1, 220)
+        printf "%s\t%s\t%s\t%s\n", cnt[id], id, label, s
+      }
+    }
+  '
+  unset MT_HAY
+}
+matched_triggers() {  # $1=store $2=haystack -- distinct matched trigger STRINGS
+  # NEW export beyond the spec's listed exports (spec:194-250): closes the
+  # §4.3.3 lessons-piggyback wiring gap (match_triggers's own output has
+  # no per-trigger column). Reuses match_triggers' exact export/ENVIRON
+  # discipline -- see Task 1's design note.
+  f="$1"
+  export MT_HAY="$2"
+  yq -r '.records[] | (.triggers // [])[]' "$f" 2>/dev/null |
+  awk '
+    BEGIN { h = tolower(ENVIRON["MT_HAY"]) }
+    { trig = tolower($0); if (trig != "" && index(h, trig) > 0 && !seen[$0]++) print }
+  '
+  unset MT_HAY
+}
+match_topic_statement() {  # $1=store $2=keyword $3=label ("" or "[global] ")
+  # RESIDUE CLOSURE (spec's own Status line names this prose-only; the
+  # spec (spec:762-767) describes but never shows literal code). One yq
+  # pass (house idiom, scripts/record-index:12-15), grep -qiF per
+  # already-fetched field -- CLI-only, no firing-frequency pressure
+  # (spec:764-767), so no awk redesign needed here.
+  f="$1"; kw="$2"; label="$3"
+  [ -n "$kw" ] || return 0
+  yq -r '.records[] | [.id, (.topic // ""), (.statement // "")] | @tsv' "$f" 2>/dev/null |
+  while IFS="$(printf '\t')" read -r id topic stmt; do
+    [ -n "$id" ] || continue
+    if printf '%s' "$topic" | grep -qiF -- "$kw" || printf '%s' "$stmt" | grep -qiF -- "$kw"; then
+      s="$(printf '%s' "$stmt" | cut -c1-220)"
+      printf '1\t%s\t%s\t%s\n' "$id" "$label" "$s"
+    fi
+  done
+}
+match_lessons() {  # $1=lessons-file $2=keyword
+  lf="$1"; kw="$2"
+  [ -n "$kw" ] || return 0
+  [ -f "$lf" ] || return 0
+  grep -iF -- "$kw" "$lf" 2>/dev/null | grep '^- ' | while IFS= read -r line; do
+    stmt="$(printf '%s' "$line" | sed 's/^- //' | cut -c1-220)"
+    hash="$(printf '%s' "$line" | shasum -a 256 | cut -c1-8)"
+    printf '1\tL:%s\t\t%s\n' "$hash" "$stmt"
+  done
+}

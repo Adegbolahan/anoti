@@ -1,0 +1,78 @@
+meta:
+  schema_version: 3
+  scope: project
+  policy:
+    {
+      entries_immutable: true,
+      events_append_only: true,
+      reverify_after_days: 180,
+    }
+index: []
+records:
+  - id: T001
+    date: 2026-08-19
+    type: claim
+    topic: test.cdchain
+    statement: cd chaining across shell invocations breaks relative paths.
+    triggers: ["cd chain", "cd &&"]
+    epistemic_status: established
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events: [{ date: 2026-08-19, action: created, by: session }]
+  - id: T002
+    date: 2026-08-19
+    type: claim
+    topic: test.vite-webpack-config-drift
+    statement: Stale Vite module cache serves old JS after a config change; webpack-config-drift is the sibling failure in the other bundler.
+    triggers: ["vite stale"]
+    epistemic_status: probable
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events: [{ date: 2026-08-19, action: created, by: session }]
+  - id: T010
+    date: 2026-08-19
+    type: claim
+    topic: test.overflow.a
+    statement: Overflow fixture record A.
+    triggers: ["overflow-test"]
+    epistemic_status: probable
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events: [{ date: 2026-08-19, action: created, by: session }]
+  - id: T011
+    date: 2026-08-19
+    type: claim
+    topic: test.overflow.b
+    statement: Overflow fixture record B.
+    triggers: ["overflow-test"]
+    epistemic_status: probable
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events: [{ date: 2026-08-19, action: created, by: session }]
+  - id: T012
+    date: 2026-08-19
+    type: claim
+    topic: test.overflow.c
+    statement: Overflow fixture record C.
+    triggers: ["overflow-test"]
+    epistemic_status: probable
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events: [{ date: 2026-08-19, action: created, by: session }]
+  - id: T013
+    date: 2026-08-19
+    type: claim
+    topic: test.overflow.d
+    statement: Overflow fixture record D.
+    triggers: ["overflow-test"]
+    epistemic_status: probable
+    ratification: approved
+    source: { type: conversation }
+    evidence: []
+    events: [{ date: 2026-08-19, action: created, by: session }]
+open_questions: []

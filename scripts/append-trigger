@@ -1,0 +1,26 @@
+#!/bin/bash
+# append-trigger <store.yaml> <record-id> <keyword>...
+# Append-only triggers: writer, cloning append-evidence's contract.
+# Spec: docs/specs/2026-08-19-jit-recall-design.md §4.5
+set -u
+f="${1:?usage: append-trigger <store> <record-id> <keyword>...}"
+rid="${2:?record id required}"
+shift 2
+[ "$#" -gt 0 ] || { echo "append-trigger: at least one keyword required" >&2; exit 1; }
+SELF="$(cd "$(dirname "$0")" && pwd)"
+idx="$("$SELF/record-index" "$f" "$rid")" \
+  || { echo "append-trigger: no record '$rid' in $f" >&2; exit 1; }
+kws_json="$(printf '%s\n' "$@" | jq -R . | jq -s -c .)"
+. "$SELF/store-lock"
+lock_store "$f" || exit 1
+trap 'unlock_store "$f"' EXIT
+K="$kws_json" yq ".records[$idx].triggers += (strenv(K) | fromjson)" "$f" > "$f.tmp.$$" \
+  || { rm -f "$f.tmp.$$"; exit 1; }
+"$SELF/validate-workspace" "$f.tmp.$$" >/dev/null 2>&1 || { rm -f "$f.tmp.$$"; echo "append-trigger: result failed validation; store untouched" >&2; exit 1; }
+pm="$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f" 2>/dev/null || echo "")"
+[ -n "$pm" ] && chmod "$pm" "$f.tmp.$$" 2>/dev/null
+mv "$f.tmp.$$" "$f"
+"$SELF/regen-index" "$f"
+"$SELF/trust" "$f" >/dev/null 2>&1 \
+  || echo "append-trigger: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+exit 0

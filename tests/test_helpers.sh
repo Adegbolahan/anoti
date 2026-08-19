@@ -717,3 +717,38 @@ assert_eq "$out" "" "match_topic_statement silent on no match"
 out="$(match_topic_statement store2.yaml 'cd chain' '')"
 printf '%s' "$out" | grep -q "T001"; assert_ok $? "match_topic_statement also finds a trigger's own keyword if it's also in statement/topic"
 ); rm -rf "$tmp"
+
+# --- append-trigger: project path (self-contained, immediately re-trusted) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+"$ROOT/scripts/append-trigger" GROUNDING.yaml D001 "cd chain" "cd &&" 2>err.log
+assert_ok $? "append-trigger exits 0 on a known id"
+[ -s err.log ]; assert_eq "$?" "1" "no stderr warning on the project path"
+assert_eq "$(yq -r '.records[0].triggers | length' GROUNDING.yaml)" "2" "two triggers appended"
+"$ROOT/scripts/append-trigger" GROUNDING.yaml D001 "third" >/dev/null 2>&1
+assert_eq "$(yq -r '.records[0].triggers | length' GROUNDING.yaml)" "3" "triggers accumulate, append-only"
+"$ROOT/scripts/append-trigger" GROUNDING.yaml NOPE "x" 2>/dev/null
+assert_eq "$?" "1" "unknown id refused"
+"$ROOT/scripts/validate-workspace" GROUNDING.yaml >/dev/null 2>&1; assert_ok $? "result still validates"
+. "$ROOT/scripts/store-resolve"; HOME="$tmp/fakehome" mkdir -p "$HOME"
+SELF="$ROOT/scripts"; ( HOME="$tmp/fakehome" bash -c '. "'"$ROOT"'/scripts/store-resolve"; SELF="'"$ROOT"'/scripts"; is_trusted "'"$tmp"'/GROUNDING.yaml" .anoti/trust' ) >/dev/null 2>&1
+pm1="$(stat -c %a GROUNDING.yaml 2>/dev/null || stat -f %Lp GROUNDING.yaml 2>/dev/null)"
+[ "$pm1" -gt 0 ]; assert_ok $? "file mode preserved (non-zero mode read back)"
+); rm -rf "$tmp"
+# --- append-trigger: GLOBAL path (fix-round C1 direct regression test) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"
+cp "$ROOT/tests/fixtures/store_valid.yaml" "$HOME/.claude/anoti/GROUNDING.yaml"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
+"$ROOT/scripts/append-trigger" "$HOME/.claude/anoti/GROUNDING.yaml" D001 "cd chain" 2>err.log
+assert_ok $? "append-trigger exits 0 on the global path too"
+assert_eq "$(yq -r '.records[0].triggers | length' "$HOME/.claude/anoti/GROUNDING.yaml")" "1" "trigger written on global store"
+"$ROOT/scripts/validate-workspace" "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null 2>&1; assert_ok $? "global store still validates"
+grep -q "NOT re-trusted" err.log; assert_ok $? "global path prints the not-re-trusted warning (C1 regression)"
+h1="$(shasum -a 256 "$HOME/.claude/anoti/GROUNDING.yaml" | cut -d' ' -f1)"
+grep -qs "$h1" "$HOME/.claude/anoti/trust"; assert_eq "$?" "1" "global store reads as UNTRUSTED after append-trigger (C1 fix, not silently re-trusted)"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
+grep -qs "$h1" "$HOME/.claude/anoti/trust"; assert_ok $? "a follow-up trust --global re-trusts it"
+); rm -rf "$tmp"

@@ -37,6 +37,8 @@ procedures the hooks point you into.
 | About to commit anything               | git skill                           | branches (never the default branch), staging, finishing                                                 |
 | Discovery worth remembering            | consolidate skill                   | typed candidates, helpers only, human ratifies                                                          |
 | Need memory mid-task                   | /anoti:recall                       | query the stores instead of re-deriving                                                                 |
+| Memory should fire by itself next time | append-trigger (consolidate step 2b) | encode the cue at consolidation — "what would I have needed to see?" — and the presence hook surfaces the record at tool-use time |
+| Quick keyword search, both stores      | `scripts/anoti recall <keywords>`   | the pull-side twin of the presence hook: same matcher, ranked, [global]-labelled                       |
 | Implementation ready to ship           | /anoti:review-work                  | pre-ship drift check (not an adversarial control — that is policy-adversarial-handoff's reviewer spawn) |
 | Drafting or amending ROADMAP / stories | direction skill                     | both direction organs are human-owned; format + freshness rules                                         |
 | Pending records / promotions           | /anoti:review                       | the human ratification ritual                                                                           |
@@ -71,6 +73,16 @@ $P/set-episode demo-tour awaiting-approval
 $P/session-consume demo-tour candidates --ids c1   # mark-applied, never deletion
 $P/set-episode demo-tour committed
 unset ANOTI_DIR                            # leave the sandbox
+```
+
+Then see memory act at the moment of use (reads the real stores, writes
+nothing):
+
+```
+$P/anoti recall "falsifiable"      # pull side: both stores, ranked
+# push side: run any Bash command containing a trigger phrase of a
+# record you have triggers on — the presence hook injects the record
+# into your next turn and logs a 'presence recall <id>' telemetry line
 ```
 
 That was the session-state half of the lifecycle: classify → frame →

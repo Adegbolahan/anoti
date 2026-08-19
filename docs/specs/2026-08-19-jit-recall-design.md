@@ -7,6 +7,13 @@ self-caught yq-dialect bug fixed round 2). Named residue for the builder
 under RED-first tests: `match_topic_statement` and retrieve's compaction
 frame-filter are prose-only; awk portability verified on macOS only (CI
 covers Linux at implementation).
+**Amendment 2026-08-19 (post-ship, live verification):** the one claim this
+spec carried as "probable, not established" — that the harness delivers a
+non-MCP tool's PostToolUse `additionalContext` into the model's next turn —
+is now established: in the maintainer's own 0.5.22 session a Bash command
+containing G008's trigger phrase produced the `<anoti-presence>` injection
+of G008 ([global], trust-checked) on the following turn, with the matching
+`presence recall G008[global]` telemetry line.
 
 **Spec:** this document. **Authority:** `docs/ROADMAP.md:96-105` (Phase 4
 deliverable, "design spec is the next step, ratified 2026-08-19",

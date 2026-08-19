@@ -177,3 +177,5 @@ assert_ok $? "step 2b sits between step 2 and step 3, in order"
 # --- jit-recall spec §4.1: demo skill names the presence hook ---
 grep -qi "presence" "$ROOT/skills/demo/SKILL.md"
 assert_ok $? "demo skill names the presence hook in its routing material"
+grep -q "anoti recall" "$ROOT/skills/demo/SKILL.md" && grep -q "append-trigger" "$ROOT/skills/demo/SKILL.md"
+assert_ok $? "demo covers pull-side recall and encoding-time triggers (0.5.22)"

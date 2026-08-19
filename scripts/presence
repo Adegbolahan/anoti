@@ -127,7 +127,18 @@ $1	$2"
 }
 
 n_picked=0; skipped_more=0; recall_detail=""
-while IFS="$(printf '\t')" read -r _ _ id label stmt; do
+# FIX (CRITICAL #1, jit-recall fix round): NEVER `IFS=<tab> read` a TSV
+# row here. Tab is IFS *whitespace*, so consecutive tabs collapse into
+# one delimiter -- every project ("" label) and lessons ("" label) row
+# has an empty label field bracketed by two tabs, which silently
+# transposed statement into $label and left $stmt empty (rendered as
+# "- <statement><id>: " instead of "- <id>: <statement>"). Read the
+# whole line unsplit, extract fields with `cut -f`, which never
+# collapses an empty field between two delimiters.
+while IFS= read -r row; do
+  id="$(printf '%s' "$row" | cut -f3)"
+  label="$(printf '%s' "$row" | cut -f4)"
+  stmt="$(printf '%s' "$row" | cut -f5)"
   [ -n "$id" ] || continue
   last="$(rc_get "$id" 2>/dev/null || true)"
   if [ -n "$last" ] && [ $((tool_calls - last)) -lt "$N" ]; then continue; fi
@@ -150,7 +161,32 @@ recall_detail="${recall_detail%,}"
 # --- duty (c) computed before (b): priority order is recall > nudge > frame ---
 cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
 nudge_block=""
-if printf '%s' "$cmd" | grep -qiE 'curl' && printf '%s' "$cmd" | grep -qiE 'grep'; then
+# FIX (MAJOR #2, jit-recall fix round, spec §4.3.5): a fetch command
+# (curl|wget) at a command position, piped or chained (| ; && ||, `tr`
+# splits each char of && into its own newline) into a text-inspection
+# command (grep|sed|awk|head|tail|jq) -- segment-aware, mirroring
+# scripts/inhibit's `tr ';&|' '\n'` row pattern. Whole-word match per
+# segment (awk's default field split), not a raw substring test: "curl"
+# inside "curl-agent" is a different word and never matches; "seen" is
+# only set once an entire segment has been scanned, so same-segment
+# prose ("...curl...grep-free...") with no pipe/chain between the two
+# words never fires. The shipped check (`grep -qiE curl && grep -qiE
+# grep` on the raw string) was unordered co-occurrence anywhere in the
+# text -- false-positived on an argument substring or prose, and
+# false-negatived on wget (never checked at all).
+if printf '%s' "$cmd" | tr ';&|' '\n' | awk '
+  BEGIN { seen = 0; found = 0 }
+  {
+    has_fetch = 0
+    for (i = 1; i <= NF; i++) {
+      w = tolower($i)
+      if (w == "curl" || w == "wget") has_fetch = 1
+      if (seen && (w == "grep" || w == "sed" || w == "awk" || w == "head" || w == "tail" || w == "jq")) found = 1
+    }
+    if (has_fetch) seen = 1
+  }
+  END { exit !found }
+'; then
   nudge_block="evidence-kind: nearer-to-ground-truth instruments (DOM query, DB read) catch what curl|grep misses on rendered output — G004/G008"
 fi
 if [ -n "$nudge_block" ] && try_emit "$nudge_block"; then tel evidence-nudge curl-grep; fi

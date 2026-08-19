@@ -716,6 +716,16 @@ out="$(match_topic_statement store2.yaml 'no-such-text' '')"
 assert_eq "$out" "" "match_topic_statement silent on no match"
 out="$(match_topic_statement store2.yaml 'cd chain' '')"
 printf '%s' "$out" | grep -q "T001"; assert_ok $? "match_topic_statement also finds a trigger's own keyword if it's also in statement/topic"
+# CRITICAL #1 (store-resolve:75's OWN internal read, not a downstream
+# consumer): the function's "id\ttopic\tstatement" TSV has an EMPTY
+# topic field for this record -- two adjacent tabs. IFS=tab read
+# collapses that empty field, shifting the statement into $topic and
+# leaving $stmt empty: real data loss, not just display corruption.
+cp "$ROOT/tests/fixtures/store_triggers.yaml" store3.yaml
+yq -i '.records += [{"id":"T099","date":"2026-08-19","type":"claim","topic":"","statement":"Empty-topic statement text survives the tab-collapse regression.","triggers":["empty-topic-marker"],"epistemic_status":"probable","ratification":"approved","source":{"type":"conversation"},"evidence":[],"events":[{"date":"2026-08-19","action":"created","by":"session"}]}]' store3.yaml
+out="$(match_topic_statement store3.yaml 'tab-collapse regression' '')"
+want="$(printf '1\tT099\t\tEmpty-topic statement text survives the tab-collapse regression.')"
+assert_eq "$out" "$want" "match_topic_statement: an EMPTY .topic does not swallow the statement (CRITICAL #1)"
 ); rm -rf "$tmp"
 
 # --- append-trigger: project path (self-contained, immediately re-trusted) ---
@@ -765,6 +775,18 @@ printf -- '- 2026-08-19 — cd chain caused a stray write once\n' > LESSONS-LEAR
 out="$("$ROOT/scripts/recall" "cd chain")"
 printf '%s' "$out" | grep -q "T001"; assert_ok $? "recall CLI finds a project trigger match"
 printf '%s' "$out" | grep -qi "stray write"; assert_ok $? "recall CLI also matches lessons"
+# CRITICAL #1 (scripts/recall:32's own display loop, a separate site from
+# presence's): project row label is "" -- pin the exact rendered shape,
+# not just id/text substring survival (both survive the glued form too).
+printf '%s' "$out" | grep -qF -- "- T001 [established, approved]: cd chaining across shell invocations breaks relative paths."
+assert_ok $? "recall CLI renders the exact project-row line shape 'id [status]: statement' (CRITICAL #1)"
+printf '%s' "$out" | grep -qF -- "cd chaining across shell invocations breaks relative paths.T001 "
+assert_eq "$?" "1" "recall CLI: statement is not transposed-and-glued before the id (CRITICAL #1 regression guard)"
+# lessons row: match_lessons' label column is ALWAYS "" (guaranteed collapse)
+printf '%s' "$out" | grep -qE -- '- L:[0-9a-f]{8} \[lesson \(unratified free text\)\]: 2026-08-19 — cd chain caused a stray write once'
+assert_ok $? "recall CLI renders the exact lessons-row line shape (CRITICAL #1)"
+printf '%s' "$out" | grep -qF -- "onceL:"
+assert_eq "$?" "1" "recall CLI: lessons statement is not glued before its L:<hash> id (CRITICAL #1 regression guard)"
 out2="$("$ROOT/scripts/recall" "webpack-config-drift")"
 printf '%s' "$out2" | grep -q "T002"; assert_ok $? "recall CLI's broader net finds a statement-only keyword (match_topic_statement)"
 out3="$("$ROOT/scripts/recall" "falsifiable")"  # DEVIATION: plan queried "D001", but store_valid.yaml's D001 record has that string in neither topic/statement/triggers (id is never a searched field) -- "falsifiable" (from D001's own statement) exercises the identical global-labeling behavior against text the fixture actually contains

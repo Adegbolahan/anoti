@@ -69,10 +69,22 @@ match_topic_statement() {  # $1=store $2=keyword $3=label ("" or "[global] ")
   # pass (house idiom, scripts/record-index:12-15), grep -qiF per
   # already-fetched field -- CLI-only, no firing-frequency pressure
   # (spec:764-767), so no awk redesign needed here.
+  # FIX (CRITICAL #1, jit-recall fix round): NEVER `IFS=<tab> read` a TSV
+  # row here. Tab is IFS *whitespace* -- POSIX field-splitting collapses
+  # consecutive IFS-whitespace delimiters into one, so a row with an EMPTY
+  # .topic ("id\t\tstatement", two adjacent tabs) silently loses a field:
+  # the statement shifts into $topic and $stmt comes back empty -- real
+  # data loss, not just display corruption (verified: reproduces on both
+  # bash 3.2 and 5.3). Read the whole line with `IFS=` (no splitting at
+  # all) and pull fields with `cut -f`, which never collapses an empty
+  # field between two delimiters.
   f="$1"; kw="$2"; label="$3"
   [ -n "$kw" ] || return 0
   yq -r '.records[] | [.id, (.topic // ""), (.statement // "")] | @tsv' "$f" 2>/dev/null |
-  while IFS="$(printf '\t')" read -r id topic stmt; do
+  while IFS= read -r row; do
+    id="$(printf '%s' "$row" | cut -f1)"
+    topic="$(printf '%s' "$row" | cut -f2)"
+    stmt="$(printf '%s' "$row" | cut -f3)"
     [ -n "$id" ] || continue
     if printf '%s' "$topic" | grep -qiF -- "$kw" || printf '%s' "$stmt" | grep -qiF -- "$kw"; then
       s="$(printf '%s' "$stmt" | cut -c1-220)"

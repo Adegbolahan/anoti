@@ -141,7 +141,16 @@ if [ "$(basename "$(dirname "$(dirname "$SELF")")")" = "anoti" ] \
 fi
 # compaction re-anchor: OWNED here, not by presence (constraint 8, §4.7).
 if [ "$rsource" = "compact" ] && [ -n "$rsid" ] && [ -f "$AD/sessions/$rsid.yaml" ]; then
-  while IFS="$(printf '\t')" read -r fid fgoal fscope; do
+  # FIX (CRITICAL #1 sweep, jit-recall fix round): NEVER `IFS=<tab> read`
+  # a TSV row -- tab is IFS whitespace, so an empty .goal sandwiched
+  # between a non-empty id and a non-empty scope collapses the two
+  # adjacent tabs into one delimiter, shifting scope text into $fgoal
+  # and leaving $fscope empty. Same fix as scripts/presence,
+  # scripts/recall, scripts/store-resolve: read unsplit, `cut -f`.
+  while IFS= read -r row; do
+    fid="$(printf '%s' "$row" | cut -f1)"
+    fgoal="$(printf '%s' "$row" | cut -f2)"
+    fscope="$(printf '%s' "$row" | cut -f3)"
     [ -n "$fid" ] || continue
     txt="- frame re-anchored (post-compaction): $(printf '%s' "$fgoal" | cut -c1-120) — scope: $(printf '%s' "$fscope" | cut -c1-80)"
     try_emit "$txt"

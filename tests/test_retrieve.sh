@@ -270,3 +270,20 @@ printf '%s' "$ctx2" | grep -q "re-anchored"; assert_eq "$?" "1" "no active frame
 ctx3="$(printf '{"session_id":"rc1","source":"resume"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
 printf '%s' "$ctx3" | grep -q "re-anchored"; assert_eq "$?" "1" "non-compact source does not re-anchor"
 ); rm -rf "$tmp"
+
+# --- CRITICAL #1 sweep finding (jit-recall-design review): retrieve:144's
+# compaction re-anchor reads "id\tgoal\tscope" the same IFS=tab way as the
+# three JIT-recall sites -- an empty .goal sandwiched between a non-empty
+# id and a non-empty scope collapses the same way, shifting scope text
+# into $fgoal and leaving $fscope empty. Not part of the JIT-recall diff,
+# but the same bug class in the same repo; found by the repo-wide sweep.
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+mkdir -p .anoti/sessions
+printf 'session:\n  id: rc9\nepisode: idle\nframes: [{id: F9, status: active, goal: "", scope: {in: ["scripts/store-resolve"], out: []}}]\n' > .anoti/sessions/rc9.yaml
+ctx9="$(printf '{"session_id":"rc9","source":"compact"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$ctx9" | grep -qF -- "— scope: scripts/store-resolve"
+assert_ok $? "compaction re-anchor: an EMPTY .goal does not swallow .scope.in (CRITICAL #1 sweep, retrieve:144)"
+printf '%s' "$ctx9" | grep -qF -- "scripts/store-resolve — scope:"
+assert_eq "$?" "1" "compaction re-anchor: scope text is not shifted into the goal position (CRITICAL #1 sweep regression guard)"
+); rm -rf "$tmp"

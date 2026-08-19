@@ -24,6 +24,49 @@ printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext' | grep -q "T0
 assert_ok $? "PostToolUse recall injects the matched id"
 grep -qE "presence.recall.T001\[\]" .anoti/telemetry.log
 assert_ok $? "PostToolUse recall logs telemetry"
+# CRITICAL #1: a project (non-[global]) row's label field is "" -- two
+# adjacent tabs in "hits\tid\t\tstatement". IFS=tab read collapses the
+# empty field, transposing id/statement. Pin the exact rendered shape,
+# not just id-substring survival (which passes even on the glued form).
+printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF -- "- T001: cd chaining across shell invocations breaks relative paths."
+assert_ok $? "PostToolUse recall renders the exact project-row line shape 'id: statement' (CRITICAL #1)"
+printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF -- "cd chaining across shell invocations breaks relative paths.T001:"
+assert_eq "$?" "1" "PostToolUse recall: statement is not transposed-and-glued before the id (CRITICAL #1 regression guard)"
+); rm -rf "$tmp"
+
+# 2b. CRITICAL #1: a lessons row's label field is ALWAYS "" (match_lessons
+# hard-codes an empty label column, store-resolve:90) -- so every lessons
+# match hits the same adjacent-tab collapse as a project row, guaranteed,
+# not just incidentally. Piggybacks on a matched trigger ("cd chain")
+# per spec §4.3.3's lessons-invocation rule.
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+mkfx "$tmp"
+printf -- '- 2026-08-19 — cd chain caused a stray write once\n' > LESSONS-LEARNT.md
+out="$(printf '{"session_id":"s2b","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain again here"},"tool_response":{}}' | "$P")"
+ctx="$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$ctx" | grep -qE -- '- L:[0-9a-f]{8}: 2026-08-19 — cd chain caused a stray write once'
+assert_ok $? "PostToolUse recall renders the exact lessons-row line shape 'L:<hash>: statement' (CRITICAL #1)"
+printf '%s' "$ctx" | grep -qF -- "onceL:"
+assert_eq "$?" "1" "PostToolUse recall: lessons statement is not glued before its L:<hash> id (CRITICAL #1 regression guard)"
+); rm -rf "$tmp"
+
+# 2c. Regression guard: a [global] row's label ("[global] ") is never
+# empty, so this specific bug does NOT corrupt it today -- confirmed by
+# construction, not assumed. Pinned so the fix cannot newly break it.
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"
+mkfx "$tmp"
+{
+  printf 'meta: { schema_version: 3, scope: project, policy: { entries_immutable: true, events_append_only: true, reverify_after_days: 180 } }\nindex: []\nrecords:\n'
+  printf -- '  - { id: G777, date: 2026-08-19, type: claim, topic: test.global, statement: "A global-store statement for the exact-shape regression test.", triggers: ["gmarkertrigger"], epistemic_status: probable, ratification: approved, events: [] }\n'
+  printf 'open_questions: []\n'
+} > "$HOME/.claude/anoti/GROUNDING.yaml"
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null
+out="$(printf '{"session_id":"s2c","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"fire gmarkertrigger now"},"tool_response":{}}' | "$P")"
+ctx="$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')"
+printf '%s' "$ctx" | grep -qF -- "- [global] G777: A global-store statement for the exact-shape regression test."
+assert_ok $? "PostToolUse recall renders the exact [global]-row line shape (regression guard, was never collapsed)"
 ); rm -rf "$tmp"
 
 # 3. PostToolUseFailure recall fires (direct regression test, no tool_response at all)
@@ -113,6 +156,29 @@ printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext' | grep -q "G0
 assert_ok $? "evidence-nudge fires on curl|grep"
 out2="$(printf '{"session_id":"s8","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"ls -la"},"tool_response":{}}' | "$P")"
 assert_eq "$out2" "" "evidence-nudge silent on a non-matching command"
+# MAJOR #2: shipped check was unordered co-occurrence of the raw substrings
+# "curl"/"grep" anywhere in the command -- no command-position check, no
+# pipe/chain requirement, no wget. Pin the spec's actual shape: a fetch
+# command (curl|wget) at a command position, piped/chained into a
+# text-inspection command (grep|sed|awk|head|tail|jq).
+nudge() {  # $1=command text, must arrive here already JSON-string-safe (no raw " or \)
+  printf '{"session_id":"s8","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"'"$1"'"},"tool_response":{}}' | "$P" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null
+}
+out3="$(nudge 'grep -r curl-agent ./logs && echo done')"
+printf '%s' "$out3" | grep -q "G004/G008"
+assert_eq "$?" "1" "evidence-nudge false positive: 'curl' as a grep ARGUMENT substring (curl-agent), no actual fetch (MAJOR #2)"
+out4="$(nudge 'wget -qO- https://x | grep -c section')"
+printf '%s' "$out4" | grep -q "G004/G008"
+assert_ok $? "evidence-nudge false negative: wget|grep -c must fire, spec names curl/wget fetch (MAJOR #2)"
+out5="$(nudge 'echo replaced curl with a grep-free check')"
+printf '%s' "$out5" | grep -q "G004/G008"
+assert_eq "$?" "1" "evidence-nudge false positive: prose containing the words curl/grep, no pipe/chain into a fetch (MAJOR #2)"
+out6="$(nudge 'curl -s URL | grep title')"
+printf '%s' "$out6" | grep -q "G004/G008"
+assert_ok $? "evidence-nudge true positive: curl piped into grep (MAJOR #2)"
+out7="$(nudge 'wget -qO- URL | grep x')"
+printf '%s' "$out7" | grep -q "G004/G008"
+assert_ok $? "evidence-nudge true positive: wget piped into grep (MAJOR #2)"
 ); rm -rf "$tmp"
 
 # 9. Fail-open: garbage stdin, and tool_name outside matcher scope
@@ -154,7 +220,19 @@ printf '%s' "$ctx2" | grep -q "T001"; assert_ok $? "budget large enough: recall 
 printf '%s' "$ctx2" | grep -q "G004/G008"; assert_ok $? "budget large enough: nudge present"
 ); rm -rf "$tmp"
 
-# 12. Perf: <1s for two 300-record stores, one firing
+# 12. Perf: <2.5s for two 300-record stores, one firing
+# MINOR fix (jit-recall fix round): the reviewer's docker ubuntu:24.04 run
+# (gawk, emulated on this ARM host) measured 3.407s against the original
+# <1s bound while every other assertion passed -- a loaded/emulated CI
+# runner legitimately needs more headroom than a native macOS box. The
+# operational hook timeout is 5s, so 2.5s leaves half the budget as
+# margin. This is NOT a blank check: the single-awk-pass match_triggers
+# redesign (spec §4.3.3) runs in ~0.03-0.05s natively; the per-record-yq
+# regression it replaced was independently measured at 12.7s on the same
+# two-store fixture (>5x this widened bound) -- so a real regression back
+# to per-record yq calls still fails this assertion even with the wider
+# margin. Mutation-verified in a scratch copy, never in place (see the
+# fix-round report for the {command, output} transcript).
 tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti" .anoti
 gen() { # $1=out-file $2=id-prefix
@@ -174,6 +252,6 @@ start="$(date +%s.%N)"
 printf '{"session_id":"perf","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"bulk-kw-1 bulk-kw-2"},"tool_response":{}}' | "$P" >/dev/null
 end="$(date +%s.%N)"
 elapsed="$(awk -v a="$start" -v b="$end" 'BEGIN{printf "%.3f", b-a}')"
-awk -v e="$elapsed" 'BEGIN{exit !(e < 1.0)}'
-assert_ok $? "perf: recall duty completes in <1s on 300+300 records (got ${elapsed}s)"
+awk -v e="$elapsed" 'BEGIN{exit !(e < 2.5)}'
+assert_ok $? "perf: recall duty completes in <2.5s on 300+300 records (got ${elapsed}s)"
 ); rm -rf "$tmp"

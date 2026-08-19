@@ -1,0 +1,11 @@
+#!/bin/bash
+# mark-retrospect <session-id> <empty|filed> -- mechanical, one durable
+# telemetry line. Closes "did the retrospective run" (spec §4.8 gap 2).
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
+sid="${1:?usage: mark-retrospect <session-id> <empty|filed>}"
+state="${2:?state required (empty|filed)}"
+case "$state" in empty|filed) ;; *) echo "mark-retrospect: state must be empty|filed" >&2; exit 1 ;; esac
+printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" >> "$AD/telemetry.log" 2>/dev/null || true
+exit 0

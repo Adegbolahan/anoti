@@ -788,3 +788,15 @@ printf '%s' '{"h":"some hypothesis"}' | "$ROOT/scripts/session-append" sX hypoth
 c="$(grep -c 'frame' .anoti/telemetry.log)"
 assert_eq "$c" "1" "session-append does NOT emit a frame line for hypotheses/in_flight/candidates"
 ); rm -rf "$tmp"
+
+# --- mark-retrospect (spec §4.8 gap 2) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+"$ROOT/scripts/mark-retrospect" sY empty
+assert_ok $? "mark-retrospect empty exits 0"
+grep -qE $'retrospect\tempty' .anoti/telemetry.log; assert_ok $? "empty branch telemetry shape"
+"$ROOT/scripts/mark-retrospect" sY filed
+grep -qE $'retrospect\tfiled' .anoti/telemetry.log; assert_ok $? "filed branch telemetry shape"
+"$ROOT/scripts/mark-retrospect" sY bogus 2>/dev/null
+assert_eq "$?" "1" "invalid state rejected"
+); rm -rf "$tmp"

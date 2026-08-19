@@ -51,7 +51,9 @@ printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "heredoc SQL fed to a client
 tmp="$(mktemp -d)"; ( cd "$tmp"
 mkdir -p .anoti templates
 out="$(printf '{"session_id":"tp","tool_name":"Edit","tool_input":{"file_path":"templates/GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit")"
-[ -z "$out" ]; assert_ok $? "templates/GROUNDING.yaml is a template, not an organ — not episode-gated"
+printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "a consumer project's own templates/GROUNDING.yaml is STILL gated (exclusion scoped to the plugin root)"
+out="$(cd "$ROOT" && printf '{"session_id":"tp","tool_name":"Edit","tool_input":{"file_path":"templates/GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "the plugin's OWN templates/GROUNDING.yaml is a template, not an organ — not episode-gated"
 out="$(printf '{"session_id":"tp","tool_name":"Edit","tool_input":{"file_path":"GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit")"
 printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "the live store is still gated"
 ); rm -rf "$tmp"

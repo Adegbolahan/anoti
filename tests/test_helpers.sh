@@ -800,3 +800,20 @@ grep -qE $'retrospect\tfiled' .anoti/telemetry.log; assert_ok $? "filed branch t
 "$ROOT/scripts/mark-retrospect" sY bogus 2>/dev/null
 assert_eq "$?" "1" "invalid state rejected"
 ); rm -rf "$tmp"
+
+# --- cleanup-session summary line (spec §4.8) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti/sessions
+printf 'session:\n  id: sZ\nepisode: idle\nclassifications: [{ts: "t", verdict: slow, reason: r}, {ts: "t", verdict: fast, reason: r}]\nframes: [{id: F1, status: active}, {id: F2, status: active}]\n' > .anoti/sessions/sZ.yaml
+touch .anoti/sessions/sZ.presence.yaml
+"$ROOT/scripts/mark-retrospect" sZ filed >/dev/null
+printf '{"session_id":"sZ"}' | "$ROOT/scripts/cleanup-session"
+grep -qE 'summary.*slow=1.*frames=2.*retrospect_ran=true.*episode=idle' .anoti/telemetry.log
+assert_ok $? "cleanup-session summary line has exact counts"
+[ -f .anoti/sessions/sZ.presence.yaml ]; assert_eq "$?" "1" "presence-state file removed at cleanup"
+mkdir -p .anoti/sessions
+printf 'session:\n  id: sZ2\nepisode: committed\nclassifications: []\nframes: []\n' > .anoti/sessions/sZ2.yaml
+printf '{"session_id":"sZ2"}' | "$ROOT/scripts/cleanup-session"
+grep -qE 'sZ2.*summary.*retrospect_ran=false' .anoti/telemetry.log  # DEVIATION: plan's RED regex checked "summary" before the session id, but the plan's own GREEN printf (and the established telemetry convention: timestamp<TAB>session_id<TAB>category<TAB>...) puts sid before "summary" -- fixed the field order in the assertion, not the implementation, which correctly follows the house convention (matches this same test's own first, already-passing assertion)
+assert_ok $? "no retrospect telemetry -> retrospect_ran=false"
+); rm -rf "$tmp"

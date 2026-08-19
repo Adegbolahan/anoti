@@ -728,6 +728,42 @@ want="$(printf '1\tT099\t\tEmpty-topic statement text survives the tab-collapse 
 assert_eq "$out" "$want" "match_topic_statement: an EMPTY .topic does not swallow the statement (CRITICAL #1)"
 ); rm -rf "$tmp"
 
+# --- store-resolve: match_trigger_pairs + feedback_shape_ok (adaptive suppression §4.3.3/§4.4) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+SELF="$ROOT/scripts"; export SELF
+. "$ROOT/scripts/store-resolve"
+cp "$ROOT/tests/fixtures/store_triggers.yaml" GROUNDING.yaml
+# T001 carries TWO triggers in the fixture as shipped: ["cd chain", "cd &&"]
+out="$(match_trigger_pairs GROUNDING.yaml 'a cd chain happened here')"
+n="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+assert_eq "$n" "1" "match_trigger_pairs emits one row for one matching pair"
+assert_eq "$out" "$(printf 'T001\tcd chain\tcd chaining across shell invocations breaks relative paths.')" \
+  "match_trigger_pairs emits id, ORIGINAL trigger text, statement (unaggregated)"
+out="$(match_trigger_pairs GROUNDING.yaml 'cd chain and cd && both here')"
+n="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+assert_eq "$n" "2" "match_trigger_pairs emits ONE ROW PER MATCHING TRIGGER, not aggregated per record (T001 x2)"
+out="$(match_trigger_pairs GROUNDING.yaml 'nothing relevant here')"
+assert_eq "$out" "" "match_trigger_pairs silent on no match"
+# event-scoping (edit:/bash: prefixes) must be honored identically to match_triggers
+cp "$ROOT/tests/fixtures/store_valid.yaml" s2.yaml
+"$ROOT/scripts/append-trigger" s2.yaml D001 "edit:CHANGELOG.md" >/dev/null 2>&1
+MT_EVENT=bash out="$(MT_EVENT=bash match_trigger_pairs s2.yaml 'editing CHANGELOG.md now')"
+assert_eq "$out" "" "match_trigger_pairs respects edit:-scoping: silent on a Bash-typed firing"
+out="$(MT_EVENT=edit match_trigger_pairs s2.yaml 'editing CHANGELOG.md now')"
+printf '%s' "$out" | grep -qF -- $'D001\tedit:CHANGELOG.md'; assert_ok $? "match_trigger_pairs preserves the ORIGINAL prefixed trigger text (for feedback/remove-trigger to act on), not the stripped form used only for matching"
+# feedback_shape_ok
+printf 'D001\tcd chain\t3\t2026-08-17\t2026-08-19\n' > good.tsv
+feedback_shape_ok good.tsv; assert_ok $? "feedback_shape_ok accepts a well-formed row"
+[ -f nope.tsv ] || true
+feedback_shape_ok nope.tsv; assert_ok $? "feedback_shape_ok: a MISSING file is not a shape failure"
+printf 'D001\tcd chain\t3\n' > bad_cols.tsv
+feedback_shape_ok bad_cols.tsv; assert_eq "$?" "1" "feedback_shape_ok rejects a row with the wrong column count"
+printf 'D001\tcd chain\tthree\t2026-08-17\t2026-08-19\n' > bad_count.tsv
+feedback_shape_ok bad_count.tsv; assert_eq "$?" "1" "feedback_shape_ok rejects a non-numeric count"
+printf 'D001\tcd chain\t3\t08-17-2026\t2026-08-19\n' > bad_date.tsv
+feedback_shape_ok bad_date.tsv; assert_eq "$?" "1" "feedback_shape_ok rejects a malformed last_marked date"
+); rm -rf "$tmp"
+
 # --- append-trigger: project path (self-contained, immediately re-trusted) ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 mkdir -p .anoti

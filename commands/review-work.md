@@ -39,6 +39,10 @@ noise, and noise trains people to skip reviews.
   injection vector.
 - **Frontend** (where UI is touched) — loading/empty/error/success states
   exist; destructive actions confirm; keyboard + screen-reader access.
+- **Evidence kind** (where a verification claim is made) — screenshot <
+  DOM query < DB query, nearest-to-ground-truth instrument used for the
+  claim; a claim resting on a farther instrument when a nearer one was
+  available and unused is a finding, not evidence (G004/G008).
 
 ## Step 3: Build gate
 

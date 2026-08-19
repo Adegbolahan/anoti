@@ -75,12 +75,22 @@ process violation the audit counts, not a technical impossibility.
    scope a cue to the tool class when the intent is "when editing X" —
    `edit:CHANGELOG.md` matches only Edit/Write firings, `bash:git push`
    only Bash; unscoped cues match any tool. A cue that proves noisy is
-   removed with `scripts/remove-trigger` and re-cued. Skip silently for
+   removed with `scripts/remove-trigger` and re-cued.
+
+   A cue that fires but keeps producing irrelevant injections quiets
+   itself mechanically after three retrospective marks within 30 days
+   (adaptive suppression, `docs/specs/2026-08-19-adaptive-suppression-design.md`)
+   without any edit here — `scripts/anoti feedback list`/`clear` shows and
+   reverses it; `remove-trigger` stays the permanent fix for a trigger
+   that is simply badly authored.
+
+   Skip silently for
    candidates with no natural
    tool-use-time cue (e.g. a `preference` about communication style) —
    not every record needs triggers, and forcing the question onto every
    candidate would just produce noise triggers that degrade the hook's
    precision (§4.3.3).
+
 3. **Citations:** a claim without evidence references is `speculative` at
    best; a claim whose statement cannot be falsified is rejected as a
    claim (retype or drop).

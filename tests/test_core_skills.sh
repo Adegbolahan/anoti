@@ -179,3 +179,12 @@ grep -qi "presence" "$ROOT/skills/demo/SKILL.md"
 assert_ok $? "demo skill names the presence hook in its routing material"
 grep -q "anoti recall" "$ROOT/skills/demo/SKILL.md" && grep -q "append-trigger" "$ROOT/skills/demo/SKILL.md"
 assert_ok $? "demo covers pull-side recall and encoding-time triggers (0.5.22)"
+
+# --- adaptive-suppression spec: consolidate step 2b notes the mechanical un-cueing path ---
+consolidate_joined="$(tr '\n' ' ' < "$ROOT/skills/consolidate/SKILL.md" | tr -s ' ')"
+printf '%s' "$consolidate_joined" | grep -qF "quiets itself mechanically after three retrospective marks within 30 days"
+assert_ok $? "consolidate step 2b notes the mechanical un-cueing path (adaptive suppression)"
+printf '%s' "$consolidate_joined" | grep -qF "anoti feedback list"
+assert_ok $? "consolidate step 2b names anoti feedback list/clear"
+awk -v s="$consolidate_joined" 'BEGIN{a=index(s,"and re-cued"); b=index(s,"quiets itself mechanically after three retrospective marks"); c=index(s,"Skip silently for candidates with no natural"); exit !(a && b && c && a<b && b<c)}'
+assert_ok $? "adaptive-suppression addendum sits between the remove-trigger sentence and the skip-silently sentence"

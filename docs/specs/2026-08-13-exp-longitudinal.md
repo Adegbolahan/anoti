@@ -90,7 +90,7 @@ not a commitment to build either.
 - **Presence precision (added 2026-08-19, field review):** relevant
   injections / total injections per audited week, where "irrelevant" is
   the retrospective's own count (`mark-retrospect … irrelevant-injections
-N` telemetry) over the `presence recall` lines. **Re-ranker filter
+  N` telemetry) over the `presence recall` lines. **Re-ranker filter
   justified** (Q006: a small cross-encoder scoring keyword candidates,
   local, fail-open, only when candidates exist) when precision stays
   below 50% across two consecutive audited weeks AFTER adaptive

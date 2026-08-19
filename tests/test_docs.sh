@@ -110,3 +110,11 @@ lb="$(grep -n 'Adaptive suppression KEEP/telemetry-only/REVERT' "$LONG" | head -
 lc="$(grep -n 'Tier 3 justified' "$LONG" | head -1 | cut -d: -f1)"
 [ -n "$la" ] && [ -n "$lb" ] && [ -n "$lc" ] && [ "$la" -lt "$lb" ] && [ "$lb" -lt "$lc" ]
 assert_ok $? "adaptive-suppression subsection sits between Presence-precision and Tier-3-justified, inside the Tier-1 gate section"
+
+# --- D011 fix round (reviewer MINOR): the §4.8 replacement bullet's
+# continuation line must keep its 2-space list-continuation indent,
+# byte-for-byte against spec:900 -- whitespace-squeezed matching above
+# cannot see this, so this checks the raw file directly, anchored at
+# column 1 ---
+grep -qE '^  N` telemetry\) over the `presence recall` lines\.' "$LONG"
+assert_ok $? "longitudinal spec §4.8 bullet: telemetry-line continuation keeps its 2-space indent (byte-verbatim vs spec:900)"

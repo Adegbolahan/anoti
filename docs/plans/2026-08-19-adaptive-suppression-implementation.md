@@ -948,7 +948,7 @@ lines 17-22, confirmed by direct read) in full:
    call that just ran, name it — otherwise leave the trigger off rather
    than guess, since a wrong trigger name silently suppresses the wrong
    cue). Record via `scripts/mark-retrospect <sid> <empty|filed>
-irrelevant-injections N [<id>[:<trigger>] ...]` — N is still the raw
+   irrelevant-injections N [<id>[:<trigger>] ...]` — N is still the raw
    count the precision metric reads; the trailing tokens are what
    adaptive suppression (docs/specs/2026-08-19-adaptive-suppression-design.md)
    learns from: an `id:trigger` pair accumulates toward silencing that

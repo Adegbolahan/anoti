@@ -40,3 +40,10 @@ printf '%s' "$retro_joined" | grep -qF 'an `id:trigger` pair accumulates toward 
 assert_ok $? "retrospect rule 2 states the exact three-marks/30-day suppression rule"
 printf '%s' "$retro_joined" | grep -qF "can never be named this way"
 assert_ok $? "retrospect rule 2 rejects lesson ids from the pair grammar"
+
+# --- D011 fix round (reviewer MINOR): the continuation line must keep its
+# 3-space list-continuation indent, byte-for-byte against spec:470 --
+# whitespace-squeezed matching above cannot see this, so this checks the
+# raw file directly, anchored at column 1 ---
+grep -qE '^   irrelevant-injections N \[<id>\[:<trigger>\] \.\.\.\]`' "$ROOT/skills/policy-retrospect/SKILL.md"
+assert_ok $? "retrospect rule 2: irrelevant-injections continuation line keeps its 3-space indent (byte-verbatim vs spec:470)"

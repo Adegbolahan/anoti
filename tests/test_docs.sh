@@ -49,3 +49,8 @@ assert_ok $? "SKILL-MAP names the anoti recall CLI"
 # --- jit-recall spec §4.1: README names the presence hook ---
 grep -qi "presence hook" "$ROOT/README.md"
 assert_ok $? "README names the presence hook"
+# recall command names the mechanical anoti recall pre-check (spec: jit-recall §4.4, Task 7)
+grep -q "anoti recall <topic-keywords>" "$ROOT/commands/recall.md"
+assert_ok $? "recall command names the mechanical pre-check as step 0"
+awk '/Mechanical pre-check/{a=NR} /^1\. Query both stores/{b=NR} END{exit !(a && b && a<b)}' "$ROOT/commands/recall.md"
+assert_ok $? "step 0 precedes the existing step 1"

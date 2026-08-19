@@ -5,6 +5,12 @@ argument-hint: <topic>
 
 Retrieve anoti memory relevant to: $ARGUMENTS
 
+0. Mechanical pre-check (free, no model reasoning needed): run
+   `anoti recall <topic-keywords>` first — it runs the exact matcher the
+   presence hook uses, over triggers/topic/statement in both stores plus
+   LESSONS-LEARNT, and prints ranked hits instantly. Use the steps below
+   when it comes up empty, or when you need deeper synthesis (evidence,
+   events, open questions) than the mechanical matcher shows.
 1. Query both stores' generated indexes — `yq '.index' GROUNDING.yaml` and
    `yq '.index' ~/.claude/anoti/GROUNDING.yaml` (if present) — and match
    rows against the topic by statement and topic fields.

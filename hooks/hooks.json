@@ -77,6 +77,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/review-debt observe",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [

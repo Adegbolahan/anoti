@@ -1,0 +1,117 @@
+#!/bin/bash
+# review-debt add <session-id> <subject...> | list | close <id> <note...> | defer <id> <reason...> | observe  -- the single reader/writer of <state-dir>/review-debt.tsv (adversarial-review obligations as tracked, aged debt; spec docs/specs/2026-08-19-review-debt-design.md)
+# Columns (7, tab-separated, no header): id created session subject status status_date note
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+. "$SELF/store-resolve"
+. "$SELF/store-lock"
+usage() { echo "review-debt: usage: review-debt add <session-id> <subject...> | list | close <id> <note...> | defer <id> <reason...> | observe" >&2; exit 1; }
+sub="${1:-}"; [ "$#" -gt 0 ] && shift
+
+# 0 if every non-empty line has exactly 7 fields, an R<n> id, a dated created column
+# and a known status; a MISSING file is not a shape failure (callers distinguish)
+rd_shape_ok() {
+  [ -f "$1" ] || return 0
+  awk -F'\t' '
+    NF == 0 { next }
+    NF != 7 { bad = 1; exit }
+    $1 !~ /^R[0-9]+$/ { bad = 1; exit }
+    $2 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/ { bad = 1; exit }
+    $5 != "open" && $5 != "deferred" && $5 != "closed" { bad = 1; exit }
+    END { exit bad ? 1 : 0 }
+  ' "$1"
+}
+flat() { printf '%s' "$1" | tr '\n\t' '  ' | sed 's/^ *//;s/ *$//'; }
+tel() { # action id subject
+  [ -d "$AD" ] || return 0
+  printf '%s\t%s\treview-debt\t%s\t%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${TSID:-?}" "$1" "$2" "$3" >> "$AD/telemetry.log" 2>/dev/null || true
+}
+# atomic replace preserving mode; refuses a result that fails the shape check
+commit_tmp() { # file tmp
+  rd_shape_ok "$2" || { rm -f "$2"; echo "review-debt: result failed shape validation; ledger untouched" >&2; return 1; }
+  pm="$(stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1" 2>/dev/null || echo "")"
+  [ -n "$pm" ] && chmod "$pm" "$2" 2>/dev/null
+  mv "$2" "$1"
+}
+# add_row <sid> <subject> -> prints id (existing id when an open/deferred row already names the subject)
+add_row() {
+  lock_store "$ff" || return 1
+  trap 'unlock_store "$ff"' EXIT
+  [ -f "$ff" ] || : > "$ff"
+  rd_shape_ok "$ff" || { echo "review-debt: review-debt.tsv is present but not parseable; refusing to write" >&2; return 1; }
+  ex="$(awk -F'\t' -v s="$2" '($5=="open"||$5=="deferred") && $4==s {print $1; exit}' "$ff")"
+  if [ -n "$ex" ]; then printf '%s\n' "$ex"; return 0; fi
+  n="$(awk -F'\t' 'NF==7 { sub(/^R/,"",$1); if ($1+0>m) m=$1+0 } END { print m+1 }' "$ff")"
+  today="$(date -u +%F)"
+  { cat "$ff"; printf 'R%s\t%s\t%s\t%s\topen\t%s\t\n' "$n" "$today" "$1" "$2" "$today"; } > "$ff.tmp.$$"
+  commit_tmp "$ff" "$ff.tmp.$$" || return 1
+  TSID="$1"; tel add "R$n" "$2"
+  printf 'R%s\n' "$n"
+}
+# set_status <id> <status> <note> -- refuses unknown ids and closed rows
+set_status() {
+  lock_store "$ff" || return 1
+  trap 'unlock_store "$ff"' EXIT
+  [ -f "$ff" ] || { echo "review-debt: no review-debt.tsv; nothing to $2" >&2; return 1; }
+  rd_shape_ok "$ff" || { echo "review-debt: review-debt.tsv is present but not parseable; refusing to write" >&2; return 1; }
+  cur="$(awk -F'\t' -v id="$1" '$1==id {print $5; exit}' "$ff")"
+  [ -n "$cur" ] || { echo "review-debt: no row '$1'" >&2; return 1; }
+  [ "$cur" != "closed" ] || { echo "review-debt: $1 is already closed" >&2; return 1; }
+  today="$(date -u +%F)"
+  export RD_NOTE="$3"
+  awk -F'\t' -v id="$1" -v st="$2" -v today="$today" 'BEGIN{OFS="\t"} $1==id { $5=st; $6=today; $7=ENVIRON["RD_NOTE"] } {print}' "$ff" > "$ff.tmp.$$"
+  commit_tmp "$ff" "$ff.tmp.$$" || return 1
+  subj="$(awk -F'\t' -v id="$1" '$1==id {print $4; exit}' "$ff")"
+  TSID="$(awk -F'\t' -v id="$1" '$1==id {print $3; exit}' "$ff")"; tel "$2" "$1" "$subj"
+  printf '%s\n' "$1"
+}
+
+case "$sub" in
+  add)
+    sid="${1:?session id required}"; shift
+    subject="$(flat "$*")"; [ -n "$subject" ] || { echo "review-debt: subject required" >&2; exit 1; }
+    AD="$("$SELF/anoti-dir" --require)" || exit 1   # writers require anchoring (G003)
+    ff="$AD/review-debt.tsv"
+    add_row "$sid" "$subject" ;;
+  list)
+    AD="$("$SELF/anoti-dir" 2>/dev/null)" || AD=".anoti"
+    ff="$AD/review-debt.tsv"
+    if ! fx "$ff"; then echo "review-debt: no review-debt.tsv yet (no review debt)"; exit 0; fi
+    rd_shape_ok "$ff" || { echo "review-debt: review-debt.tsv is present but not parseable" >&2; exit 1; }
+    printf 'id\tcreated\tsession\tsubject\tstatus\tstatus_date\tnote\n'
+    cat "$ff"
+    exit 0 ;;
+  close|defer)
+    id="${1:?row id required}"; shift
+    note="$(flat "$*")"
+    if [ "$sub" = "defer" ] && [ -z "$note" ]; then echo "review-debt: defer requires a written reason — a deferral without one is the silent skip this ledger exists to prevent" >&2; exit 1; fi
+    AD="$("$SELF/anoti-dir" --require)" || exit 1
+    ff="$AD/review-debt.tsv"
+    st=closed; [ "$sub" = "defer" ] && st=deferred
+    set_status "$id" "$st" "$note" ;;
+  observe)
+    # PostToolUse hook mode: a Write of a .md file directly under the project's
+    # spec dir files a spec -> open a row. Silent, fail-open, never blocks.
+    input="$(cat 2>/dev/null || true)"
+    tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null || true)"
+    [ "$tool" = "Write" ] || exit 0
+    p="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)"
+    [ -n "$p" ] || exit 0
+    case "$p" in *.md) ;; *) exit 0 ;; esac
+    AD="$("$SELF/anoti-dir" --require 2>/dev/null)" || exit 0
+    # the written path resolves from the hook's cwd (Write paths are absolute in
+    # practice); the spec dir resolves from the PROJECT ROOT — both physical
+    pd="$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)" || exit 0
+    root="$(dirname "$AD")"
+    cd "$root" 2>/dev/null || exit 0
+    sd="$(cfgk spec_dir)"; [ -n "$sd" ] || sd=docs/specs
+    sd="${sd%/}"
+    sdp="$(cd "$sd" 2>/dev/null && pwd -P)" || exit 0
+    [ "$pd" = "$sdp" ] || exit 0
+    sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"; [ -n "$sid" ] || sid="?"
+    ff="$AD/review-debt.tsv"
+    rel="$sd/$(basename "$p")"
+    add_row "$sid" "$rel" >/dev/null 2>&1 || true
+    exit 0 ;;
+  *) usage ;;
+esac

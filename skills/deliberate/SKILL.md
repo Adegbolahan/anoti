@@ -57,9 +57,11 @@ writer throughout.
    main session.
 8. **Execution & synthesis** — builder roles per task, version control
    per the **git skill** (branching, worktrees for parallel workstreams,
-   explicit staging, human-gated integration); the main session
-   synthesizes; discoveries enter the consolidation episode machine
-   (episode → candidate-detected in session state).
+   explicit staging, human-gated integration); ready-for-review opens a
+   review-debt row (policy-adversarial-handoff) that the reviewer's
+   verdict closes; the main session synthesizes; discoveries enter the
+   consolidation episode machine (episode → candidate-detected in
+   session state).
 
 Record each hypothesis and each spawn mechanically as you go —
 `scripts/session-append <session-id> hypotheses < h.json` and

@@ -31,8 +31,10 @@ each run it.)
    trail only. A lesson id (`L:<hash>`) can never be named this way —
    lessons carry no `triggers:` of their own, so there is no pairing to
    suppress; naming one is silently rejected with a warning, not written.
-   Cite the moment. A retrospective that finds no friction in
-   nontrivial work is suspect, not clean.
+   Cite the moment. Also name any **review debt left open or deferred
+   this session** (`anoti review-debt list`) — each row by id, with the
+   deferral reason or the fact that none was written. A retrospective
+   that finds no friction in nontrivial work is suspect, not clean.
 3. **What should be skillified** — any procedure performed twice, or
    performed once with obvious generality: candidate for a skill, policy,
    or helper script. File as a TODOS entry naming the repeatable steps.

@@ -38,7 +38,11 @@ standard.
   matched tool call** (just-in-time recall, periodic frame re-anchor,
   an evidence-kind nudge, telemetry — silent by default, and it learns:
   pairs the retrospective marks irrelevant stop firing, visibly and
-  reversibly via `anoti feedback`), and a consolidation gate.
+  reversibly via `anoti feedback`), a consolidation gate, and a
+  **review-debt ledger** (`anoti review-debt`): adversarial review owed
+  on a filed spec or a ready-for-review batch is tracked, aged in the
+  digest, blocks the Stop hook once and makes integration ask until it
+  is closed by a verdict or deferred with a written reason.
 - **Governed memory** (`GROUNDING.yaml`, schema v3): typed records
   (claim/preference/decision/goal/policy), separated epistemic and
   ratification status, append-only event logs, a generated index, and

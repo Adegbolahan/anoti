@@ -15,6 +15,7 @@
 | Stop hook (`consolidation-gate`)                 | candidate episodes                                | `/anoti:consolidate`                                                                                    |
 | PostToolUse/PostToolUseFailure hook (`presence`) | matched tool calls (Bash/Write/Edit/NotebookEdit) | JIT recall (filtered by adaptive suppression); periodic frame re-anchor; evidence-kind nudge; telemetry |
 | `scripts/feedback` (list/clear)                  | on demand, or via `mark-retrospect`'s named pairs | inspect/undo adaptive suppression — presence-feedback.tsv (project-level, gitignored)                   |
+| `scripts/review-debt` (add/list/close/defer)     | ready-for-review (handoff policy); spec filed under `spec_dir` (PostToolUse `observe`, matcher Write) | review-debt.tsv (project-level, gitignored) → digest line; Stop gate block-once; inhibit `ask` at integration while open |
 | Human commands                                   | on demand                                         | new, implement, review-work, update, review, recall, consolidate; anoti recall (mechanical pre-check)   |
 
 ## The spine (explicitly chained, never description-luck)

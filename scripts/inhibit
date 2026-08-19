@@ -94,6 +94,27 @@ case "$tool" in
       && ! printf '%s' "$c" | grep -qE 'localhost|127\.0\.0\.1'; then
       decide deny "catastrophic: destructive SQL against non-local target"
     fi
+    # review-debt ask (spec docs/specs/2026-08-19-review-debt-design.md §4.5):
+    # integration — git merge / gh pr merge on the default branch, or any git
+    # push — while the project has OPEN review debt asks with the owed subjects
+    # named. Deferred rows carry their reason already and do not re-ask; never
+    # deny (G004: inhibit cannot know this push IS that work's integration).
+    if [ -f "$AD/review-debt.tsv" ] && printf '%s' "$c" | grep -qE '(^|[;&| ])(git push|git merge|gh pr merge)([[:space:]]|$)'; then
+      integ=""
+      printf '%s' "$c" | grep -qE '(^|[;&| ])git push([[:space:]]|$)' && integ=1
+      if [ -z "$integ" ]; then
+        cb="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+        cdb="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"; cdb="${cdb#origin/}"
+        if [ -n "$cb" ] && { [ "$cb" = "${cdb:-main}" ] || [ "$cb" = "main" ] || [ "$cb" = "master" ]; }; then integ=1; fi
+      fi
+      if [ -n "$integ" ]; then
+        owed="$(awk -F'\t' 'NF==7 && $5=="open" { printf "%s %s; ", $1, $4; n++ } END { if (n) printf "\t%d", n }' "$AD/review-debt.tsv" 2>/dev/null)"
+        if [ -n "$owed" ]; then
+          tab="$(printf '\t')"; n="${owed##*"$tab"}"; subj="${owed%"$tab"*}"
+          decide ask "$n adversarial review(s) owed: ${subj%; } — review (anoti review-debt close <id> \"<verdict>\") or defer with a written reason (anoti review-debt defer <id> \"<reason>\") before integrating"
+        fi
+      fi
+    fi
     # ask row: consequential commands
     if printf '%s' "$c" | grep -qE '(^|[;&| ])(git push|npm publish|terraform (apply|destroy)|kubectl (delete|apply)|gh release|rm -r[a-zA-Z]* |git branch -[dD] +(main|master)([[:space:]]|$))'; then
       decide ask "consequential action — confirm it traces to the current goal"

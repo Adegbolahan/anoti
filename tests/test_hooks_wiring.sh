@@ -13,10 +13,12 @@ assert_eq "$(jq -r '.hooks.PostToolUseFailure[0].hooks[0].command' "$h")" "\${CL
 assert_eq "$(jq -r '.hooks.PostToolUse[0].hooks[0].timeout' "$h")" "5" "presence timeout 5s (PostToolUse)"
 assert_eq "$(jq -r '.hooks.PostToolUseFailure[0].hooks[0].timeout' "$h")" "5" "presence timeout 5s (PostToolUseFailure)"
 # every referenced script exists and is executable (resolve ${CLAUDE_PLUGIN_ROOT} to repo root)
-for cmd in $(jq -r '.. | .command? // empty' "$h"); do
+# a command may carry an argument (review-debt observe): check its first word
+while IFS= read -r cmd; do
+  cmd="${cmd%% *}"
   real="${cmd/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}"
   [ -x "$real" ]; assert_ok $? "wired script exists+executable: $real"
-done
+done < <(jq -r '.. | .command? // empty' "$h")
 n="$(printf '{"session_id":"w","prompt":"refactor the auth module and change the session policy"}' | "$ROOT/scripts/classify" | jq -r '.hookSpecificOutput.additionalContext' | wc -l | tr -d ' ')"
 [ "$n" -le 10 ]; assert_ok $? "classifier injection is <= 10 lines (attention tax)"
 printf '{"session_id":"w","prompt":"refactor the auth module and change the session policy"}' | "$ROOT/scripts/classify" | jq -r '.hookSpecificOutput.additionalContext' | grep -q "SLOW if"

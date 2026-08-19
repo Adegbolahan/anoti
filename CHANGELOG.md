@@ -3,6 +3,29 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.27] — 2026-08-19
+
+- **Review-debt ledger** (spec
+  docs/specs/2026-08-19-review-debt-design.md; motivated by D026, a
+  field retrospective where adversarial review was owed three times,
+  flagged four times, done zero times): `scripts/review-debt
+  add|list|close|defer|observe` is the single reader/writer of
+  `<state-dir>/review-debt.tsv` (project-level, gitignored; 7 columns;
+  shape-checked, locked writes). A spec filed by `Write` under
+  `spec_dir` opens a row mechanically (new PostToolUse hook entry,
+  matcher `Write`, `review-debt observe`); ready-for-review opens one by
+  hand (policy-adversarial-handoff step 1). Rows surface at session
+  start (`review debt: N open, M deferred — oldest …`), block the Stop
+  hook **once per session** while a row this session opened is still
+  open (consolidation-gate; deferred and other sessions' rows never
+  block), and make `git merge`/`gh pr merge` on the default branch and
+  `git push` **ask** with the owed subjects named while any row is open
+  (inhibit; never deny — G004). `defer` refuses an empty reason; `close`
+  refuses unknown and already-closed rows. Skills updated: handoff
+  policy, spec, deliberate step 8, policy-retrospect, demo routing row,
+  SKILL-MAP root row, README; longitudinal spec gains three
+  telemetry-only metrics (dated amendment).
+
 ## [0.5.26] — 2026-08-19
 
 - **Adaptive suppression** (ratified spec

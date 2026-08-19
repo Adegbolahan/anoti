@@ -229,6 +229,15 @@ spot-audit.
   Also adds §"Adaptive suppression KEEP/telemetry-only/REVERT" as a new,
   independent pre-registered gate for the suppression mechanism's own
   disposition (below).
+- 2026-08-19 (review debt) — amended per
+  `docs/specs/2026-08-19-review-debt-design.md` §4.7: three
+  **telemetry-only** metrics added to each weekly audit, read from
+  `<state-dir>/review-debt.tsv` and the `review-debt` telemetry rows —
+  open-row age (max days since `created` among `open`/`deferred` rows),
+  rows deferred / rows opened, rows closed / rows opened. No decision
+  rule changes; D026 (prose-only policies are self-graded) moves on the
+  ladder only through /anoti:review reading this data after at least
+  two audited weeks.
 
 ## Execution routing
 

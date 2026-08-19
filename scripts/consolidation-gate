@@ -1,5 +1,6 @@
 #!/bin/bash
-# Stop hook: block exactly once per episode when candidates await consolidation. Fail-open.
+# Stop hook: block exactly once per episode when candidates await consolidation;
+# block once per session while review debt this session opened is still open. Fail-open.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
@@ -7,13 +8,34 @@ input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
 [ -n "$sid" ] || exit 0
 [ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ] && exit 0
+# review debt (spec docs/specs/2026-08-19-review-debt-design.md §4.4): block
+# once per session while a row THIS session opened is still `open`. Runs only
+# when the consolidation check above did not block (one decision per stop);
+# deferred rows and other sessions' rows never block. Fail-open on a
+# malformed ledger.
+review_debt_block() {
+  rd="$AD/review-debt.tsv"
+  [ -f "$rd" ] || return 0
+  mk="$AD/sessions/$sid.review-debt-blocked"
+  [ -f "$mk" ] && return 0
+  # whole-file shape check inside the awk: any malformed non-empty line ->
+  # the ledger is treated as empty (fail-open; the helpers refuse to write
+  # through it too, so the two surfaces agree)
+  rows="$(awk -F'\t' -v s="$sid" 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||$2!~/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $3==s && $5=="open" { r=r $1 " " $4 "; "; i=i sep $1; sep="," } END { if (!bad && r!="") printf "%s\t%s", r, i }' "$rd" 2>/dev/null)"
+  [ -n "$rows" ] || return 0
+  tab="$(printf '\t')"; ids="${rows##*"$tab"}"; rows="${rows%"$tab"*}"
+  mkdir -p "$AD/sessions" 2>/dev/null; : > "$mk" 2>/dev/null
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "review-debt" "block" "$ids" >> "$AD/telemetry.log" 2>/dev/null || true
+  jq -n --arg r "anoti: adversarial review owed for work this session opened: ${rows%; } — run the reviewer and close the row (anoti review-debt close <id> \"<verdict>\"), or defer it with a written reason (anoti review-debt defer <id> \"<reason>\"). Silent skipping is the failure mode this gate exists to prevent (D026)." '{decision:"block",reason:$r}'
+  exit 0
+}
 sf="$AD/sessions/$sid.yaml"
-[ -f "$sf" ] || exit 0
+if [ ! -f "$sf" ]; then review_debt_block; exit 0; fi
 if ! yq -e '.' "$sf" >/dev/null 2>&1; then
   echo "anoti: session state unreadable ($sf) — failing open; repair or remove it" >&2
   exit 0
 fi
-[ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" = "candidate-detected" ] || exit 0
+if [ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" != "candidate-detected" ]; then review_debt_block; exit 0; fi
 yq '.episode = "awaiting-approval"' "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
 jq -n '{decision:"block",reason:"anoti: memory candidates await consolidation. Review the candidates in the session state file and run /anoti:consolidate to propose them to the human, or set episode: idle to skip."}'
 exit 0

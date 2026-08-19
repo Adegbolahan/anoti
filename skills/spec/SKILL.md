@@ -83,4 +83,8 @@ entries, not silent edits.
   scope check, ambiguity check — fix inline.
 - Specs of consequence get adversarial review before "done"
   (policy-adversarial-handoff); self-graded specs are the failure mode
-  this skill exists to prevent.
+  this skill exists to prevent. Filing a spec under `spec_dir` opens a
+  review-debt row mechanically (PostToolUse hook `review-debt observe`);
+  it closes when the review lands
+  (`anoti review-debt close <id> "<verdict>"`) or is deferred with a
+  written reason — never silently.

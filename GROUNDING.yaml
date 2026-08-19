@@ -122,6 +122,10 @@ index:
     type: "policy"
     topic: "anoti.orientation_currency"
     statement: "When a feature ships, the surfaces that teach it learn it in the same change: the demo skill's routing table, docs/SKILL-MAP.md, and README one-liners are updated alongside the CHANGELOG entry and version bump — never in a later reminder from the human. Mechanically: the currency test in tests/test_docs.sh gates what it can express; this record's triggers fire the reminder at release-edit time for the judgment-shaped rest."
+  - ref: "D026"
+    type: "claim"
+    topic: "anoti.advisory_policy_self_graded"
+    statement: "An operating policy that exists only as prose — no ledger, no surface, no gate — is self-graded in practice: under delivery pressure it is flagged and skipped rather than executed. Field observation 2026-08-19 (consumer project, qa/findings.yaml site): adversarial review was owed three times, flagged four times, done zero times, while the same session's gated or triggered mechanisms (JIT presence hit C042 at a findings.yaml write; G004) changed behaviour repeatedly."
 records: # generated — do not edit by hand
   - id: D001
     date: 2026-08-12
@@ -163,6 +167,22 @@ records: # generated — do not edit by hand
         action: promoted
         by: human
         note: probable -> established in /anoti:review — verify-then-promote ruling; literature evidence (different method) plus sampled external-source verification
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:skills/attend/|top-down feedback|attention bottleneck'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:skills/attend/|top-down feedback|attention bottleneck
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "edit:skills/attend/"
+      - "top-down feedback"
+      - "attention bottleneck"
   - id: D002
     date: 2026-08-12
     type: claim
@@ -203,6 +223,22 @@ records: # generated — do not edit by hand
         action: promoted
         by: human
         note: probable -> established in /anoti:review — verify-then-promote ruling; literature evidence (different method) plus external-source verification incl. verbatim frozen-weights confirmation
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): context window|frozen at training|token-prediction'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: context window|frozen at training|token-prediction
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "context window"
+      - "frozen at training"
+      - "token-prediction"
   - id: D003
     date: 2026-08-12
     type: claim
@@ -244,6 +280,22 @@ records: # generated — do not edit by hand
         action: reviewed
         by: human
         note: 'kept probable: evidence explicitly dependent on D001/D002 — no independent support (2026-08-15 ritual)'
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): working memory|long-term memory|diverge'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: working memory|long-term memory|diverge
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "working memory"
+      - "long-term memory"
+      - "diverge"
   - id: D004
     date: 2026-08-12
     type: claim
@@ -295,6 +347,22 @@ records: # generated — do not edit by hand
         action: reviewed
         by: human
         note: 'kept probable: Q001 pilot tension (no accuracy separation at 8-fact scale) unresolved (2026-08-15 ritual)'
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): notation|training priors|edit:templates/'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: notation|training priors|edit:templates/
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "notation"
+      - "training priors"
+      - "edit:templates/"
   - id: D005
     date: 2026-08-13
     type: claim
@@ -322,6 +390,22 @@ records: # generated — do not edit by hand
         action: promoted
         by: human
         note: 'review ritual 2026-08-15: independence criterion met — multi-project field operation (group A ruling)'
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:scripts/recall|edit:scripts/retrieve|index-based recall'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:scripts/recall|edit:scripts/retrieve|index-based recall
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "edit:scripts/recall"
+      - "edit:scripts/retrieve"
+      - "index-based recall"
   - id: D006
     date: 2026-08-13
     type: decision
@@ -343,6 +427,21 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:roles/|model: haiku'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: 'edit:roles/|model: haiku'
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'
+    triggers:
+      - "edit:roles/"
+      - "model: haiku"
   - id: D007
     date: 2026-08-13
     type: decision
@@ -364,6 +463,22 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:roles/performance|builder-class|reviewer-class'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:roles/performance|builder-class|reviewer-class
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "edit:roles/performance"
+      - "builder-class"
+      - "reviewer-class"
   - id: D008
     date: 2026-08-13
     type: claim
@@ -393,6 +508,22 @@ records: # generated — do not edit by hand
         action: promoted
         by: human
         note: 'review ritual 2026-08-15: independence criterion met — repeated framed work across sessions and projects (group A ruling)'
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:scripts/classify|slow verdict|edit:skills/attend/'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:scripts/classify|slow verdict|edit:skills/attend/
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "edit:scripts/classify"
+      - "slow verdict"
+      - "edit:skills/attend/"
   - id: D009
     date: 2026-08-13
     type: claim
@@ -426,6 +557,22 @@ records: # generated — do not edit by hand
       - {date: 2026-08-13, action: ratified, by: human, note: approved in review}
       - {date: 2026-08-13, action: evidence-appended, by: session, note: "second end-to-end run, sample-app cascade; approved in consolidation"}
       - {date: 2026-08-13, action: promoted, by: human, note: "probable -> established in /anoti:review — two independent sessions (v1.1 role-set run outside-relayed, sample-app cascade self-reported with inspectable artifacts), distinct task types"}
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:hooks/hooks.json|consolidation-gate|Stop gate'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:hooks/hooks.json|consolidation-gate|Stop gate
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "edit:hooks/hooks.json"
+      - "consolidation-gate"
+      - "Stop gate"
   - id: D010
     date: 2026-08-13
     type: claim
@@ -454,6 +601,21 @@ records: # generated — do not edit by hand
         action: reviewed
         by: human
         note: 'kept probable: single trial with two caveats; needs a second independent dispatch (2026-08-15 ritual)'
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:roles/support|reproduce-and-translate'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:roles/support|reproduce-and-translate
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'
+    triggers:
+      - "edit:roles/support"
+      - "reproduce-and-translate"
   - id: D011
     date: 2026-08-13
     type: decision
@@ -474,6 +636,22 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: approved in consolidation}
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): fix round|message-resume|edit:skills/deliberate/'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: fix round|message-resume|edit:skills/deliberate/
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'
+    triggers:
+      - "fix round"
+      - "message-resume"
+      - "edit:skills/deliberate/"
   - id: D012
     date: 2026-08-13
     type: decision
@@ -485,19 +663,35 @@ records: # generated — do not edit by hand
     events:
       - {date: 2026-08-13, action: created, by: session}
       - {date: 2026-08-13, action: ratified, by: human, note: "they should live in docs/"}
-  - {"id": "D013", "date": "2026-08-13", "type": "decision", "topic": "anoti.role_tools_deferral", "statement": "Per-role tools allowlists and effort defaults are deliberately deferred: the practitioner inherits session tools, boundary enforcement lives in the inhibition decision table and native permissions, and per-role allowlists wait for evidence of need.", "ratification": "approved", "source": {"type": "conversation", "context": "Q003 ruling, review follow-up"}, "rationale": "YAGNI: 23 unverifiable frontmatter fields add contract surface without a demonstrated failure; revisit if a role-boundary violation is observed live.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "defer with recorded decision"}]}
-  - {"id": "D014", "date": "2026-08-13", "type": "claim", "topic": "anoti.pilot_sequence1", "statement": "In benchmark pilot sequence 1, anoti showed no measurable advantage over vanilla Claude Code or instructions-only on the trap metrics: both traps ceilinged (all three arms caught the contradiction and used the revised retention value), the recall metric was unmeasurable (interactive points never executed), and arm B ran degraded (human-absent, no store ever bootstrapped).", "epistemic_status": "established", "ratification": "approved", "source": {"type": "experiment", "context": "pre-registered H1-H3 pilot, sequence 1"}, "evidence": [{"date": "2026-08-13", "type": "experiment", "note": "Blinded per-arm grading against the planted answer key; decision rules applied as frozen: H1 against-with-ambiguity, H2 against-with-ambiguity, H3 untestable. Ceiling effect and degraded arm B stated as the ambiguity.", "refs": ["docs/trials/2026-08-13-h1h3-armA/GRADES.md", "docs/trials/2026-08-13-h1h3-armB/GRADES.md", "docs/trials/2026-08-13-h1h3-armC/GRADES.md", "docs/trials/2026-08-13-h1h3-INTERACTIVE-GAP-NOTE.md", "docs/specs/2026-08-13-exp-h1-h3-benchmark.md"]}], "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix directive (we should fix the issues identified) treats findings as real; recorded accordingly"}, {date: "2026-08-15", action: promoted, by: human, note: 'review ritual 2026-08-15 group C ruling: bounded historical claim, pre-registered blinded evidence complete by construction'}]}
-  - {"id": "D015", "date": "2026-08-13", "type": "claim", "topic": "anoti.classifier_headless", "statement": "The UserPromptSubmit classifier under-triggered in headless mode before 0.3.1: zero slow verdicts across nine arm-B sessions including a nontrivial policy-trap prompt, while the model still caught the trap in-context.", "epistemic_status": "established", "ratification": "approved", "source": {"type": "experiment", "context": "arm B telemetry, pilot sequence 1"}, "evidence": [{"date": "2026-08-13", "type": "observation", "note": "Telemetry confusion counts: nontrivial recall 0/5, trivial specificity 2/2; the S4 trap rationale read the prompt as routine. Fix shipped in 0.3.1 (concrete slow criteria; headless applies identically) - claim covers pre-0.3.1 behavior; post-fix behavior needs its own measurement.", "refs": ["docs/trials/2026-08-13-h1h3-armB/telemetry.log", "docs/trials/2026-08-13-h1h3-armB/GRADES.md"]}], "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix directive; defect fixed in 66e0a98"}, {date: "2026-08-15", action: promoted, by: human, note: 'review ritual 2026-08-15 group C ruling: bounded historical claim, mechanical telemetry complete; 0.3.1 fix operating since corroborates the diagnosis'}]}
-  - {"id": "D016", "date": "2026-08-13", "type": "decision", "topic": "anoti.state_dir", "statement": "The project state directory is configurable per project: resolution order ANOTI_DIR env var, then .claude/anoti.local.md frontmatter state_dir, then default .anoti — always project-relative; the global memory tier at ~/.claude/anoti resolves separately and the two are never conflated.", "ratification": "approved", "source": {"type": "conversation", "context": "user request relayed from live session; implemented same day"}, "rationale": "Single resolution point (scripts/anoti-dir) instead of eight hardcodes; gitignore follows the resolved dir; tier-collision concern answered by forbidding home-relative resolution.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "requested the capability; default unchanged"}]}
-  - {"id": "D017", "date": "2026-08-13", "type": "decision", "topic": "anoti.repo_takeover", "statement": "anoti replaced the getting-started-claude repository on the same remote, renamed to github.com/Adegbolahan/anoti: project-scaffolder deprecated with its four workflow commands adopted anoti-native (/new, /implement, /review-work, /update), its CI/CHANGELOG/marketplace discipline absorbed, old v3.x tags preserved for pinned installs, and the replacement executed as a no-force branch swap.", "ratification": "approved", "source": {"type": "conversation", "context": "human directive: option C, deprecate, take the four commands if they integrate"}, "rationale": "Marketplace continuity on a known URL (GitHub redirects the old name); scaffolder users keep working tags; anoti gains battle-tested release infrastructure; no force-push needed, honoring the deny-list.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "option C chosen; rename to anoti requested"}]}
-  - {"id": "D018", "date": "2026-08-13", "type": "decision", "topic": "anoti.sequence2_ruling", "statement": "Benchmark sequence 2 is not run: sequence 1 verdicts stand as the standing synthetic result (D014), and the continuing test becomes a pre-registered longitudinal observational protocol over this repository real work — weekly trail audits counting contradiction incidents, bad-memory events, and recall successes.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling after decision-support presentation"}, "rationale": "Three experiments ceilinged identically: synthetic traps below strong-model native competence measure the model, not the methodology. Rebuilding above the ceiling is an arms race; real long-horizon work is above it by construction. Observational honesty over synthetic theater.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "accept + longitudinal protocol"}]}
-  - {"id": "D019", "date": "2026-08-13", "type": "decision", "topic": "anoti.recall_metric_ruling", "statement": "Recall successes in the longitudinal audit count textual record-ID citations only. An artifact that implements a record without naming it is a citation-discipline gap to fix in the artifact (policy-epistemic: artifacts cite what they implement, by ID), never a recall success to award.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling on GitHub issue #4: option (a), citation-discipline"}, "rationale": "Counting silent implementations would reward invisible coupling and make the metric a judgment call; making in-text citation the norm keeps the count mechanical and the trail auditable. The incentive is now chosen, not accidental.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix them, for 4. a"}]}
-  - {"id": "D020", "date": "2026-08-13", "type": "policy", "topic": "anoti.branch_protection", "statement": "No edit actions on the default branch: implementation lands on a feature branch or a worktree. The inhibition hook enforces this mechanically — Edit/Write/NotebookEdit on tracked files is denied while HEAD is on main/master (or origin/HEAD); gitignored paths and episode-gated memory-organ writes pass; the human override is touch <state-dir>/allow-default-branch.", "ratification": "approved", "source": {"type": "conversation", "context": "human directive mid-session 2026-08-13: 'we need to make sure that not edit action on main branch or default branch — either a worktree or feature branch'"}, "rationale": "The git skill already stated the norm; norms without mechanism decay under pressure. The hook makes the safe path the only unattended path while keeping consolidation (episode-gated) and state-dir writes unaffected, and the override keeps the human in charge.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "instruction-is-ratification: direct user directive"}]}
-  - {"id": "D021", "date": "2026-08-13", "type": "policy", "topic": "anoti.candidate_consumption", "statement": "Session-state candidates are consumed by mark-applied, never deletion: scripts/session-consume sets applied: true + applied_date, and consolidation collects only unapplied entries. No flow may instruct a raw session-YAML edit; every state write the skills mandate has a helper.", "ratification": "approved", "source": {"type": "conversation", "context": "issue #9 field report (livingsyncs, real candidate loss from interleaved raw clearing writes); human approved the batch proposal naming the mark-applied direction"}, "rationale": "Deletion destroys the audit trail and invites the exact clobbering that lost a candidate in the field; marking keeps history inspectable and makes consumption idempotent. The 0.5.2 rule — mandated writes get helpers — now covers the consume side too.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "proceed on the batch proposal"}], evidence: [{date: "2026-08-14", type: observation, note: 'Principle held under a third field test: issue #10 showed the review ritual''s ratification and status decisions had no field-writing helper (append-event only logs), so the documented flow silently did nothing — closed by set-ratification/set-status with append-record''s full contract. Same batch closed the wildcard-equality audit: all record-id lookups now resolve via the shared record-index exact matcher.', refs: ["gh issue #10", "scripts/set-ratification", "scripts/set-status", "scripts/record-index"]}]}
-  - {"id": "D022", "date": "2026-08-15", "type": "decision", "topic": "anoti.no_mcp_front", "statement": "anoti's helpers are not fronted by an MCP server: the scripts remain the plugin's only interface. Typed MCP fronting was assessed (discoverability, typed args, permission ergonomics, write serialization) and ruled out by the human; the hooks are shell by harness contract and the scripts stay the single source of truth for hooks, humans, CI, and degraded environments.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling 2026-08-15: 'we not doing the MCP Stuff'"}, "rationale": "A server process would fork the source of truth the hooks share and add a runtime dependency whose failure takes every memory write down with it — against fail-open. The assessed benefits do not outweigh substrate simplicity at current scale.", "events": [{"date": "2026-08-15", "action": "created", "by": "session"}, {"date": "2026-08-15", "action": "ratified", "by": "human", "note": "explicit ruling; group D approval"}]}
-  - {"id": "D023", "date": "2026-08-15", "type": "claim", "epistemic_status": "probable", "topic": "anoti.adversarial_review_efficacy", "statement": "Adversarial reviewer spawns on builder batches catch real, execution-verified defects before integration at a rate that justifies their cost: in one session, six of six pre-integration skeptic reviews refuted the builder's draft with reproducible findings (mechanical gaps, false doc claims, data-corrupting edges), every one fixed before merge.", "ratification": "approved", "source": {"type": "observation", "context": "session 60267002 releases 0.5.5-0.5.11, six skeptic dispatches"}, "rationale": "Six-for-six across independent batches in one session is strong but single-session evidence; probable until other sessions or projects replicate the rate.", "evidence": [{"date": "2026-08-15", "type": "observation", "note": "Six skeptic reports, six refutations with execution-verified findings, six fix-round commits: feedback skill (consolidate-claim gap), issues 7-9 batch (glob expansion, marker swallowing, unmandated consume), demo skill (six findings incl. sandbox defeat), issues 10-11 (global-trust masking, stale doc, missing type guard, untested regen), lessons surfacing (stale spec enumeration, unpinned case-exactness), issue 13 (two live stray-store paths).", "refs": ["commits 4208269 ac2a35a c29234c e3fbfdd 41f96d7 2aa8689"]}], "events": [{"date": "2026-08-15", "action": "created", "by": "session"}, {"date": "2026-08-15", "action": "ratified", "by": "human", "note": "group D approval"}]}
-  - {"id": "D024", "date": "2026-08-15", "type": "policy", "topic": "anoti.single_pending_surface", "statement": "pending.md is the single human-absent surface: every queue that defers a human decision stores its documents wherever it likes but appends one pointer line to <state-dir>/pending.md, which the SessionStart digest announces until the human rules. No second human-absent surface may be introduced.", "ratification": "approved", "source": {"type": "conversation", "context": "designed in the 0.5.5 feedback-skill review fix round; flagged for ratification at consolidation, approved 2026-08-15 group D"}, "rationale": "Two queues means one silently rots; a single announced surface makes deferred gates impossible to lose. The feedback drafts queue set the precedent (documents in feedback/, pointer in pending.md).", "events": [{"date": "2026-08-15", "action": "created", "by": "session"}, {"date": "2026-08-15", "action": "ratified", "by": "human", "note": "group D approval"}]}
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 'JIT recall backfill (/anoti:update step 4b): edit:skills/skillify/|edit:templates/'
+      - date: "2026-08-19"
+        action: trigger-removed
+        by: session
+        note: edit:skills/skillify/|edit:templates/
+      - date: "2026-08-19"
+        action: trigger-added
+        by: session
+        note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'
+    triggers:
+      - "edit:skills/skillify/"
+      - "edit:templates/"
+  - {"id": "D013", "date": "2026-08-13", "type": "decision", "topic": "anoti.role_tools_deferral", "statement": "Per-role tools allowlists and effort defaults are deliberately deferred: the practitioner inherits session tools, boundary enforcement lives in the inhibition decision table and native permissions, and per-role allowlists wait for evidence of need.", "ratification": "approved", "source": {"type": "conversation", "context": "Q003 ruling, review follow-up"}, "rationale": "YAGNI: 23 unverifiable frontmatter fields add contract surface without a demonstrated failure; revisit if a role-boundary violation is observed live.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "defer with recorded decision"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): edit:roles/|allowed-tools|allowlist'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'edit:roles/|allowed-tools|allowlist'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["edit:roles/", "allowed-tools", "allowlist"]}
+  - {"id": "D014", "date": "2026-08-13", "type": "claim", "topic": "anoti.pilot_sequence1", "statement": "In benchmark pilot sequence 1, anoti showed no measurable advantage over vanilla Claude Code or instructions-only on the trap metrics: both traps ceilinged (all three arms caught the contradiction and used the revised retention value), the recall metric was unmeasurable (interactive points never executed), and arm B ran degraded (human-absent, no store ever bootstrapped).", "epistemic_status": "established", "ratification": "approved", "source": {"type": "experiment", "context": "pre-registered H1-H3 pilot, sequence 1"}, "evidence": [{"date": "2026-08-13", "type": "experiment", "note": "Blinded per-arm grading against the planted answer key; decision rules applied as frozen: H1 against-with-ambiguity, H2 against-with-ambiguity, H3 untestable. Ceiling effect and degraded arm B stated as the ambiguity.", "refs": ["docs/trials/2026-08-13-h1h3-armA/GRADES.md", "docs/trials/2026-08-13-h1h3-armB/GRADES.md", "docs/trials/2026-08-13-h1h3-armC/GRADES.md", "docs/trials/2026-08-13-h1h3-INTERACTIVE-GAP-NOTE.md", "docs/specs/2026-08-13-exp-h1-h3-benchmark.md"]}], "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix directive (we should fix the issues identified) treats findings as real; recorded accordingly"}, {date: "2026-08-15", action: promoted, by: human, note: 'review ritual 2026-08-15 group C ruling: bounded historical claim, pre-registered blinded evidence complete by construction'}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): edit:benchmark/|sequence 1'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'edit:benchmark/|sequence 1'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'}], triggers: ["edit:benchmark/", "sequence 1"]}
+  - {"id": "D015", "date": "2026-08-13", "type": "claim", "topic": "anoti.classifier_headless", "statement": "The UserPromptSubmit classifier under-triggered in headless mode before 0.3.1: zero slow verdicts across nine arm-B sessions including a nontrivial policy-trap prompt, while the model still caught the trap in-context.", "epistemic_status": "established", "ratification": "approved", "source": {"type": "experiment", "context": "arm B telemetry, pilot sequence 1"}, "evidence": [{"date": "2026-08-13", "type": "observation", "note": "Telemetry confusion counts: nontrivial recall 0/5, trivial specificity 2/2; the S4 trap rationale read the prompt as routine. Fix shipped in 0.3.1 (concrete slow criteria; headless applies identically) - claim covers pre-0.3.1 behavior; post-fix behavior needs its own measurement.", "refs": ["docs/trials/2026-08-13-h1h3-armB/telemetry.log", "docs/trials/2026-08-13-h1h3-armB/GRADES.md"]}], "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix directive; defect fixed in 66e0a98"}, {date: "2026-08-15", action: promoted, by: human, note: 'review ritual 2026-08-15 group C ruling: bounded historical claim, mechanical telemetry complete; 0.3.1 fix operating since corroborates the diagnosis'}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): edit:scripts/classify|headless|UserPromptSubmit'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'edit:scripts/classify|headless|UserPromptSubmit'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["edit:scripts/classify", "headless", "UserPromptSubmit"]}
+  - {"id": "D016", "date": "2026-08-13", "type": "decision", "topic": "anoti.state_dir", "statement": "The project state directory is configurable per project: resolution order ANOTI_DIR env var, then .claude/anoti.local.md frontmatter state_dir, then default .anoti — always project-relative; the global memory tier at ~/.claude/anoti resolves separately and the two are never conflated.", "ratification": "approved", "source": {"type": "conversation", "context": "user request relayed from live session; implemented same day"}, "rationale": "Single resolution point (scripts/anoti-dir) instead of eight hardcodes; gitignore follows the resolved dir; tier-collision concern answered by forbidding home-relative resolution.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "requested the capability; default unchanged"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): ANOTI_DIR|state_dir|edit:scripts/anoti-dir'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'ANOTI_DIR|state_dir|edit:scripts/anoti-dir'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["ANOTI_DIR", "state_dir", "edit:scripts/anoti-dir"]}
+  - {"id": "D017", "date": "2026-08-13", "type": "decision", "topic": "anoti.repo_takeover", "statement": "anoti replaced the getting-started-claude repository on the same remote, renamed to github.com/Adegbolahan/anoti: project-scaffolder deprecated with its four workflow commands adopted anoti-native (/new, /implement, /review-work, /update), its CI/CHANGELOG/marketplace discipline absorbed, old v3.x tags preserved for pinned installs, and the replacement executed as a no-force branch swap.", "ratification": "approved", "source": {"type": "conversation", "context": "human directive: option C, deprecate, take the four commands if they integrate"}, "rationale": "Marketplace continuity on a known URL (GitHub redirects the old name); scaffolder users keep working tags; anoti gains battle-tested release infrastructure; no force-push needed, honoring the deny-list.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "option C chosen; rename to anoti requested"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): getting-started-claude|project-scaffolder|bash:push --force'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'getting-started-claude|project-scaffolder|bash:push --force'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["getting-started-claude", "project-scaffolder", "bash:push --force"]}
+  - {"id": "D018", "date": "2026-08-13", "type": "decision", "topic": "anoti.sequence2_ruling", "statement": "Benchmark sequence 2 is not run: sequence 1 verdicts stand as the standing synthetic result (D014), and the continuing test becomes a pre-registered longitudinal observational protocol over this repository real work — weekly trail audits counting contradiction incidents, bad-memory events, and recall successes.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling after decision-support presentation"}, "rationale": "Three experiments ceilinged identically: synthetic traps below strong-model native competence measure the model, not the methodology. Rebuilding above the ceiling is an arms race; real long-horizon work is above it by construction. Observational honesty over synthetic theater.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "accept + longitudinal protocol"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): edit:benchmark/|sequence 2'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'edit:benchmark/|sequence 2'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'}], triggers: ["edit:benchmark/", "sequence 2"]}
+  - {"id": "D019", "date": "2026-08-13", "type": "decision", "topic": "anoti.recall_metric_ruling", "statement": "Recall successes in the longitudinal audit count textual record-ID citations only. An artifact that implements a record without naming it is a citation-discipline gap to fix in the artifact (policy-epistemic: artifacts cite what they implement, by ID), never a recall success to award.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling on GitHub issue #4: option (a), citation-discipline"}, "rationale": "Counting silent implementations would reward invisible coupling and make the metric a judgment call; making in-text citation the norm keeps the count mechanical and the trail auditable. The incentive is now chosen, not accidental.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "fix them, for 4. a"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): recall success|longitudinal audit|edit:commands/audit.md'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'recall success|longitudinal audit|edit:commands/audit.md'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["recall success", "longitudinal audit", "edit:commands/audit.md"]}
+  - {"id": "D020", "date": "2026-08-13", "type": "policy", "topic": "anoti.branch_protection", "statement": "No edit actions on the default branch: implementation lands on a feature branch or a worktree. The inhibition hook enforces this mechanically — Edit/Write/NotebookEdit on tracked files is denied while HEAD is on main/master (or origin/HEAD); gitignored paths and episode-gated memory-organ writes pass; the human override is touch <state-dir>/allow-default-branch.", "ratification": "approved", "source": {"type": "conversation", "context": "human directive mid-session 2026-08-13: 'we need to make sure that not edit action on main branch or default branch — either a worktree or feature branch'"}, "rationale": "The git skill already stated the norm; norms without mechanism decay under pressure. The hook makes the safe path the only unattended path while keeping consolidation (episode-gated) and state-dir writes unaffected, and the override keeps the human in charge.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "instruction-is-ratification: direct user directive"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): allow-default-branch|bash:git switch|bash:checkout -b'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'allow-default-branch|bash:git switch|bash:checkout -b'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["allow-default-branch", "bash:git switch", "bash:checkout -b"]}
+  - {"id": "D021", "date": "2026-08-13", "type": "policy", "topic": "anoti.candidate_consumption", "statement": "Session-state candidates are consumed by mark-applied, never deletion: scripts/session-consume sets applied: true + applied_date, and consolidation collects only unapplied entries. No flow may instruct a raw session-YAML edit; every state write the skills mandate has a helper.", "ratification": "approved", "source": {"type": "conversation", "context": "issue #9 field report (livingsyncs, real candidate loss from interleaved raw clearing writes); human approved the batch proposal naming the mark-applied direction"}, "rationale": "Deletion destroys the audit trail and invites the exact clobbering that lost a candidate in the field; marking keeps history inspectable and makes consumption idempotent. The 0.5.2 rule — mandated writes get helpers — now covers the consume side too.", "events": [{"date": "2026-08-13", "action": "created", "by": "session"}, {"date": "2026-08-13", "action": "ratified", "by": "human", "note": "proceed on the batch proposal"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): session-consume|applied_date|edit:skills/consolidate/'}, {date: "2026-08-19", action: trigger-removed, by: session, note: 'session-consume|applied_date|edit:skills/consolidate/'}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], evidence: [{date: "2026-08-14", type: observation, note: 'Principle held under a third field test: issue #10 showed the review ritual''s ratification and status decisions had no field-writing helper (append-event only logs), so the documented flow silently did nothing — closed by set-ratification/set-status with append-record''s full contract. Same batch closed the wildcard-equality audit: all record-id lookups now resolve via the shared record-index exact matcher.', refs: ["gh issue #10", "scripts/set-ratification", "scripts/set-status", "scripts/record-index"]}], triggers: ["session-consume", "applied_date", "edit:skills/consolidate/"]}
+  - {"id": "D022", "date": "2026-08-15", "type": "decision", "topic": "anoti.no_mcp_front", "statement": "anoti's helpers are not fronted by an MCP server: the scripts remain the plugin's only interface. Typed MCP fronting was assessed (discoverability, typed args, permission ergonomics, write serialization) and ruled out by the human; the hooks are shell by harness contract and the scripts stay the single source of truth for hooks, humans, CI, and degraded environments.", "ratification": "approved", "source": {"type": "conversation", "context": "human ruling 2026-08-15: 'we not doing the MCP Stuff'"}, "rationale": "A server process would fork the source of truth the hooks share and add a runtime dependency whose failure takes every memory write down with it — against fail-open. The assessed benefits do not outweigh substrate simplicity at current scale.", "events": [{"date": "2026-08-15", "action": "created", "by": "session"}, {"date": "2026-08-15", "action": "ratified", "by": "human", "note": "explicit ruling; group D approval"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): mcp server|.mcp.json'}, {date: "2026-08-19", action: trigger-removed, by: session, note: mcp server|.mcp.json}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'}], triggers: ["mcp server", ".mcp.json"]}
+  - {"id": "D023", "date": "2026-08-15", "type": "claim", "epistemic_status": "probable", "topic": "anoti.adversarial_review_efficacy", "statement": "Adversarial reviewer spawns on builder batches catch real, execution-verified defects before integration at a rate that justifies their cost: in one session, six of six pre-integration skeptic reviews refuted the builder's draft with reproducible findings (mechanical gaps, false doc claims, data-corrupting edges), every one fixed before merge.", "ratification": "approved", "source": {"type": "observation", "context": "session 60267002 releases 0.5.5-0.5.11, six skeptic dispatches"}, "rationale": "Six-for-six across independent batches in one session is strong but single-session evidence; probable until other sessions or projects replicate the rate.", "evidence": [{"date": "2026-08-15", "type": "observation", "note": "Six skeptic reports, six refutations with execution-verified findings, six fix-round commits: feedback skill (consolidate-claim gap), issues 7-9 batch (glob expansion, marker swallowing, unmandated consume), demo skill (six findings incl. sandbox defeat), issues 10-11 (global-trust masking, stale doc, missing type guard, untested regen), lessons surfacing (stale spec enumeration, unpinned case-exactness), issue 13 (two live stray-store paths).", "refs": ["commits 4208269 ac2a35a c29234c e3fbfdd 41f96d7 2aa8689"]}], "events": [{"date": "2026-08-15", "action": "created", "by": "session"}, {"date": "2026-08-15", "action": "ratified", "by": "human", "note": "group D approval"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): skeptic|adversarial review'}, {date: "2026-08-19", action: trigger-removed, by: session, note: skeptic|adversarial review}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 2 triggers'}], triggers: ["skeptic", "adversarial review"]}
+  - {"id": "D024", "date": "2026-08-15", "type": "policy", "topic": "anoti.single_pending_surface", "statement": "pending.md is the single human-absent surface: every queue that defers a human decision stores its documents wherever it likes but appends one pointer line to <state-dir>/pending.md, which the SessionStart digest announces until the human rules. No second human-absent surface may be introduced.", "ratification": "approved", "source": {"type": "conversation", "context": "designed in the 0.5.5 feedback-skill review fix round; flagged for ratification at consolidation, approved 2026-08-15 group D"}, "rationale": "Two queues means one silently rots; a single announced surface makes deferred gates impossible to lose. The feedback drafts queue set the precedent (documents in feedback/, pointer in pending.md).", "events": [{"date": "2026-08-15", "action": "created", "by": "session"}, {"date": "2026-08-15", "action": "ratified", "by": "human", "note": "group D approval"}, {date: "2026-08-19", action: trigger-added, by: session, note: 'JIT recall backfill (/anoti:update step 4b): pending.md|append-pending|human-absent'}, {date: "2026-08-19", action: trigger-removed, by: session, note: pending.md|append-pending|human-absent}, {date: "2026-08-19", action: trigger-added, by: session, note: 're-cued correctly after malformed write (zsh word-split) was removed: 3 triggers'}], triggers: ["pending.md", "append-pending", "human-absent"]}
   - {"id": "D025", "date": "2026-08-19", "type": "policy", "topic": "anoti.orientation_currency", "statement": "When a feature ships, the surfaces that teach it learn it in the same change: the demo skill's routing table, docs/SKILL-MAP.md, and README one-liners are updated alongside the CHANGELOG entry and version bump — never in a later reminder from the human. Mechanically: the currency test in tests/test_docs.sh gates what it can express; this record's triggers fire the reminder at release-edit time for the judgment-shaped rest.", "ratification": "approved", "source": {"type": "conversation", "context": "human 2026-08-19: the demo skill had to be human-reminded after 0.5.22 shipped — 'thats something i don't wanna have to do everytime'; brainstorm ruled: encode the obligation as a trigger-bearing policy (prospective memory) + a gate where cheap"}, "rationale": "Prospective memory — remember to do X when Y happens — is the presence hook's triggers field pointed at obligations instead of lessons; the maintenance map already names the obligations in prose, which nothing fired. A gate beats a nudge (house ordering), so the test covers the enumerable part and the trigger covers wording currency.", "events": [{"date": "2026-08-19", "action": "created", "by": "session"}, {"date": "2026-08-19", "action": "ratified", "by": "human", "note": "proceed as recommended"}, {date: "2026-08-19", action: trigger-removed, by: session, note: CHANGELOG.md}, {date: "2026-08-19", action: trigger-removed, by: session, note: plugin.json}, {date: "2026-08-19", action: trigger-removed, by: session, note: marketplace.json}, {date: "2026-08-19", action: trigger-removed, by: session, note: version bump}, {date: "2026-08-19", action: trigger-removed, by: session, note: release notes}], triggers: ["edit:CHANGELOG.md", "edit:plugin.json", "edit:marketplace.json", "## [0."]}
+  - {"id": "D026", "date": "2026-08-19", "type": "claim", "topic": "anoti.advisory_policy_self_graded", "statement": "An operating policy that exists only as prose — no ledger, no surface, no gate — is self-graded in practice: under delivery pressure it is flagged and skipped rather than executed. Field observation 2026-08-19 (consumer project, qa/findings.yaml site): adversarial review was owed three times, flagged four times, done zero times, while the same session's gated or triggered mechanisms (JIT presence hit C042 at a findings.yaml write; G004) changed behaviour repeatedly.", "epistemic_status": "speculative", "ratification": "approved", "source": {"type": "observation", "context": "field retrospective pasted by the human 2026-08-19 (session 60267002): one consumer-project site, self-reported; n=1"}, "evidence": [{"date": "2026-08-19", "type": "observation", "note": "Consumer-project retrospective: 'three reviews are owed and none has been done … I've flagged it four times and proceeded anyway, which means in practice these specs are self-graded'. Same report credits C042 (presence hook, at the moment of a findings.yaml write) and G004 with repeated behaviour change — the contrast between prose-only and gated/triggered mechanisms in one session.", "refs": ["session 60267002 transcript 2026-08-19 (user-pasted retrospective)"]}], "events": [{"date": "2026-08-19", "action": "created", "by": "session"}, {"date": "2026-08-19", "action": "ratified", "by": "human", "note": "approved"}, {date: "2026-08-19", action: refines, by: session, note: 'D023: reviews catch real defects when run; D026: the policy does not get run without a ledger/gate — together the case for a review-debt mechanism'}], triggers: ["edit:policy-adversarial-handoff", "ready-for-review", "self-graded"], relationships: [{type: refines, target: D023, date: "2026-08-19"}]}
 open_questions:
   - id: Q001
     date: 2026-08-12

@@ -25,3 +25,17 @@ assert_ok $? "review-work checklist carries the Evidence kind dimension"
 # match instead of the intended checklist bullet.
 awk '/^- \*\*Frontend\*\*/{a=NR} /^- \*\*Evidence kind\*\*/{b=NR} END{exit !(a && b && a<b)}' "$ROOT/commands/review-work.md"
 assert_ok $? "Evidence kind bullet follows the Frontend bullet"
+
+# --- jit-recall spec §4.10: longitudinal protocol dated amendment ---
+grep -q "Recall MISS" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md" && \
+  grep -q "Frame adherence" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md" && \
+  grep -q "Retrospect adherence" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "longitudinal spec carries the three new jit-recall metrics"
+grep -q "## Tier-1 gate (pre-registered, frozen 2026-08-19)" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "longitudinal spec carries the pre-registered Tier-1 gate"
+grep -qE "2026-08-19 — amended per .docs/specs/2026-08-19-jit-recall-design" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "dated changelog entry for the jit-recall amendment"
+grep -q "## Execution routing" "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "backfilled Execution routing section present"
+awk '/^## Decision rules/{a=NR} /^## Tier-1 gate/{b=NR} /^## Cadence/{c=NR} END{exit !(a && b && c && a<b && b<c)}' "$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+assert_ok $? "Tier-1 gate sits between Decision rules and Cadence, per spec"

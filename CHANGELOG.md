@@ -3,6 +3,20 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.21] — 2026-08-19
+
+- Eleventh field-report fix (issue #19, livingsyncs — dispatch-time
+  discoverability): the practitioner agent's description now enumerates
+  every legal role name (test-pinned to `roles/` so the list cannot
+  drift), the bare-name → `skills/policy-<name>/` convention is stated
+  where it is used (practitioner load step, deliberate's hat assignment),
+  and README names `scripts/anoti help` as the helper index. Finding 3
+  (five skills rendering without descriptions) assessed as host-side:
+  the files are byte-identical in structure to rendering siblings, and
+  the blank set differs between installations (five at the reporting
+  site, ten in the maintainer's session with more plugins installed) —
+  consistent with a host listing budget, not a per-file predicate.
+
 ## [0.5.20] — 2026-08-18
 
 - Field-review fix: the inhibit destructive-SQL row fired on the word

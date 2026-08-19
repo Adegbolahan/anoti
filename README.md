@@ -39,6 +39,8 @@ standard.
   (claim/preference/decision/goal/policy), separated epistemic and
   ratification status, append-only event logs, a generated index, and
   mechanical write helpers — the model never hand-serializes YAML.
+  One entry point for all of them: `scripts/anoti <action> [args...]`;
+  `scripts/anoti help` is the index.
 - **Commands:** `/anoti:new`, `/anoti:implement` (feature workflow with a
   mandatory spec gate), `/anoti:review-work` (pre-ship review with an
   evidence contract and cycle cap), `/anoti:update`, `/anoti:review`

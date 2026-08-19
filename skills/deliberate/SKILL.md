@@ -14,7 +14,10 @@ attend first).
   probe, or benchmark. Predictions made after results are worthless.
 - **Synthesis over accumulation:** fold findings into the frame as
   conclusions with citations; never let raw output pile up in context.
-- **Hat assignment:** each subtask gets exactly one role from `roles/`;
+- **Hat assignment:** each subtask gets exactly one role from `roles/`
+  (the legal names are enumerated in the practitioner agent's
+  description, visible at dispatch; a role's `policies:` list uses bare
+  names that resolve to `skills/policy-<name>/`);
   spawn the practitioner with the role profile + the attention frame
   injected. One spawn, one hat; builder work judged by a separate
   reviewer spawn (policy-adversarial-handoff).

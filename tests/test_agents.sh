@@ -14,3 +14,16 @@ assert_eq "$(sed -n 's/^model: //p' "$ROOT/agents/skeptic.md" | head -1)" "inher
 grep -q "never" "$ROOT/agents/practitioner.md" 2>/dev/null; assert_ok $? "practitioner forbids memory-organ writes"
 grep -qi "newest" "$ROOT/agents/practitioner.md" && grep -qi "bare role name" "$ROOT/agents/practitioner.md"
 assert_ok $? "practitioner resolves bare role names from the newest plugin root"
+
+# --- #19: dispatch vocabulary visible at dispatch time ---
+for r in "$ROOT"/roles/*.md; do
+  n="$(basename "$r" .md)"
+  sed -n 's/^description: //p' "$ROOT/agents/practitioner.md" | grep -q -- "$n" || { echo "practitioner description missing role: $n" >&2; false; break; }
+done
+assert_ok $? "#19 practitioner description enumerates every role in roles/ (invariant)"
+grep -q "skills/policy-<name>" "$ROOT/agents/practitioner.md" && grep -qi "bare" "$ROOT/agents/practitioner.md"
+assert_ok $? "#19 practitioner states the bare-name -> policy-<name> convention"
+grep -qi "bare name" "$ROOT/skills/deliberate/SKILL.md" || grep -qi "policy-<name>" "$ROOT/skills/deliberate/SKILL.md"
+assert_ok $? "#19 deliberate states the policy naming convention where hats are assigned"
+grep -q "anoti help" "$ROOT/README.md"
+assert_ok $? "#19 README names the helper index (anoti help)"

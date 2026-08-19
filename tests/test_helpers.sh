@@ -700,7 +700,7 @@ assert_eq "$out" "" "matched_triggers silent on no match"
 # match_lessons
 printf -- '- 2026-08-19 — z-index popover bug fixed by raising stacking context\n' > LESSONS-LEARNT.md
 out="$(match_lessons LESSONS-LEARNT.md 'z-index')"
-printf '%s' "$out" | grep -q "^1\tL:"; assert_ok $? "match_lessons hits, synthetic L: id"
+printf '%s' "$out" | grep -q $'^1\tL:'; assert_ok $? "match_lessons hits, synthetic L: id"  # DEVIATION: plan's own text used a double-quoted "\t" (2 literal chars, confirmed via od -c) instead of this codebase's own established $'...' ANSI-C-quoting idiom for tab-matching (see the sibling frame/retrospect assertions in this same file) -- stock GNU grep on Linux and BSD grep on macOS both leave "\t" uninterpreted in default BRE mode; this only passed locally because the dev machine's `grep` resolves to ugrep (homebrew), which is more lenient. Confirmed failing under vanilla ubuntu:24.04 + GNU grep 3.11 in Task 15's docker verification; fixed to the house idiom, which is portable by construction (a real tab byte, not an escape grep must interpret)
 id1="$(printf '%s' "$out" | cut -f2)"
 printf -- '- 2026-08-18 — unrelated earlier line\n' | cat - LESSONS-LEARNT.md > LESSONS-LEARNT.md.new && mv LESSONS-LEARNT.md.new LESSONS-LEARNT.md
 out2="$(match_lessons LESSONS-LEARNT.md 'z-index')"

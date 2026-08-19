@@ -188,3 +188,13 @@ printf '%s' "$consolidate_joined" | grep -qF "anoti feedback list"
 assert_ok $? "consolidate step 2b names anoti feedback list/clear"
 awk -v s="$consolidate_joined" 'BEGIN{a=index(s,"and re-cued"); b=index(s,"quiets itself mechanically after three retrospective marks"); c=index(s,"Skip silently for candidates with no natural"); exit !(a && b && c && a<b && b<c)}'
 assert_ok $? "adaptive-suppression addendum sits between the remove-trigger sentence and the skip-silently sentence"
+
+# --- adaptive-suppression spec §9: demo routing row for anoti feedback ---
+grep -qF "Injections keep firing at the wrong moment" "$ROOT/skills/demo/SKILL.md"
+assert_ok $? "demo routing table gains the adaptive-suppression row"
+grep -qF '`anoti feedback list`, `clear <id> [trigger]`' "$ROOT/skills/demo/SKILL.md"
+assert_ok $? "demo row names the anoti feedback list/clear commands"
+da="$(grep -n 'append-trigger (consolidate step 2b)' "$ROOT/skills/demo/SKILL.md" | head -1 | cut -d: -f1)"
+db="$(grep -n 'Injections keep firing at the wrong moment' "$ROOT/skills/demo/SKILL.md" | head -1 | cut -d: -f1)"
+[ -n "$da" ] && [ -n "$db" ] && [ "$da" -lt "$db" ]
+assert_ok $? "adaptive-suppression row follows the append-trigger row, per spec's insertion point"

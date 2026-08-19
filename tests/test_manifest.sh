@@ -9,3 +9,5 @@ for t in ROADMAP.md HIGH-LEVEL-STORIES.md TODOS.md LESSONS-LEARNT.md gitignore-f
   [ -s "$ROOT/templates/$t" ]; assert_ok $? "template exists and non-empty: $t"
 done
 grep -q '^\.anoti/' "$ROOT/templates/gitignore-fragment"; assert_ok $? "gitignore fragment ignores .anoti/"
+grep -qE '^#[[:space:]]+triggers: \[\]' "$ROOT/templates/GROUNDING.yaml"
+assert_ok $? "template documents the triggers: field (Task 3; plan regex adjusted to the template's comment-indented shape)"

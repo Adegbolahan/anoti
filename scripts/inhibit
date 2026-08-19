@@ -20,6 +20,10 @@ case "$tool" in
   Write|Edit|NotebookEdit)
     p="$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' 2>/dev/null)"
     case "$p" in
+      # the plugin's packaged templates share organ basenames but are
+      # source files, not memory — the builder that hit this (JIT-recall
+      # Task 3) was right to stop rather than misuse the episode flow
+      templates/*|*/templates/*) ;;
       *ROADMAP.md|*HIGH-LEVEL-STORIES.md)
         ep="idle"
         if [ -n "$sid" ] && [ -f "$AD/sessions/$sid.yaml" ]; then

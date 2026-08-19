@@ -18,6 +18,7 @@ open_questions: []
 #   type: claim            # claim | preference | decision | goal | policy
 #   topic: dotted.topic
 #   statement: one sentence; falsifiable when type is claim
+#   triggers: [] # optional; short authored keywords/phrases matched at tool-use time (append-only via scripts/append-trigger)
 #   epistemic_status: speculative   # claims only: speculative | probable | established
 #   ratification: pending           # pending | approved | rejected (human-only transition)
 #   source: { type: conversation }

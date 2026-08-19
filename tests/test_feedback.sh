@@ -37,7 +37,7 @@ assert_ok $? "setup: recall_cache holds a pre-clear entry for T001"
 "$F" clear T001 "cd chain"; assert_ok $? "clear (with trigger) exits 0"
 c="$(grep -c $'^T001\tcd chain' .anoti/presence-feedback.tsv 2>/dev/null)"; c="${c:-0}"
 assert_eq "$c" "0" "clear removed exactly the named (id,trigger) row"
-c2="$(grep -c '^T001' .anoti/presence-feedback.tsv 2>/dev/null || echo 0)"
+c2="$(grep -c '^T001' .anoti/presence-feedback.tsv 2>/dev/null)"; c2="${c2:-0}"
 assert_eq "$c2" "1" "clear left the OTHER trigger's row for the same id untouched"
 yq -e '.recall_cache | has("T001")' .anoti/sessions/fbclr.presence.yaml >/dev/null 2>&1
 assert_eq "$?" "1" "clear purges the stale recall_cache entry for the cleared id (MINOR 13 fix)"

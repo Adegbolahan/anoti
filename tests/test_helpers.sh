@@ -870,7 +870,7 @@ grep -qE $'irrelevant=3$' .anoti/telemetry.log; assert_ok $? "backward-compat: c
 # item 11: named pairs -- id:trigger feeds scripts/feedback mark; id-only is audit-only
 "$ROOT/scripts/mark-retrospect" rY filed irrelevant-injections 2 "D001:cd chain" "D009" >/dev/null
 grep -qF -- 'pairs=D001:cd chain,D009' .anoti/telemetry.log; assert_ok $? "pairs= field is comma-joined, id-only un-suffixed"
-c1="$(grep -c $'^D001\tcd chain' .anoti/presence-feedback.tsv 2>/dev/null || echo 0)"
+c1="$(grep -c $'^D001\tcd chain' .anoti/presence-feedback.tsv 2>/dev/null)"; c1="${c1:-0}"
 assert_eq "$c1" "1" "id:trigger pair fed scripts/feedback mark"
 c2="$(grep -c '^D009' .anoti/presence-feedback.tsv 2>/dev/null)"; c2="${c2:-0}"
 assert_eq "$c2" "0" "id-only token is audit-trail ONLY, no feedback-store write"

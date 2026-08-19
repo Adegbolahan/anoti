@@ -64,12 +64,20 @@ case "$sub" in
     # DEVIATION from the spec's own illustrative code (spec:744-754): a bare
     # `trap 'unlock_store "$sf"' EXIT` inside this loop would REPLACE the
     # outer `trap 'unlock_store "$ff"' EXIT` already set above, so an early
-    # exit mid-loop would leak the feedback-file lock. Restore the outer
-    # trap after each inner iteration instead of clearing it.
+    # exit mid-loop would leak the feedback-file lock. FIX (reviewer MINOR,
+    # D011 fix round): the original two-step "set sf-only trap, do work,
+    # restore ff-only trap" still left a window -- a signal arriving
+    # between the two trap statements ran whichever trap was current at
+    # that instant, unlocking only ONE of the two held locks and leaking
+    # the other for up to 30s (self-healing via stale-lock steal, but
+    # avoidable). Covering BOTH locks in one trap for the loop body's
+    # full duration closes the window: unlock_store is idempotent
+    # (store-lock's rmdir ... || true), so invoking it on an
+    # already-released lock is a harmless no-op.
     for sf in "$AD"/sessions/*.presence.yaml; do
       [ -f "$sf" ] || continue
       lock_store "$sf" || continue
-      trap 'unlock_store "$sf"' EXIT
+      trap 'unlock_store "$sf"; unlock_store "$ff"' EXIT
       yq -e ".recall_cache | has(\"$id\")" "$sf" >/dev/null 2>&1 \
         && yq -i "del(.recall_cache[\"$id\"])" "$sf" 2>/dev/null
       unlock_store "$sf"

@@ -115,7 +115,12 @@ new enforcement path for that, only for what happens once names exist.
    `scripts/append-trigger:17-22` and `scripts/remove-trigger:22-29`
    already establish), and exact-string matching for every id/trigger
    comparison — never a shell `case` pattern or a `yq ==` against
-   freeform text (G002, `~/.claude/anoti/GROUNDING.yaml:43`). Verified,
+   freeform text (**G002** — cited by id, not line: the global store is
+   unversioned in this repo and its record order drifts as new records
+   are appended; a fix-round re-check found G002 had moved from line 43
+   to line 47 between the first draft of this spec and this fix round,
+   confirming the fragility — every citation into `~/.claude/anoti/GROUNDING.yaml`
+   in this document now cites by id only). Verified,
    not assumed, that the two primitives this spec actually uses for exact
    comparison are safe: awk's `==` on two strings is byte-exact, not
    wildcard (`{command: "awk 'BEGIN{a=\"c*\"; b=\"c1\"; print
@@ -130,7 +135,7 @@ output: "CORRECT-NO-MATCH"}`). Neither primitive carries G002's
    specifically); this spec's TSV never touches `yq` at all (§4.2).
 4. **bash 3.2 compatible; no `IFS=<tab> read`; shellcheck clean.** Same
    constraints `scripts/presence` already documents and works around
-   (`scripts/presence:117-125`'s TSV-substitute-for-`declare -A` note;
+   (`scripts/presence:116-125`'s TSV-substitute-for-`declare -A` note;
    `scripts/presence:135-142`'s `cut -f` note). Every TSV row this spec
    introduces is read with `cut -f` or `awk -F'\t'`, never `IFS=$'\t' read`.
 5. **One component, one responsibility.** `scripts/store-resolve` gets
@@ -162,20 +167,20 @@ output: "CORRECT-NO-MATCH"}`). Neither primitive carries G002's
 
 ### 4.1 Component map
 
-| Component           | File                                            | New/changed                | Responsibility                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------- | ----------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Feedback store      | `<state-dir>/presence-feedback.tsv`             | new                        | durable `(record_id, trigger, irrelevant_count, last_marked, first_marked)` rows                                                                                                                                                                                                                                                                                         |
-| Feedback helper     | `scripts/feedback`                              | new                        | `mark`/`list`/`clear` — the only reader/writer of the feedback store                                                                                                                                                                                                                                                                                                     |
-| Detail matcher      | `scripts/store-resolve` (`match_trigger_pairs`) | new, sourced               | per-`(record, trigger)` match detail for one firing, sibling to `match_triggers`                                                                                                                                                                                                                                                                                         |
-| Shape checker       | `scripts/store-resolve` (`feedback_shape_ok`)   | new, sourced               | one shared corrupt/valid predicate for the feedback TSV, used by both hook and helper                                                                                                                                                                                                                                                                                    |
-| Presence hook       | `scripts/presence`                              | extended                   | applies suppression before ranking; new `suppressed` telemetry duty; warn-once on corruption                                                                                                                                                                                                                                                                             |
-| Retrospect marker   | `scripts/mark-retrospect`                       | extended                   | accepts named `id[:trigger]` tokens after the existing count; backward compatible                                                                                                                                                                                                                                                                                        |
-| Retrospect policy   | `skills/policy-retrospect/SKILL.md`             | extended                   | wording: name ids (and triggers where known), not only a count                                                                                                                                                                                                                                                                                                           |
-| SessionStart digest | `scripts/retrieve`                              | extended                   | "presence: N pairs suppressed" line, gated like the existing recall-coverage line                                                                                                                                                                                                                                                                                        |
-| Demo skill          | `skills/demo/SKILL.md`                          | extended                   | routing row for `anoti feedback` (D025 obligation, §9)                                                                                                                                                                                                                                                                                                                   |
-| Skill map           | `docs/SKILL-MAP.md`                             | extended                   | new entry-point row (D025 obligation, §9)                                                                                                                                                                                                                                                                                                                                |
-| Longitudinal spec   | `docs/specs/2026-08-13-exp-longitudinal.md`     | extended (dated changelog) | Q006 gate reworded; new pre-registered KEEP/telemetry-only rule for adaptive suppression                                                                                                                                                                                                                                                                                 |
-| Dispatcher          | `scripts/anoti`                                 | **no change**              | `scripts/anoti`'s `help` listing already iterates every executable file under `$SELF` (`scripts/anoti:12-29`) — `scripts/feedback`, once created and made executable, is picked up automatically. Verified by reading the loop, not assumed: it has no allow-list, only a deny-list for the six hook scripts (`scripts/anoti:17-21`), and `feedback` is not one of them. |
+| Component           | File                                            | New/changed                | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | ----------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feedback store      | `<state-dir>/presence-feedback.tsv`             | new                        | durable `(record_id, trigger, irrelevant_count, last_marked, first_marked)` rows                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Feedback helper     | `scripts/feedback`                              | new                        | `mark`/`list`/`clear` — the only reader/writer of the feedback store; `clear` also purges the matching stale `recall_cache` entry from any `$AD/sessions/*.presence.yaml` on disk (§4.5.2)                                                                                                                                                                                                                                                                                                                                                     |
+| Detail matcher      | `scripts/store-resolve` (`match_trigger_pairs`) | new, sourced               | per-`(record, trigger)` match detail for one firing, sibling to `match_triggers`                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Shape checker       | `scripts/store-resolve` (`feedback_shape_ok`)   | new, sourced               | one shared corrupt/valid predicate for the feedback TSV, used by both hook and helper                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Presence hook       | `scripts/presence`                              | extended                   | applies suppression before ranking; new `suppressed` telemetry duty; warn-once on corruption                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Retrospect marker   | `scripts/mark-retrospect`                       | extended                   | accepts named `id[:trigger]` tokens after the existing count; backward compatible                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Retrospect policy   | `skills/policy-retrospect/SKILL.md`             | extended                   | wording: name ids (and triggers where known), not only a count                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| SessionStart digest | `scripts/retrieve`                              | extended                   | "presence: N pairs suppressed" line, gated like the existing recall-coverage line                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Demo skill          | `skills/demo/SKILL.md`                          | extended                   | routing row for `anoti feedback` (D025 obligation, §9)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Skill map           | `docs/SKILL-MAP.md`                             | extended                   | new entry-point row (D025 obligation, §9)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Longitudinal spec   | `docs/specs/2026-08-13-exp-longitudinal.md`     | extended (dated changelog) | Q006 gate reworded; new pre-registered KEEP/telemetry-only/REVERT rule for adaptive suppression                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Dispatcher          | `scripts/anoti`                                 | **no change**              | `scripts/anoti`'s `help` listing already iterates every executable file under `$SELF` (`scripts/anoti:12-29`) — `scripts/feedback`, once created and made executable, is picked up automatically. Verified by reading the loop, not assumed: it has no allow-list, only a deny-list for the seven hook scripts — `retrieve`, `classify`, `inhibit`, `persist-session`, `consolidation-gate`, `cleanup-session`, `presence` (`scripts/anoti:17-21`, counted directly from the `case` pattern, not assumed) — and `feedback` is not one of them. |
 
 ### 4.2 The feedback store: `<state-dir>/presence-feedback.tsv`
 
@@ -338,6 +343,66 @@ the token `D025:edit:CHANGELOG.md`, never a mis-split on the trigger's
 own internal colon. No colon present (`"${tok%%:*}" = "$tok"`) means an
 id-only token.
 
+**Fully-specified token classification (fix-round corrections, IMPORTANT
+3 and 4 — the first draft left two real gaps here, both closed below,
+not just patched):**
+
+```sh
+for tok in "$@"; do   # illustrative shape; the pair-arguments loop
+  [ -n "$tok" ] || continue
+  idhalf="${tok%%:*}"
+  if [ "$idhalf" = "$tok" ]; then
+    # no colon present -- id-only form
+    trighalf=""
+    haspair=0
+  else
+    trighalf="${tok#*:}"
+    haspair=1
+  fi
+  # GUARD 1 (IMPORTANT 4): empty-half check -- only meaningful for the
+  # pair form; "D001:" -> idhalf=D001, trighalf="" is rejected here;
+  # ":cd-chain" -> idhalf="", trighalf=cd-chain is rejected here too.
+  # An id-only token with an empty idhalf can only arise from a stray
+  # blank argument (bad quoting upstream) and is rejected by the same
+  # check (idhalf empty is never valid, paired or not).
+  if [ -z "$idhalf" ] || { [ "$haspair" = "1" ] && [ -z "$trighalf" ]; }; then
+    echo "mark-retrospect: skipping malformed pair token '$tok' (empty id or trigger half)" >&2
+    continue
+  fi
+  # GUARD 2 (IMPORTANT 3): lesson-id collision. Lesson ids are always
+  # shaped "L:<hash>" (store-resolve's match_lessons, scripts/store-resolve:112;
+  # presence's own telemetry already renders one as "L:a1b2c3d4[]",
+  # scripts/presence:157) -- their OWN mandatory colon means ANY mention
+  # of a lesson id in this pair grammar always splits with idhalf exactly
+  # "L", whether written bare ("L:a1b2c3d4", which looks like an
+  # attempted id-only mark but the mandatory colon forces the pair path)
+  # or with a spurious trigger appended ("L:a1b2c3d4:sometrigger").
+  # DISPATCHER RULING: lesson ids can never be named for suppression --
+  # consistent with §7's lesson exclusion (lessons carry no authored
+  # triggers: of their own, so there is no (lesson, trigger) pair this
+  # mechanism could ever act on) -- so this is an outright reject, not a
+  # degraded id-only accept.
+  if [ "$idhalf" = "L" ]; then
+    echo "mark-retrospect: skipping '$tok' -- lesson ids cannot be named for suppression (§7)" >&2
+    continue
+  fi
+  if [ "$haspair" = "1" ]; then
+    id="$idhalf"; trigger="$trighalf"   # feeds scripts/feedback mark, point 2 below
+  else
+    id="$idhalf"                          # audit-only, point 3 below
+  fi
+done
+```
+
+Rejected tokens (either guard) are **not** written to
+`presence-feedback.tsv` and **not** included in the `pairs=` telemetry
+field (§4.3.4 point 1) — the stderr warning is their only trace, visible
+in the session transcript at the moment `mark-retrospect` runs, which is
+sufficient audit trail for a caller error rather than a suppression
+decision. A malformed or lesson-guarded token never blocks the other
+tokens in the same call, nor the base `<empty|filed> irrelevant=N`
+line, which is always written regardless (§5).
+
 **Behavior:**
 
 1. The existing summary telemetry line is unchanged in shape —
@@ -401,7 +466,10 @@ Replace with (technical-writer applies verbatim, per D025, §9):
    adaptive suppression (docs/specs/2026-08-19-adaptive-suppression-design.md)
    learns from: an `id:trigger` pair accumulates toward silencing that
    exact pairing after three marks within 30 days, an id alone is audit
-   trail only. Cite the moment. A retrospective that finds no friction in
+   trail only. A lesson id (`L:<hash>`) can never be named this way —
+   lessons carry no `triggers:` of their own, so there is no pairing to
+   suppress; naming one is silently rejected with a warning, not written.
+   Cite the moment. A retrospective that finds no friction in
    nontrivial work is suspect, not clean.
 ```
 
@@ -479,8 +547,8 @@ row matched, mirroring `scripts/remove-trigger:21`'s refusal on an absent
 trigger — clearing something that was never suppressed is a caller error
 worth surfacing, not a silent no-op (G004: a `clear` that always exits 0
 regardless of whether anything changed could not distinguish "cleared" from
-"nothing there," the same non-falsifiable shape G004 already names,
-`~/.claude/anoti/GROUNDING.yaml:45`). Same write-to-tmp/validate/atomic-mv
+"nothing there," the same non-falsifiable shape G004 already names —
+cited by id only, per the fix-round note above). Same write-to-tmp/validate/atomic-mv
 sequence as `mark`.
 
 **Deliberately not built:** `scripts/feedback clear` with no id at all
@@ -514,6 +582,11 @@ Once per firing (not once per store — the feedback file is one
 project-level file, §4.2):
 
 ```sh
+# read upfront, same position/shape as the existing warned_g/warned_p
+# reads (scripts/presence:60-61) -- NOT only inside the warn branch,
+# so the value is always defined and ready for the persist step below
+# regardless of which branch this firing takes
+warned_f="$(yq -r '.warned.feedback // false' "$pf" 2>/dev/null || echo false)"
 threshold="$(cfgk feedback_threshold)"; [ -n "$threshold" ] || threshold=3   # §4.7
 cutoff="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"   # exact idiom, scripts/retrieve:25
 ff="$AD/presence-feedback.tsv"
@@ -523,7 +596,6 @@ if fx "$ff"; then
     suppressed="$(awk -F'\t' -v th="$threshold" -v cutoff="$cutoff" \
       'NF==5 && $3+0>=th && $4>=cutoff {print $1"\t"$2}' "$ff" 2>/dev/null)"
   else
-    warned_f="$(yq -r '.warned.feedback // false' "$pf" 2>/dev/null || echo false)"
     if [ "$warned_f" != "true" ]; then
       try_emit "- presence-feedback.tsv: present but not parseable; suppression disabled this session (fix or remove it)" \
         && { tel warn feedback; warned_f=true; }
@@ -542,8 +614,39 @@ flag is a **third key** added to the presence-state file's existing
 presence-state file written by a session before this ships simply reads
 `.warned.feedback // false` as `false` via `yq`'s default, the same
 defensive pattern every other field in that file already uses (`tool_calls
-// 0`, `scripts/presence:52`). This is the "warn once per session" half of
-the corrupt-file failure contract (§5).
+// 0`, `scripts/presence:52`).
+
+**Fix-round correction (IMPORTANT 2, reviewer finding): reading
+`warned_f` is not enough — the value must be written back, or every
+firing re-reads `false` and warns again.** The above code block, taken
+alone, sets the local shell variable `warned_f=true` but nothing in it
+persists that to `$pf` — and because `scripts/presence` is a fresh
+process invocation per tool call (not a long-running daemon holding
+state in memory), a local variable set in one firing does not exist in
+the next one; only what is written to `$pf` survives. `scripts/presence`
+already solves exactly this problem for `warned_g`/`warned_p` at its
+existing persist step
+(`scripts/presence:235-237`, current shipped file — reproduced here for
+the exact insertion point):
+
+```sh
+TC="$((tool_calls + 1))" LR="$last_reanchor" RC="$rc_json" WG="$warned_g" WP="$warned_p" \
+  yq ".tool_calls = strenv(TC) | .last_frame_reanchor = strenv(LR) | .recall_cache = (strenv(RC) | fromjson) | .warned.global = (strenv(WG) == \"true\") | .warned.project = (strenv(WP) == \"true\")" "$pf" > "$pf.tmp.$$" \
+  && mv "$pf.tmp.$$" "$pf"
+```
+
+This spec's required change to that one line: add `WF="$warned_f"` to
+the prefix-assignment list and `| .warned.feedback = (strenv(WF) ==
+\"true\")` to the `yq` filter — the exact same shape as the existing
+`WG`/`.warned.global` and `WP`/`.warned.project` pairs, nothing novel.
+Without this, `warned_f` would silently reset to `false` every firing and
+the corrupt-file warning would re-emit on every single matched tool call
+for the rest of the session — the exact spam constraint 2/US-002 exists
+to prevent, and the precise regression §6 item 8 is extended to catch
+(two firings **in the same session, each its own process invocation**,
+not two calls within one process — the direct test for this fix).
+This is the "warn once per session" half of the corrupt-file failure
+contract (§5).
 
 #### 4.5.2 Filtering and re-aggregation — replacing, not adding to, the recall duty's matching step
 
@@ -610,7 +713,65 @@ This is the literal reading of the task's "the record still fires via
 OTHER triggers": suppression removes a pairing's _contribution_, not the
 record.
 
-Everything downstream — `tag_prio`, the `sort` tie-break (project >
+**`recall_cache` can go stale across a suppression lifecycle (MINOR 13,
+reviewer finding) — two purge points close it, both mechanical:** a
+fully-suppressed record never reaches `rc_set` (`scripts/presence:158`)
+this firing — its contribution is excluded before the dedupe loop even
+runs (above) — so `recall_cache[id]` is left exactly as it was from the
+**last time the record was actually injected, before it became
+suppressed**. If suppression then ends — by `scripts/feedback clear` or
+by the marks aging past the 30-day TTL — that stale entry could
+otherwise dedupe-block the record for up to `N=10` more calls even
+though the real reason it stopped appearing (suppression) is already
+gone, defeating the reversibility the task requires. Two purge points,
+not one, because the two ways suppression ends are observed from two
+different places:
+
+1. **Explicit `clear` (`scripts/feedback clear`, §4.4):** after the
+   `presence-feedback.tsv` write succeeds, `scripts/feedback` additionally
+   globs every `$AD/sessions/*.presence.yaml` currently on disk and, for
+   each one whose `recall_cache` object has a key equal to the cleared
+   `<id>`, removes that key — under that **session file's own**
+   `store-lock` (the same primitive `scripts/presence:38-39` already
+   locks it with), one file at a time:
+
+   ```sh
+   for sf in "$AD"/sessions/*.presence.yaml; do
+     [ -f "$sf" ] || continue
+     lock_store "$sf" || continue
+     trap 'unlock_store "$sf"' EXIT
+     yq -e ".recall_cache | has(\"$id\")" "$sf" >/dev/null 2>&1 \
+       && yq -i "del(.recall_cache[\"$id\"])" "$sf" 2>/dev/null
+     unlock_store "$sf"
+     trap - EXIT
+   done
+   ```
+
+   Best-effort, not correctness-critical: there are realistically 0-1
+   active session files at any moment plus perhaps a handful of
+   not-yet-cleaned abandoned ones (`scripts/cleanup-session:19-22`); a
+   file appearing or disappearing mid-scan is not raced beyond each
+   file's own lock, because the worst case of a missed purge is the
+   pre-existing dedupe window (`N=10` more calls), never a permanent
+   block or a corruption.
+
+2. **Natural TTL expiry, at read time (`scripts/presence` itself,
+   §4.5.1):** on the firing where §4.5.1's threshold+cutoff computation
+   first finds a pair's marks have aged past 30 days (i.e., that pair
+   just fell out of the `suppressed` set it would have been in on the
+   previous firing), `scripts/presence` drops that id's `recall_cache`
+   entry as part of the same persist step that already writes
+   `recall_cache` back (§4.5's closing `yq` call) — computed by comparing
+   this firing's `suppressed` set against **the previous firing's**, which
+   requires `presence-feedback.tsv`'s own `last_marked` values (already
+   loaded, §4.5.1) rather than any new state: an id is "just expired"
+   when it has a `presence-feedback.tsv` row at/above threshold whose
+   `last_marked` is **not** in `suppressed` this firing (aged out) but a
+   `recall_cache` entry still exists for it. This is illustrative logic,
+   not literal verified code — the **contract** is: a `recall_cache`
+   entry never outlives the suppression episode that made it stale.
+
+**Everything else in the pipeline is unchanged:** `tag_prio`, the `sort` tie-break (project >
 global > lessons, then id ascending,
 `docs/specs/2026-08-19-jit-recall-design.md:528-544`), the `recall_cache`
 dedupe window, `MAX_RECORDS`, the `(+N more matched)` suffix — is
@@ -653,8 +814,10 @@ conflated.
 ### 4.6 Visibility: the digest line
 
 `scripts/retrieve` gains one `try_emit` line, inserted directly after the
-existing recall-coverage line (`scripts/retrieve:95-101`, the `#20`
-block) — same gating (`[ -n "$PSTORE" ]`, a governed project store must
+existing recall-coverage line (`scripts/retrieve:106-115`, the `#20`
+block, re-verified against the current file — it shifted from its
+earlier 95-101 position when 0.5.25 added the codepoint-aware cut
+handling ahead of it) — same gating (`[ -n "$PSTORE" ]`, a governed project store must
 exist; an unrelated global-only or bare-`TODOS.md` directory never shows
 it, matching that block's own comment "warnings only for a GOVERNED
 project"), same independent-reproduction choice §4.2 of
@@ -677,7 +840,10 @@ fi
 
 `$AD` is already resolved at the top of `scripts/retrieve`
 (`scripts/retrieve:9`); `PSTORE` and `fx`/`cfgk` are the file's own
-existing locals (`scripts/retrieve:24,76-79,83`) — no new dependency, no
+existing locals (`fx` at `scripts/retrieve:24`, `cfgk` at
+`scripts/retrieve:90-93`, `PSTORE` set at `scripts/retrieve:96-97` —
+re-verified against the current file, all three shifted from an earlier
+draft's line numbers) — no new dependency, no
 new sourced file, only new local lines, matching how the recall-coverage
 line was added in 0.5.23 (commit `6036f45`, `scripts/retrieve` diff
 "+10" per that commit's stat) with the same shape of change.
@@ -686,7 +852,7 @@ line was added in 0.5.23 (commit `6036f45`, `scripts/retrieve` diff
 
 `.claude/anoti.local.md` gains one recognized key: `feedback_threshold:`
 — read via the existing generic `cfgk` function (`scripts/store-resolve:9-12`,
-duplicated locally in `scripts/retrieve:76-79`, same key-reading pattern
+duplicated locally in `scripts/retrieve:90-93`, same key-reading pattern
 `lessons_path`/`todos_path`/`roadmap_path`/`story_path`/`state_dir`
 already use). There is no central registry of valid `.claude/anoti.local.md`
 keys in this repository (a repo-wide search for a keys-list document
@@ -747,60 +913,101 @@ New changelog entry, appended after the existing 2026-08-19 entries
   gate can fire — adaptive suppression is itself a mechanical precision
   measure and the pre-registered discipline (`docs/specs/2026-08-13-exp-longitudinal.md:103-108`)
   requires it be given the same fair chance the earlier measures were.
-  Also adds §"Adaptive suppression KEEP/telemetry-only" as a new,
+  Also adds §"Adaptive suppression KEEP/telemetry-only/REVERT" as a new,
   independent pre-registered gate for the suppression mechanism's own
   disposition (below).
 ```
 
-### 4.9 Pre-registered KEEP/telemetry-only criterion for adaptive suppression itself
+### 4.9 Pre-registered KEEP/telemetry-only/REVERT criterion for adaptive suppression itself
 
 New subsection, appended immediately after the existing "Presence
 precision" bullet (§4.8's replacement text) inside the Tier-1 gate section
 (`docs/specs/2026-08-13-exp-longitudinal.md:76-108`):
 
 ```
-**Adaptive suppression KEEP/telemetry-only (pre-registered, frozen
+**Adaptive suppression KEEP/telemetry-only/REVERT (pre-registered, frozen
 2026-08-19):** compare Presence precision across two windows, each drawn
 from this file's own existing weekly-audit cadence
 (`docs/specs/2026-08-13-exp-longitudinal.md:112-114`, first audit
-2026-08-20, weekly thereafter) — never a bespoke measurement window:
+2026-08-20, weekly thereafter) — never a bespoke measurement window.
 
-- **Baseline window:** the two most recently completed audited weeks
-  immediately BEFORE adaptive suppression ships. If fewer than two
-  audited weeks exist yet at ship time, this comparison WAITS — it does
-  not run on a partial baseline; it starts counting from whenever the
-  second baseline week completes.
-- **Post-ship window:** the two audited weeks immediately AFTER adaptive
-  suppression ships.
+**Baseline window, with an explicit fallback (MINOR 11, reviewer
+finding — this repo's audit cadence starts 2026-08-20 and adaptive
+suppression is expected to ship within days of that, so two full audited
+PRE-ship weeks may simply not exist yet):**
+
+- **Primary:** the two most recently completed audited weeks immediately
+  BEFORE adaptive suppression ships, if both exist.
+- **Fallback, stated plainly rather than left as a silent gap:** if fewer
+  than two pre-ship audited weeks exist, the baseline is instead **the
+  first two audited weeks AFTER shipping** — defensible only because
+  suppression cannot act at all until a pair accumulates 3 marks within
+  30 days (§4.2), so a freshly-shipped mechanism's first two weeks are a
+  reasonable, if imperfect, proxy for "before it had any effect" (it
+  barely acts early). Under this fallback, the **post-ship window**
+  becomes the two audited weeks immediately **following** the fallback
+  baseline (weeks 3-4 after ship, compared against weeks 1-2) — this
+  makes the whole comparison a **within-post-ship** measurement, not a
+  true before/after one, and any conclusion drawn from it carries
+  correspondingly **weaker inference**, labeled as such wherever it is
+  cited — the same "observational, no counterfactual arm" honesty this
+  file's own Method section already states up front
+  (`docs/specs/2026-08-13-exp-longitudinal.md:19-23`).
+- Under the **primary** path, the post-ship window is simply the two
+  audited weeks immediately after ship, as originally specified.
+
+**Three outcomes, not two (MINOR 12, reviewer finding — folding "no
+effect" and "regressed" into one bucket hid a real failure mode: a
+mechanism that makes precision WORSE is a different, more urgent finding
+than one that merely does nothing):**
+
 - **KEEP** — adaptive suppression is credited as the cause of any
   precision gain and stays the load-bearing precision mechanism — when
   mean post-ship precision is **≥15 percentage points higher** than mean
   baseline precision.
 - **Telemetry-only** — the mechanism's marks/suppressions keep recording
   (nothing is removed or disabled), but it is no longer treated as a
-  source of further expected precision gain — when the rise is **<15
-  points**. This is not a rollback: `presence-feedback.tsv` and
-  `scripts/feedback` stay exactly as built; "telemetry-only" describes
+  source of further expected precision gain — when the change is **between
+  -10 and +15 points** (a rise below the KEEP bar, or a fall that does not
+  reach the REVERT bar). This is not a rollback: `presence-feedback.tsv`
+  and `scripts/feedback` stay exactly as built; "telemetry-only" describes
   how future gates read the evidence, not a code change.
-- **Either outcome opens Q006's gate identically:** the "two audited
+- **REVERT** — when mean post-ship precision is **≥10 percentage points
+  LOWER** than mean baseline precision (the mechanism is actively making
+  things worse, e.g. by suppressing pairs a later trigger context would
+  have found relevant). Filed as a **corrective TODO** — matching this
+  file's own existing decision-rule shape for a filed action rather than
+  an autonomous code change ("two incidents in one audit → a corrective
+  TODO," `docs/specs/2026-08-13-exp-longitudinal.md:39-41`) — to disable
+  the suppression check pending human review (e.g., an effectively
+  unreachable `feedback_threshold` override, §4.7, or a dedicated
+  disable flag; the exact mechanism is an implementation decision for
+  that TODO, not fixed here) while `presence-feedback.tsv` continues
+  accumulating for audit. Not an automatic rollback: this is a metrics
+  and gate document, not a deployment mechanism, and every other
+  decision rule in this file resolves to a filed human action, not
+  self-executing code.
+- **Every outcome opens Q006's gate identically:** the "two audited
   weeks have passed" clause in §4.8's amended Presence-precision bullet
-  is satisfied the moment this comparison runs, regardless of which way
-  it resolves — the two-week wait exists to give the mechanical measure a
-  fair chance to work, not to hide an unfavorable result from the ranker
-  gate.
+  is satisfied the moment this comparison runs (primary or fallback
+  path), regardless of which of the three outcomes it resolves to — the
+  wait exists to give the mechanical measure a fair chance to work, not
+  to hide an unfavorable result from the ranker gate.
 ```
 
 ## 5. Failure behavior
 
-| Condition                                                                     | Behavior                                                                                                                                                                                                                        | Never breaks                                                                                          |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `presence-feedback.tsv` missing                                               | No suppression this firing; no warning, no telemetry (§4.5.1's `fx "$ff"` gate is false) — silent, matching US-002                                                                                                              | The recall duty's existing unfiltered behavior — identical to a session with no feedback history ever |
-| `presence-feedback.tsv` present but malformed (`feedback_shape_ok` fails)     | Suppression disabled this firing; warned **once per session** (`.warned.feedback`, mirrors the existing global/project warn-once pattern, `scripts/presence:704-717` per the earlier spec)                                      | Every other duty; the malformed file is never auto-repaired or deleted — a human fixes or removes it  |
-| `scripts/feedback mark`/`clear` write races another writer                    | `store-lock`'s existing mkdir-based mutex (`scripts/store-lock:9-46`) — same primitive already serializing the presence-state file (`scripts/presence:38-39`); a stuck lock steals after 30s, a waiter times out loudly at ~60s | The feedback file's own consistency — a torn write is never committed (write-to-tmp + atomic `mv`)    |
-| A retrospective names a nonexistent record id                                 | Accepted, written, harmless — it can never match a haystack at hook-fire time (§4.3.4 point 4), and shows up in `anoti feedback list` for a human to notice                                                                     | Every real pairing's own suppression accounting                                                       |
-| `mark-retrospect` given a malformed pair token (no id before/after the split) | Skipped for that one token with a stderr note; the run continues and still writes the base `<empty                                                                                                                              | filed> irrelevant=N` line                                                                             | The count-only precision metric, which never depended on pair parsing succeeding |
-| `scripts/feedback` invoked outside any anoti workspace                        | `scripts/anoti-dir --require` fails loudly (`scripts/anoti-dir:33-36`) — the writer refuses rather than minting a stray file, the same G003 discipline every other writer here follows                                          | —                                                                                                     |
-| The hook script itself errors (bad JSON, missing `yq`/`jq`)                   | Fail-open: exit 0, no `additionalContext`, no telemetry — identical, unchanged contract to every other failure mode already in `docs/specs/2026-08-19-jit-recall-design.md:1268-1278`'s table                                   | The tool call itself — presence fires after the tool already ran                                      |
+| Condition                                                                                                                                                | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Never breaks                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `presence-feedback.tsv` missing                                                                                                                          | No suppression this firing; no warning, no telemetry (§4.5.1's `fx "$ff"` gate is false) — silent, matching US-002                                                                                                                                                                                                                                                                                                                                                                                           | The recall duty's existing unfiltered behavior — identical to a session with no feedback history ever |
+| `presence-feedback.tsv` present but malformed (`feedback_shape_ok` fails)                                                                                | Suppression disabled this firing; warned **once per session** (`.warned.feedback`, mirrors the existing global/project warn-once pattern **as documented in the design spec**, `docs/specs/2026-08-19-jit-recall-design.md:704-717` — fix-round correction: the earlier draft of this table cited `scripts/presence:704-717`, but `scripts/presence` is 245 lines total; the quoted "once per session... `warned: {global: bool, project: bool}` map" text lives in the design doc, not the 245-line script) | Every other duty; the malformed file is never auto-repaired or deleted — a human fixes or removes it  |
+| `scripts/feedback mark`/`clear` write races another writer                                                                                               | `store-lock`'s existing mkdir-based mutex (`scripts/store-lock:9-46`) — same primitive already serializing the presence-state file (`scripts/presence:38-39`); a stuck lock steals after 30s, a waiter times out loudly at ~60s                                                                                                                                                                                                                                                                              | The feedback file's own consistency — a torn write is never committed (write-to-tmp + atomic `mv`)    |
+| A retrospective names a nonexistent record id                                                                                                            | Accepted, written, harmless — it can never match a haystack at hook-fire time (§4.3.4 point 4), and shows up in `anoti feedback list` for a human to notice                                                                                                                                                                                                                                                                                                                                                  | Every real pairing's own suppression accounting                                                       |
+| A pair token is malformed — either half empty after the split (`"D001:"` gives id=`D001`, trigger=`""`; `":cd-chain"` gives id=`""`, trigger=`cd-chain`) | Skipped for that one token, with a stderr note naming the token; N and every other valid token in the same call are unaffected (§4.3.4's fully-specified empty-half guard)                                                                                                                                                                                                                                                                                                                                   | The base `irrelevant=N` telemetry line, which is written regardless                                   |
+| A pair token names a lesson id (`L:<hash>`, or any token whose id-half is exactly `L`)                                                                   | Rejected outright with a stderr warning, never written to `presence-feedback.tsv` and never counted in the `pairs=` telemetry field — lessons carry no authored `triggers:` of their own, so `(lesson, trigger)` is not a pairing this mechanism can suppress (§4.3.4's lesson guard, consistent with §7's lesson exclusion)                                                                                                                                                                                 | Every non-lesson token in the same call                                                               |
+| A `recall_cache` entry for an id predates a suppression that has since been cleared or expired                                                           | `scripts/feedback clear` purges the matching `recall_cache` entry from every `$AD/sessions/*.presence.yaml` on disk as part of the clear; `scripts/presence` itself purges a stale entry at read time on the firing where an id's suppression naturally expires past the 30-day cutoff (§4.5.2) — a record is never dedupe-blocked by a cache entry set before it became suppressed                                                                                                                          | The dedupe window's normal behavior for every id that was never suppressed                            |
+| `scripts/feedback` invoked outside any anoti workspace                                                                                                   | `scripts/anoti-dir --require` fails loudly (`scripts/anoti-dir:33-36`) — the writer refuses rather than minting a stray file, the same G003 discipline every other writer here follows                                                                                                                                                                                                                                                                                                                       | —                                                                                                     |
+| The hook script itself errors (bad JSON, missing `yq`/`jq`)                                                                                              | Fail-open: exit 0, no `additionalContext`, no telemetry — identical, unchanged contract to every other failure mode already in `docs/specs/2026-08-19-jit-recall-design.md:1268-1278`'s table                                                                                                                                                                                                                                                                                                                | The tool call itself — presence fires after the tool already ran                                      |
 
 ## 6. Testing
 
@@ -838,6 +1045,21 @@ Fixture-driven, hermetic (`mktemp -d`, `HOME` overridden — the pattern
    removes both).
    `clear` on an absent pair exits 1 with a stderr message (mirrors
    `scripts/remove-trigger:21`'s refusal test, `tests/test_helpers.sh:892-893`).
+   **Extended (MINOR 13, reviewer finding):** before `clear`, inject the
+   record once (uncorrupted, unsuppressed) so `recall_cache` in the
+   session's `*.presence.yaml` holds an entry for it; mark it to
+   `count=3` (now suppressed, so no further `rc_set` calls touch that
+   entry — it stays exactly as it was pre-suppression); `clear` it →
+   assert the `recall_cache` entry for that id is gone from the
+   presence-state file, not merely that the feedback row is gone —
+   then a firing on the very next tool call (not N calls later)
+   re-injects the record, proving the fix (without it, a stale
+   pre-suppression `recall_cache` entry could dedupe-block the record for
+   up to `N=10` more calls after `clear`, silently defeating
+   reversibility). A parallel case for natural TTL expiry: same setup,
+   but instead of `clear`, advance the fixture's `last_marked` past the
+   30-day cutoff and fire presence once — assert the same
+   `recall_cache` purge happens at that firing, per §4.5.2's expiry rule.
 6. **Digest line:** `N=0` (no feedback file, or file present but nothing
    at/above threshold) → digest omits the line entirely; `N=2` → digest
    contains `presence: 2 (record,trigger) pairs suppressed — anoti
@@ -851,15 +1073,34 @@ feedback list`, gated on `PSTORE` being set (a directory with only a
 8. **Corrupt file, warn-once:** a hand-corrupted `presence-feedback.tsv`
    (wrong column count on one line) → first presence firing this session
    emits the warning line + `presence\twarn\tfeedback` telemetry and
-   disables suppression; a second firing in the same session is silent on
-   that point (mirrors the existing warn-once test pattern,
-   `docs/specs/2026-08-19-jit-recall-design.md:1314-1316`, item 6).
+   disables suppression; a **second, separate invocation** of
+   `scripts/presence` (piped fresh JSON into a new process — not a second
+   call inside the same process, since each hook firing genuinely is its
+   own process, §4.5.1's fix-round note) reusing the same `$sid` and `$pf`
+   is silent on that point (mirrors the existing warn-once test pattern,
+   `docs/specs/2026-08-19-jit-recall-design.md:1314-1316`, item 6). This
+   is the direct regression test for IMPORTANT 2 (the write-back fix):
+   asserting the second invocation reads `.warned.feedback == true` from
+   `$pf` on disk, not merely that a single in-process run behaves —
+   run against the **unfixed** design (no `WF`/`.warned.feedback` write-back)
+   first, in a scratch copy, to confirm it goes RED (warns twice), per
+   the reviewer's own optional-empirical-evidence pattern
+   (`roles/reviewer.md:27-33`), before confirming GREEN against the fixed
+   version.
 9. **Perf:** a `presence-feedback.tsv` fixture with 200 rows, a firing
    matching several pairs against it → wall-clock time for the recall
-   duty stays under the same **<1s** bar
-   `docs/specs/2026-08-19-jit-recall-design.md:1342-1358` already
-   established for `match_triggers` at 300-record-store scale — this is
-   the required re-verification §4.3.3 flags as unperformed by this spec.
+   duty stays under **2.5s**, the actual shipped bar
+   `tests/test_presence.sh:223,255-256` already enforces for
+   `match_triggers` at two-300-record-store scale (`awk -v e="$elapsed"
+'BEGIN{exit !(e < 2.5)}'`, widened from the parent design spec's own
+   narrower **<1s** prose estimate — `docs/specs/2026-08-19-jit-recall-design.md:1342-1358`
+   — to **2.5s** during 0.5.22 to tolerate slower CI/developer machines,
+   per `tests/test_presence.sh:228`'s own comment: "operational hook
+   timeout is 5s, so 2.5s leaves half the budget"). This spec's perf test
+   extends the **shipped** 2.5s assertion (not the earlier, narrower
+   prose figure) to also cover the new `match_trigger_pairs` call and the
+   suppression filter pass — this is the required re-verification §4.3.3
+   flags as unperformed by this spec.
 10. **`mark-retrospect` backward compatibility:** the existing two- and
     three-arg forms (`<sid> filed`, `<sid> filed irrelevant-injections 3`)
     produce byte-identical telemetry lines to today's — a direct
@@ -884,6 +1125,22 @@ irrelevant-injections 2 D001:"cd chain" D009` → `telemetry.log` gains
     baseline, per `docs/specs/2026-08-19-jit-recall-design.md:1631-1642`'s
     own noted platform scope) — no `declare -A`, no `${var,,}`, no
     `IFS=<tab> read`, matching constraint 4.
+14. **Malformed pair token (IMPORTANT 4, direct regression test):**
+    `mark-retrospect s1 filed irrelevant-injections 1 "D001:"` →
+    `presence-feedback.tsv` gains **no** row, stderr carries the
+    "malformed pair token" note, and the base `irrelevant=1` telemetry
+    line is still written. Same assertions for
+    `mark-retrospect s1 filed irrelevant-injections 1 ":cd-chain"`. Both
+    cases are the literal worked examples the reviewer named.
+15. **Lesson-id guard (IMPORTANT 3, direct regression test):**
+    `mark-retrospect s1 filed irrelevant-injections 1 "L:a1b2c3d4"` →
+    `presence-feedback.tsv` gains no row, stderr carries the "lesson ids
+    cannot be named for suppression" note, and `telemetry.log`'s `pairs=`
+    field (if present at all) does **not** contain `L:a1b2c3d4` — proving
+    the token is rejected outright, not silently accepted as a
+    `(id=L, trigger=a1b2c3d4)` pair. A second case with a spurious
+    trigger appended (`"L:a1b2c3d4:cd chain"`) asserts the same rejection
+    (idhalf is `L` either way, per the split rule).
 
 ## 7. Out of scope
 
@@ -943,7 +1200,7 @@ irrelevant-injections 2 D001:"cd chain" D009` → `telemetry.log` gains
    diffing telemetry lines against `tests/test_helpers.sh:814-822`'s
    existing fixtures, unmodified.
 7. `docs/specs/2026-08-13-exp-longitudinal.md`'s Q006 gate text and the
-   new Adaptive-suppression KEEP/telemetry-only subsection (§4.8, §4.9)
+   new Adaptive-suppression KEEP/telemetry-only/REVERT subsection (§4.8, §4.9)
    appear verbatim, each with its own dated changelog entry — no silent
    edit.
 8. `skills/policy-retrospect/SKILL.md` rule 2's new wording (§4.3.5)
@@ -998,12 +1255,34 @@ to sequence its build.
   direction organ in the `policy-draft-for-ratification` sense
   (`skills/policy-draft-for-ratification/SKILL.md:8-10` scopes that
   policy to ROADMAP/HIGH-LEVEL-STORIES-class organs) — ordinary
-  plugin/spec source, reviewed like code. Loads: policy-reader-run
-  (execute every edited doc's instructions as written), policy-adversarial-handoff,
-  the universal stack.
-- **reviewer** (`roles/reviewer.md`) — adversarial pass over both
-  builders' diffs before merge, mandatory for builder-class work
-  (`skills/policy-adversarial-handoff/SKILL.md:8-11`). Verifies
+  plugin/spec source, reviewed like code even though no organ here
+  triggers `draft-for-ratification`'s procedure. **Loads (fix-round
+  correction, IMPORTANT 5): policy-reader-run (execute every edited doc's
+  instructions as written), policy-draft-for-ratification, plus the
+  universal epistemic/trace-to-frame/escalate-destructive stack — this is
+  `roles/technical-writer.md:6-13`'s own registered policy stack,
+  verbatim.** The earlier draft of this routing additionally listed
+  `policy-adversarial-handoff` here, which is wrong: that policy's own
+  "Applies" line is conditional — "roles that declare it — builder work
+  whose failure would be expensive to discover late"
+  (`skills/policy-adversarial-handoff/SKILL.md:8-9`) — and
+  `roles/technical-writer.md:6-13`'s policy list does not declare it (it
+  carries `draft-for-ratification` instead, which backend's own stack
+  does not). Technical-writer's diff is not left unreviewed by this
+  correction: it is still adversarially checked, just via the **reviewer
+  role's own batch pass** below (which does declare, and does apply
+  `policy-adversarial-handoff` to itself as the mechanism, not because
+  technical-writer independently carries the policy) — the same
+  distinction the dispatcher's ruling draws.
+- **reviewer** (`roles/reviewer.md`) — one adversarial pass over the
+  **whole batch** — backend's diff, covered by `policy-adversarial-handoff`
+  as backend's own declared policy (`roles/backend.md:6-13`,
+  `skills/policy-adversarial-handoff/SKILL.md:8-9`'s "roles that declare
+  it"), and technical-writer's diff alongside it in the same pass, as
+  ordinary reviewed source (not because technical-writer declares
+  `policy-adversarial-handoff` itself — it does not, per the correction
+  above — but because the reviewer's own scope is the batch, not a
+  policy-by-policy dispatch). Verifies
   specifically: every §6 test exercises what it claims (re-running RED
   before GREEN where a transcript is ambiguous); the awk multidim-`in`
   and `ENVIRON`-vs-`-v` discipline in §4.5.2's illustrative code is
@@ -1022,8 +1301,9 @@ to sequence its build.
 **Fix rounds:** per D011 (`skills/deliberate/SKILL.md:85-93`), reviewer
 findings resume the **original** backend or technical-writer spawn with
 findings relayed verbatim — never a fresh spawn — capped at 3 cycles by
-analogy to `commands/review-work.md:51-54`; a blocker surviving three
-rounds returns to the human as a design decision, not a fourth attempt.
+analogy to `commands/review-work.md:55-56`'s "Cycle cap (MANDATORY): at
+cycle 3, STOP" sentence; a blocker surviving three rounds returns to the
+human as a design decision, not a fourth attempt.
 
 ## Questions/doubts
 
@@ -1063,20 +1343,28 @@ first_marked`) would be scope creep for an advisory role. If this
   codebase's existing convention anywhere else I found), that is a free
   substitution as long as the contract in §4.5.2's closing paragraph
   holds.
-- **The 15-percentage-point KEEP bar and the 30-day TTL are labeled
-  judgments, not derived from data** — no audited weeks exist yet at
-  filing time (the longitudinal spec's own cadence starts 2026-08-20,
-  `docs/specs/2026-08-13-exp-longitudinal.md:112`). I chose 15 points as
-  large enough to be distinguishable from week-to-week noise in a
-  metric with no stated confidence interval, and 30 days because the
-  task specified it directly, matching (in rhythm, not value — the two
-  numbers are deliberately different, 30 vs. 180) the kind of policy-level
-  day-count constant `templates/GROUNDING.yaml:10`'s `reverify_after_days`
-  already establishes as a precedent shape for "a bare integer constant
-  governing when accumulated state stops counting." Both are exactly the
-  kind of default the pre-registered gates in this spec and the
-  longitudinal spec exist to revisit with real evidence, not treated as
-  permanent.
+- **The 15-point KEEP bar, the 10-point REVERT bar, and the 30-day TTL
+  are labeled judgments, not derived from data** — no audited weeks exist
+  yet at filing time (the longitudinal spec's own cadence starts
+  2026-08-20, `docs/specs/2026-08-13-exp-longitudinal.md:112`). The KEEP
+  and TTL values were specified directly by the human directive this
+  spec implements; the REVERT bar was specified by the fix-round
+  dispatcher ruling (MINOR 12) that split the original two-outcome KEEP/
+  telemetry-only design into three. None of the three numbers is
+  independently derived from this project's own precision data, which
+  does not exist yet. 15 and 10 points are both large enough to be
+  distinguishable from plausible week-to-week noise in a metric with no
+  stated confidence interval — a reasonable-on-its-face pair (asymmetric
+  by design: a smaller fall is treated as more urgent than an equal-sized
+  rise, since a regressing mechanism actively hurts where a flat one
+  merely fails to help) — but reasonable-on-its-face is not the same as
+  validated. 30 days matches (in rhythm, not value — the two numbers are
+  deliberately different, 30 vs. 180) the kind of policy-level day-count
+  constant `templates/GROUNDING.yaml:10`'s `reverify_after_days` already
+  establishes as a precedent shape for "a bare integer constant governing
+  when accumulated state stops counting." All three are exactly the kind
+  of default the pre-registered gates in this spec and the longitudinal
+  spec exist to revisit with real evidence, not treated as permanent.
 - **Whether "two audited weeks" cleanly aligns when adaptive suppression
   ships mid-week is not fully specified** — §4.9 names the mechanism
   (draw from the existing weekly-audit artifacts, wait for the boundary)

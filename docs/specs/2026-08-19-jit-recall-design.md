@@ -1,8 +1,11 @@
 # Just-in-Time Recall — the Presence Hook
 
 **Spec:** this document. **Authority:** `docs/ROADMAP.md:96-105` (Phase 4
-deliverable, ratified 2026-08-19 — "design spec is the next step, blocked
-on this ratification", `docs/ROADMAP.md:97`); `docs/HIGH-LEVEL-STORIES.md:54-66`
+deliverable, "design spec is the next step, ratified 2026-08-19",
+`docs/ROADMAP.md:97`, fix-round correction — N1: the line reads "ratified",
+not "blocked on this ratification", which was this section's earlier,
+now-superseded draft state before the human's 2026-08-19 ratification);
+`docs/HIGH-LEVEL-STORIES.md:54-66`
 (Audit — 2026-08-19, human-ratified Option A, "Human ruling 2026-08-19:
 option A over a new story", `docs/HIGH-LEVEL-STORIES.md:65-66`);
 `docs/plans/2026-08-18-jit-recall-cascade.md` (cascade plan, spawn #1);
@@ -40,6 +43,22 @@ SessionStart digest (`scripts/retrieve`) is a table of contents read once;
 `/anoti:recall` (`commands/recall.md`) is an LLM-driven query the model
 must think to run; this hook requires no invocation at all.
 
+**Evidentiary status of the core mechanism (fix-round M3, precise
+labeling):** that PostToolUse's `additionalContext` surfaces in the next
+model turn is verified for this plugin's existing surfaces
+(`scripts/retrieve:161`, `scripts/classify:24`). That it does so
+**specifically for a non-MCP built-in tool on `PostToolUse`** — the exact
+case this hook depends on — is skeptic spawn #3's SURVIVES verdict on U1,
+assembled from three convergent sources: the documented mechanism, a
+third-party plugin observed using the identical pattern (PostToolUse
+combined with `additionalContext` on Edit and Write), and a transcript of
+injected context acted on next turn. Convergent, but no single local
+artifact combines "non-MCP built-in tool" and "`additionalContext`" within
+one observed firing. Per G005, that composite claim is labeled
+**probable, not established** everywhere this spec relies on it (§4.3.1,
+§4.3.2) — not settled fact. Everything else skeptic spawn #3 verified
+(the field names themselves, §4.3.2) stays at its verified weight.
+
 ## 2. Why
 
 Three concrete field failures — cd-chain, stale Vite modules, popover
@@ -60,7 +79,13 @@ cited grounding for writing cues (`triggers:`) at write-time rather than
 relying on retrieval-time reconstruction alone. US-001's ✅ status verifies
 SessionStart delivery only (`docs/HIGH-LEVEL-STORIES.md:19,30-32`); the
 2026-08-19 audit note names the gap this spec closes without reopening that
-story (`docs/HIGH-LEVEL-STORIES.md:54-66`).
+story (`docs/HIGH-LEVEL-STORIES.md:54-66`). This gap-closing motivation
+depends on the mechanism §1 already labels **probable, not established**
+(the non-MCP-tool + `additionalContext` combination, fix-round M3) — the
+"why" holds regardless of that label (the field failures are real,
+already-occurred events, §1's citation), but the "this spec closes it"
+claim inherits the same evidentiary weight until the follow-on
+implementation's first live test (§9) confirms the mechanism directly.
 
 ## 3. Design principles / constraints
 
@@ -69,8 +94,14 @@ story (`docs/HIGH-LEVEL-STORIES.md:54-66`).
    plan §3a, docs-fetch citation, `docs/plans/2026-08-18-jit-recall-cascade.md:125-128`).
    This is a structural property of the mechanism, not merely a design
    choice: the presence hook can only inform, never gate.
-2. **Fail open, ≤5s, no network, POSIX shell + `yq`/`jq`** — identical to
-   every hook this plugin ships (`docs/specs/2026-08-12-anoti-plugin-design.md:507-510`).
+2. **Fail open, no network, POSIX shell + `yq`/`jq`** — identical to every
+   hook this plugin ships (`docs/specs/2026-08-12-anoti-plugin-design.md:507-510`).
+   `scripts/presence`'s own timeout is **5s**, not a plugin-wide constant
+   (fix-round N4, corrected overclaim): `hooks/hooks.json` registers each
+   hook's timeout individually — `retrieve` at 10s
+   (`hooks/hooks.json:9`), `presence` at 5s (§4.3.1) — chosen tighter here
+   because this hook fires far more often per session than `retrieve`
+   does (principle 4 below), so a slow firing costs more in aggregate.
 3. **Silent by default (US-002).** `docs/HIGH-LEVEL-STORIES.md:20,33-34`:
    "zero methodology overhead... no visible ritual on small asks." Nothing
    matched → nothing emitted, no telemetry line — the same contract
@@ -173,12 +204,35 @@ resolve_project() { ... }
 resolve_lessons() { ... }
 
 # match_triggers <store> <haystack> <label>
-#   Prints ranked "hits\tid\tlabel\tstatement" lines (§4.3.3 algorithm).
+#   O(1) yq subprocess spawns per store (fix-round M2 redesign, §4.3.3).
+#   Prints "hits\tid\tlabel\tstatement" lines; caller sorts/ranks (§4.3.3).
 match_triggers() { ... }
 
+# match_topic_statement <store> <keyword> <label>
+#   CLI-only broader net (§4.4, fix-round N6 — exported here, was used in
+#   §4.4 without being listed): substring match against .records[].topic
+#   and .records[].statement (not triggers). Same "hits\tid\tlabel\tstatement"
+#   output shape as match_triggers (hits is always 1: a keyword either
+#   matches across the two checked fields or it doesn't). Never called by
+#   the presence hook — §4.3.3's "why triggers only" precision argument
+#   applies to this function too, which is why it is CLI-only by design.
+match_topic_statement() { ... }
+
 # match_lessons <lessons-file> <keyword>
-#   Prints matching "^- " lines (grep -i, cut -c1-220), mirroring the
-#   grep pattern scripts/retrieve:87-92 already uses for lesson counting.
+#   Same "hits\tid\tlabel\tstatement" output shape as match_triggers
+#   (fix-round M1 — the original draft had no id/hit-count, so its output
+#   could not merge/sort/dedupe/telemetry alongside match_triggers'
+#   output). hits is always 1 per matching line (a lesson line either
+#   contains the keyword or it doesn't — no per-line trigger array to
+#   count multiple hits against). id is synthetic and stable:
+#   "L:<first 8 hex chars of sha256(line text)>" — a line-number id would
+#   silently shift whenever an earlier line is appended to
+#   LESSONS-LEARNT.md's append-only growth, breaking recall_cache/dedupe
+#   (§4.3.6) across sessions; a content hash of the line itself does not
+#   shift. label is always "" (LESSONS-LEARNT resolves project-local only,
+#   scripts/retrieve:86-93 — no global-tier lessons file exists in this
+#   design). statement is the matched line, `sed 's/^- //'` then
+#   `cut -c1-220`.
 match_lessons() { ... }
 ```
 
@@ -217,7 +271,12 @@ hook MUST register on both events." Matcher string mirrors the existing
 PreToolUse matcher exactly (`hooks/hooks.json:27`, `scripts/inhibit`'s
 own scope) — non-MCP tools only, the region the cascade plan already
 confirmed sits outside the one documented PostToolUse+MCP gap
-(`docs/plans/2026-08-18-jit-recall-cascade.md:118-124`).
+(`docs/plans/2026-08-18-jit-recall-cascade.md:118-124`). This entire
+registration presupposes `additionalContext` actually surfaces for a
+non-MCP built-in tool on `PostToolUse`/`PostToolUseFailure` — labeled
+**probable, not established** (fix-round M3; full evidentiary accounting
+in §1), not settled fact, even though the two-event requirement itself
+(the correction quoted above) is established.
 
 **Defense in depth (labeled judgment, closes an unverified assumption):**
 whether the Claude Code harness honors a `matcher` field on
@@ -243,7 +302,14 @@ tool_name, tool_input, tool_response, tool_use_id, duration_ms`.
 PostToolUseFailure fields (same verification, corrected from the earlier
 draft's single-event assumption): `..., tool_name, tool_input,
 tool_use_id, error, is_interrupt` — **no `tool_response`** on this event;
-`error` carries the failure text instead. `hook_event_name` is read first
+`error` carries the failure text instead. **Precise on what "verified"
+covers (fix-round M3):** the field _names_ above are established by
+skeptic spawn #3's live capture. That the resulting `additionalContext`
+then surfaces in the next model turn **for this non-MCP-tool case
+specifically** is the separate, convergent-but-not-directly-witnessed
+claim §1 labels **probable, not established** — this whole input contract
+is built on it, and the field-name verification does not itself settle
+it. `hook_event_name` is read first
 to branch:
 
 ```sh
@@ -286,45 +352,90 @@ input; the hook does not special-case interruption.
 **Haystack:** `$tin $outcome` (space-joined; case-folding happens inside
 the match, not here — see below).
 
-**Per-record matching (`match_triggers`, in `scripts/store-resolve`):**
+**Per-record matching (`match_triggers`, in `scripts/store-resolve`) —
+redesigned for O(1) subprocess spawns TOTAL per store, not per record
+(fix-round M2, empirically verified during this fix round):**
+
+The original draft called `yq` three times per record (once for its
+`triggers` list, once for `id`, once for `statement`) inside a
+per-record loop — benchmarked by the reviewer at ~5.6ms per `yq` call on
+this repo's own 24-record store, extrapolating to ~3.4s on two
+~300-record stores for the trigger read alone, before `jq`/nudge/
+reanchor/telemetry work even starts, against a 5s hook timeout (M2
+finding). A first redesign attempt (one `yq` call per store piped into a
+shell loop calling `grep -qiF` per trigger, mirroring the house pattern
+`scripts/record-index:12-15`) was built and actually timed against a
+synthetic 300-record fixture in this sandbox: **1.944s for one store**
+(`{command: "yq ... | while read ... grep -qiF ...", output: "1.02s
+user 0.77s system 92% cpu 1.944 total"}`) — still too slow across two
+stores; the `grep`-subprocess-per-trigger cost (≈600 spawns for 300
+records ×~2 triggers) dominated. Redesigned again to push the matching
+itself **into a single `awk` pass** reading the same one-`yq`-call TSV
+output — verified: **0.032s for two 300-record stores combined**
+(`{command: "two-store combined timing loop", output: "0.04s user 0.02s
+system 171% cpu 0.032 total"}`), a ~60x improvement over the grep-loop
+attempt and comfortably inside the 5s budget with room for the other
+three duties:
 
 ```sh
 match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
-  f="$1"; hay="$2"; label="$3"
-  n="$(yq -r '.records | length' "$f" 2>/dev/null || echo 0)"
-  i=0
-  while [ "$i" -lt "$n" ]; do
-    tcount=0
-    while IFS= read -r trig; do
-      [ -n "$trig" ] || continue
-      printf '%s' "$hay" | grep -qiF -- "$trig" && tcount=$((tcount+1))
-    done <<< "$(yq -r ".records[$i].triggers // [] | .[]" "$f" 2>/dev/null)"
-    if [ "$tcount" -gt 0 ]; then
-      rid="$(yq -r ".records[$i].id" "$f" 2>/dev/null)"
-      stmt="$(yq -r ".records[$i].statement" "$f" 2>/dev/null | cut -c1-220)"
-      printf '%s\t%s\t%s\t%s\n' "$tcount" "$rid" "$label" "$stmt"
-    fi
-    i=$((i+1))
-  done
+  f="$1"; label="$3"
+  # ONE yq pass: one row per (record, trigger) pair; (.triggers // [])[]
+  # emits zero rows for a triggerless record automatically. Piped into
+  # ONE awk pass doing the matching itself (index()/tolower() are POSIX
+  # awk, no extension needed) instead of a grep subprocess per trigger --
+  # this is the change that took the design from 1.944s to 0.032s.
+  #
+  # Haystack passed via ENVIRON, NEVER awk -v: verified empirically that
+  # -v processes backslash escapes in its value (a literal backslash-n /
+  # backslash-backslash / backslash-t typed in the shell string becomes a
+  # real newline/backslash/tab byte once inside awk) while ENVIRON
+  # preserves the value byte-for-byte. tool_input/tool_response haystack
+  # text is jq -c-serialized JSON (Sec 4.3.2) and routinely contains
+  # literal backslash escapes (embedded quotes, literal backslashes,
+  # newlines inside JSON string values); -v would silently corrupt it
+  # before matching while triggers (read as awk fields, not via -v) would
+  # not undergo the same corruption — an asymmetry that could cause real
+  # misses. ENVIRON is the safe channel, used here.
+  MT_HAY="$2" \
+    yq -r '.records[] | .id as $id | .statement as $s |
+      (.triggers // [])[] | [$id, ., $s] | @tsv' "$f" 2>/dev/null |
+  awk -F'\t' -v label="$label" '
+    BEGIN { h = tolower(ENVIRON["MT_HAY"]) }
+    {
+      trig = tolower($2)
+      if (trig != "" && index(h, trig) > 0) { cnt[$1]++; stmt[$1] = $3 }
+    }
+    END {
+      for (id in cnt) {
+        s = stmt[id]; if (length(s) > 220) s = substr(s, 1, 220)
+        printf "%s\t%s\t%s\t%s\n", cnt[id], id, label, s
+      }
+    }
+  '
 }
 ```
 
+`label` is passed via `awk -v` safely (unlike the haystack, `label` is
+always one of two fixed literal strings — `""` or `"[global] "` — never
+derived from arbitrary tool-call text, so it carries no backslash risk).
 Precise definitions, each a direct answer to a dispatcher requirement:
 
-- **Case-insensitive fixed-string per trigger:** `grep -qiF -- "$trig"` —
-  `-F` (fixed string, not regex) **and** `-i` (case-fold) in one call.
-  `-F` is load-bearing, not incidental: a trigger is freeform authored
-  text and may contain glob/regex metacharacters (`*`, `?`, `[`); using a
-  shell `case` pattern or `grep -E` here would let those metacharacters
-  be interpreted rather than matched literally — the exact class of bug
-  `G002` already names for `yq`'s `==` ("Freeform identifiers must never
-  meet a yq ==" — the same "pattern-matching operator meets freeform
-  text" shape, `~/.claude/anoti/GROUNDING.yaml:43`) and the reasoning
-  `G004`'s own predicate literally asks for ("what result would make it
-  FAIL", `~/.claude/anoti/GROUNDING.yaml:45`). `grep -qiE` is already
-  this codebase's precedent for case-insensitive pattern checks
-  (`scripts/inhibit:78-79`); `-F` is the one-character difference that
-  keeps triggers safe as _literal_ text.
+- **Case-insensitive fixed-string per trigger:** `index(tolower(h),
+tolower(trig)) > 0` — a literal substring test on case-folded text,
+  with zero pattern-language ambiguity (awk's `index()` has no glob or
+  regex semantics to accidentally invoke, unlike a shell `case` pattern
+  or `grep -E`, either of which would let trigger metacharacters like
+  `*`/`?`/`[` be interpreted rather than matched literally — the exact
+  class of bug `G002` already names for `yq`'s `==` ("Freeform
+  identifiers must never meet a yq ==" — the same "pattern-matching
+  operator meets freeform text" shape,
+  `~/.claude/anoti/GROUNDING.yaml:43`) and the reasoning `G004`'s own
+  predicate literally asks for ("what result would make it FAIL",
+  `~/.claude/anoti/GROUNDING.yaml:45`)). Case-insensitive matching itself
+  is already this codebase's precedent (`grep -qiE`,
+  `scripts/inhibit:78-79`) — `index()`/`tolower()` is the fixed-string
+  equivalent, verified working (above) rather than assumed.
 - **Multi-word triggers:** a trigger is matched as one literal substring
   — `"cd chain"` matches only if that exact (case-folded) run of
   characters appears in the haystack, not as a set of independently
@@ -337,18 +448,38 @@ Precise definitions, each a direct answer to a dispatcher requirement:
   triggers on that record that matched (not occurrences of any one
   trigger) — a record with two different matching triggers outranks one
   with a single matching trigger repeated many times in the haystack.
+- **How the hook invokes `match_lessons` (fix-round M1 — closes an
+  invocation-shape gap the original draft left implicit):**
+  `match_lessons`'s signature (§4.2) takes one explicit `<keyword>`, which
+  is straightforward for the CLI (a human/agent-supplied keyword, §4.4)
+  but undefined for the hook, which has a haystack, not a keyword.
+  **Resolution (labeled judgment):** the hook calls `match_lessons` once
+  per **distinct trigger string that already matched at least one record**
+  in this firing's `match_triggers` output (project or global) — lessons
+  never fire "cold" on their own free text, only riding along on a cue
+  already established as relevant to this specific tool call by an
+  authored record trigger. If zero record triggers matched, `match_lessons`
+  is not invoked at all this firing. This is the same precision-first
+  scoping already argued below ("why triggers only, not statement/topic")
+  extended honestly to lessons, which carry no authored `triggers:` field
+  of their own to test independently.
 - **Cross-source ranking + deterministic tie-break:** the caller collects
   `match_triggers` output from project store, global store (each
-  correctly labeled), and `match_lessons` output from LESSONS-LEARNT
-  (each lesson line counts as exactly one hit, since lessons carry no
-  per-line trigger array to count against), then sorts:
-  `sort -t"$(printf '\t')" -k1,1nr` (hit count, descending), tie-broken by
-  **source priority project > global > lessons** (labeled judgment: a
-  project-scoped trigger is authored against this codebase's own
-  vocabulary and is inherently less likely to be a coincidental match
-  than a broadly-scoped global one — the same caution `G004`'s
-  namespace-collision case names), then by **id ascending** for full
-  determinism (mirrors `scripts/record-index`'s exact-match discipline).
+  correctly labeled), and `match_lessons` output from LESSONS-LEARNT —
+  now schema-compatible by construction (fix-round M1, §4.2): every
+  source emits the same `hits\tid\tlabel\tstatement` shape, lessons'
+  `hits` always `1` per matching line and `id` the stable synthetic
+  `L:<hash>` form (§4.2) — then sorts: `sort -t"$(printf '\t')" -k1,1nr`
+  (hit count, descending), tie-broken by **source priority project >
+  global > lessons** (labeled judgment: a project-scoped trigger is
+  authored against this codebase's own vocabulary and is inherently less
+  likely to be a coincidental match than a broadly-scoped global one — the
+  same caution `G004`'s namespace-collision case names; lessons rank last
+  as the least curated source), then by **id ascending** for full
+  determinism (mirrors `scripts/record-index`'s exact-match discipline —
+  `L:` sorts after bare record ids lexically, which is an acceptable,
+  arbitrary-but-deterministic tie-break, not a claimed ordering of
+  importance).
 - **Dedupe per session:** a record/lesson-line id already injected is not
   re-injected until `N` tool calls have passed since its last injection
   in this session (`N = 10`, shared with periodic frame re-anchoring —
@@ -457,7 +588,8 @@ recovery's telemetry is emitted by `scripts/retrieve`, not this script —
 see §4.7). `<detail>`:
 
 - `recall`: comma-separated `id[label]` pairs actually injected, e.g.
-  `G004[global],D007[]`.
+  `G004[global],D007[],L:a1b2c3d4[]` — the third form is a lesson hit
+  (§4.2's synthetic `L:<hash>` id, fix-round M1).
 - `frame-reanchor-periodic`: the frame id.
 - `evidence-nudge`: the matched pattern name (`curl-grep`).
 
@@ -527,8 +659,13 @@ least costly duty to drop under pressure.
 (`scripts/anoti:2-3,34-35`). Sources `store-resolve`; for each keyword,
 runs `match_triggers` **and** a broader `match_topic_statement` pass
 (new, `store-resolve`: substring match against `.records[].topic` and
-`.records[].statement`, same `grep -qiF` primitive) against both stores,
-plus `match_lessons` against LESSONS-LEARNT — the broader net justified in
+`.records[].statement`, case-insensitive fixed-string — `grep -qiF` is
+sufficient here, unlike `match_triggers`'s `awk` redesign (fix-round M2,
+§4.3.3): this function is CLI-only, invoked once per human/agent query,
+not once per tool call, so it carries none of the firing-frequency
+perf pressure that motivated `match_triggers`'s redesign) against both
+stores, plus `match_lessons` against LESSONS-LEARNT — the broader net
+justified in
 §4.3.3's "why triggers only" note: a human/agent explicitly invoked this,
 so higher recall at the cost of some noise is the right trade, the inverse
 of the hook's precision-first stance. Output: ranked list (same
@@ -560,7 +697,8 @@ its existing step 1 (`commands/recall.md:8`):
 ### 4.5 `triggers:` schema, `scripts/append-trigger`, validator check
 
 **Schema (additive, `templates/GROUNDING.yaml` reference-comment block
-gains one line after `templates/GROUNDING.yaml:24` `statement:`):**
+gains one line after `templates/GROUNDING.yaml:20` `statement:`, fix-round
+N2 correction — line 24 is `evidence: []`, not `statement:`):**
 
 ```yaml
 triggers: [] # optional; short authored keywords/phrases matched at tool-use time (append-only via scripts/append-trigger)
@@ -600,22 +738,48 @@ explicit brief, with one deliberate strengthening:
    refuse on failure, store untouched).
 5. Preserve file mode (`scripts/append-evidence:38-39`'s `stat`/`chmod`
    dance), atomic `mv` (`scripts/append-evidence:40`).
-6. **Deliberate strengthening beyond `append-evidence`:**
-   `scripts/append-trigger` also runs `regen-index` and `trust` on the
-   result — cloning `scripts/append-record:18`'s stronger,
-   self-contained contract instead. Reasoning (labeled judgment): every
-   store mutation changes the file's hash, so `is_trusted` fails until
-   the store is re-trusted (`scripts/retrieve:17`); `append-evidence`
-   defers re-trusting to the caller's batch-end step
-   (`skills/consolidate/SKILL.md:115-116`, step 9), which is safe inside
-   a multi-step consolidation flow but not for `append-trigger`, which
-   the encoding-time question (below) invokes as a **standalone** action
-   that may be the last write in its episode — leaving the store
-   untrusted after it would silently break the very next `retrieve`/
-   `presence` read. `regen-index` is a content no-op here (`triggers:`
-   is not part of the generated index shape, `scripts/regen-index:7`)
-   but is run anyway for hygiene/idempotency consistency with
-   `append-record`'s contract.
+6. **Deliberate strengthening beyond `append-evidence`, corrected for the
+   global store (CRITICAL fix-round finding C1, dispatcher-ruled):**
+   `scripts/append-trigger` also runs `regen-index`, then **attempts**
+   `trust` on the result — the original draft claimed this cloned
+   `scripts/append-record:18`'s "self-contained" `regen-index && trust`
+   pattern, but that claim was refuted empirically: `scripts/trust:15-18`
+   refuses any store path under `$HOME/.claude/anoti/` unless called with
+   `--global` (`scripts/trust:4-6`'s "deliberate friction on the
+   machine-wide path"), and neither `append-record`'s literal pattern nor
+   a naive clone passes it — running `append-record`'s pattern against a
+   global-path store exits 0 while the trailing `trust` call fails
+   silently, leaving the store **untrusted**. This would have broken the
+   spec's own flagship motivating example (§2) — retrofitting triggers
+   onto the global `G004`/`G005`/`G008` records — exactly as the reviewer
+   found: the very next `retrieve`/`presence` firing would report
+   "not yet trusted; not loaded" against the store `append-trigger` just
+   wrote to. **Fix, matching the pattern the `set-*` helpers already
+   ship** (`scripts/set-ratification:35-36`, the same shape recurs in
+   `set-status`/`resolve-question`) — never silently threading `--global`
+   in, which would override a deliberate consent gate:
+
+   ```sh
+   "$SELF/regen-index" "$f"
+   "$SELF/trust" "$f" >/dev/null 2>&1 \
+     || echo "append-trigger: store written and indexed but NOT re-trusted — machine-wide scope requires explicit consent: scripts/trust --global $f" >&2
+   exit 0
+   ```
+
+   On the project path, `trust` (no flag needed) succeeds and this is
+   invisible — `append-trigger` stays fully self-contained, as originally
+   intended. On the global path, the store is still written, indexed, and
+   valid; only re-trust is deferred, exactly the state
+   `skills/consolidate/SKILL.md:156`'s own global-tier opt-in flow already
+   expects the human to close explicitly (`scripts/trust --global
+<store>` as its own named step) — `append-trigger` degrades to
+   `append-evidence`'s existing deferred-trust contract
+   (`skills/consolidate/SKILL.md:115-116`, step 9) on this one path,
+   loudly flagged rather than silently assumed. `regen-index` is a
+   content no-op here (`triggers:` is not part of the generated index
+   shape, `scripts/regen-index:7`) but is run anyway, unconditionally, for
+   hygiene/idempotency consistency with `append-record`'s contract — its
+   success does not depend on `--global` the way `trust`'s does.
 
 **`scripts/validate-workspace` gains a triggers shape check** (new check,
 inserted alongside the existing per-record checks at
@@ -656,8 +820,10 @@ and step 3 ("Citations", `skills/consolidate/SKILL.md:65-67`):
 
 This is a skill-file edit, not a spec/direction-organ change — no dated
 changelog or ratification gate applies (`skills/spec/SKILL.md`'s
-changelog rule binds _specs_; `docs/direction/SKILL.md`'s ratification
-gate binds `docs/ROADMAP.md`/`docs/HIGH-LEVEL-STORIES.md` only,
+changelog rule binds _specs_; `skills/direction/SKILL.md`'s ratification
+gate — fix-round N3 correction, the path is `skills/direction/SKILL.md`,
+not `docs/direction/SKILL.md`, which does not exist — binds
+`docs/ROADMAP.md`/`docs/HIGH-LEVEL-STORIES.md` only,
 `skills/direction/SKILL.md:8-11`).
 
 ### 4.7 Compaction recovery (owned by existing hooks, not the new one)
@@ -755,9 +921,9 @@ ts\tsid\tsummary\tslow=<n>\tframes=<n>\tretrospect_ran=<bool>\tepisode=<final>
 ```
 
 where `slow` = count of `slow` verdicts in `.classifications[]`, `frames`
-= length of `.frames[]`, `retrospect_ran` = true iff a `presence` (wait —
-`retrospect`, not `presence`) telemetry line for this `sid` exists in
-`telemetry.log` from step above (`grep`-checked, not re-derived from
+= length of `.frames[]`, `retrospect_ran` = true iff a `retrospect`
+telemetry line for this `sid` (written by `scripts/mark-retrospect`,
+above) exists in `telemetry.log` (`grep`-checked, not re-derived from
 session state, since session state is about to be deleted), `episode` =
 final `.episode` value. This is the durable artifact "% slow-classified
 sessions with a frame" and "% nontrivial sessions with a retrospect"
@@ -923,7 +1089,10 @@ test run → surface policy-test-driven" — both are additional entries in
 the same matching/telemetry machinery §4.3 already builds, deferred as
 follow-on work because this spec's scope is the four duties the cascade
 plan named (`docs/plans/2026-08-18-jit-recall-cascade.md:260-312`), not an
-open-ended pattern library.
+open-ended pattern library. **Dispatcher ruling (fix-round, cited per
+review):** this deferral stands as-is — the ratified `docs/ROADMAP.md:96-105`
+line names four duties and controls scope; the two extra patterns stay
+"Tier-1 growth path, not built now," not promoted into this spec's build.
 
 **Tier 2 (opt-in, human-wired — NOT built by this spec):** an
 `/anoti:presence` command examining session state + telemetry + recent
@@ -1018,6 +1187,32 @@ scripts/presence` → `assert_eq "$out" "" "no match, no output"` — and
     hypothetical matcher misconfiguration let it through) → silent,
     proving the internal guard (§4.3.1) independent of the registered
     matcher string.
+11. **Priority-order budget yielding (fix-round N7a — the original draft
+    named the `recall > evidence-nudge > frame-reanchor-periodic`
+    priority order in §4.3.7 but had no test for it):** construct a
+    firing where all three duties would fire simultaneously (a slow
+    session at exactly `N` tool calls, an active frame, a matching
+    trigger, and a matching evidence-nudge pattern, all in one call) with
+    `BUDGET_TOTAL` (§4.3.7) deliberately undersized via a test-only
+    override — assert `additionalContext` contains the recall content,
+    then the evidence-nudge, and omits or truncates the frame-reanchor
+    content first when the budget forces a drop; a second case with
+    budget large enough for all three asserts all three duties' content
+    present together.
+12. **Perf pass condition (fix-round M2 — the original draft's `match_triggers`
+    design was benchmarked by the reviewer at ~3.4s for two ~300-record
+    stores, exceeding the 5s timeout with no room left for the hook's
+    other work; the redesign was verified in this fix round at 0.032s for
+    the same scale, `{command: "yq ... | awk ..." against a synthetic
+300-record fixture, two stores combined, output: "0.04s user 0.02s
+system 171% cpu 0.032 total"}`):** a generated 300-record fixture per
+    store (not checked into the repo — generated by the test itself, to
+    avoid bloating the tree with a large static fixture), both project
+    and global paths populated, one firing → wall-clock time **< 1s**
+    total for the recall duty (a wide margin above the 0.032s measured
+    here, chosen to tolerate slower CI/developer machines while still
+    being a meaningful regression guard against a reintroduced
+    per-record `yq` spawn).
 
 **Extended: `tests/test_retrieve.sh`** — compaction-recovery cases (owned
 by `retrieve`, §4.7), appended to the existing suite: a `SessionStart`
@@ -1042,8 +1237,21 @@ block):
   (mirroring `tests/test_helpers.sh:51`'s `append-evidence ... NOPE ...`
   pattern), result validates, triggers accumulate across repeated calls
   (append-only, never overwrite), file mode preserved, `regen-index`+
-  `trust` both ran (store re-trusted immediately after, verified by a
-  subsequent untrusted-store check returning false).
+  `trust` both ran on a **project-path** store (re-trusted immediately
+  after, verified by a subsequent untrusted-store check returning false).
+- `append-trigger` **global-path fixture (fix-round N7b — the missing
+  case that would have caught C1):** a store constructed under a
+  `HOME`-overridden `$HOME/.claude/anoti/GROUNDING.yaml` path (mirroring
+  `tests/test_retrieve.sh:3`'s hermetic-`HOME` pattern), trusted via
+  `scripts/trust --global` first — `append-trigger` against it must (a)
+  exit 0, (b) leave the triggers written and the store `validate-workspace`-clean,
+  (c) print the "NOT re-trusted — machine-wide scope requires explicit
+  consent" warning to stderr (§4.5 point 6), and (d) leave the store
+  **untrusted** afterward (a subsequent `retrieve`/`presence` firing
+  against it reports "not yet trusted") until a follow-up `scripts/trust
+--global` call re-trusts it — this is the direct regression test for
+  C1, distinct from the project-path case above which must show the
+  opposite (self-contained, immediately re-trusted, no warning).
 - `scripts/recall`: keyword match across both stores + lessons, `[global]`
   labeling correct, untrusted-store framing preserved (same assertions
   `tests/test_retrieve.sh:5-8` already makes for the digest, applied to
@@ -1106,14 +1314,28 @@ command path, correct timeout) — extended, not replaced.
    checkable resolution of the corrected foundation's central finding.
 3. A trivial, unmatched tool call produces zero output and zero
    telemetry lines — US-002 silence, mechanically checkable.
-4. `scripts/anoti recall <keyword>` and the presence hook agree on which
-   records a shared fixture keyword matches (same underlying
-   `match_triggers`/`match_topic_statement` functions, different entry
-   points) — checkable by running both against the same fixture store and
-   diffing matched-id sets.
-5. `scripts/append-trigger` round-trips: appended triggers are visible to
-   both `scripts/recall` and `scripts/presence` immediately after the
-   call returns (store re-trusted in the same call, §4.5 point 6).
+4. `scripts/anoti recall <keyword>` and the presence hook agree on
+   **trigger-based** matches for a shared fixture keyword (both call the
+   same `match_triggers` function, different entry points) — checkable
+   by running both against the same fixture store and diffing matched-id
+   sets, restricted to hits `match_triggers` itself produced. They are
+   **not** expected to agree in full: the CLI's additional
+   `match_topic_statement` pass (§4.4) surfaces topic/statement matches
+   the hook deliberately never does (§4.3.3's precision-first "why
+   triggers only" argument) — a fixture keyword present only in a
+   record's `statement`, not its `triggers:`, should appear in the CLI's
+   output and correctly NOT appear in the hook's, and the test suite
+   asserts that asymmetry directly rather than treating it as a bug.
+5. `scripts/append-trigger` round-trips **on the project-path store**:
+   appended triggers are visible to both `scripts/recall` and
+   `scripts/presence` immediately after the call returns (self-contained
+   trust, §4.5 point 6). **On the global-path store (fix-round C1
+   correction — item 5 originally claimed this unconditionally, which
+   the reviewer showed false):** triggers are appended and indexed, but
+   the store is left untrusted with a loud stderr warning until a human
+   runs `scripts/trust --global`; success here means the warning fires
+   and the store reads as untrusted immediately after, not that it
+   round-trips silently.
 6. `docs/specs/2026-08-13-exp-longitudinal.md`'s next scheduled audit run
    (on/after 2026-08-20 per its own cadence, `docs/specs/2026-08-13-exp-longitudinal.md:53`)
    can score the three new metrics from durable `telemetry.log` artifacts
@@ -1250,3 +1472,27 @@ fourth attempt.
   `docs/ROADMAP.md:97` line's own date and the filename this spawn was
   explicitly instructed to produce, and I have no basis to second-guess
   either.
+- **New doubts from this fix round (fix-round self-review):**
+  - **The `match_lessons` invocation-shape rule I added to close M1**
+    ("piggyback on already-matched record triggers; never fire on the
+    haystack cold," §4.3.3) is my own judgment call, made under this fix
+    round's pressure to close the gap "without a clarifying question" —
+    it changes lessons' actual recall behavior (a lesson can now only
+    ever surface alongside a record trigger, never independently) in a
+    way the original three-source design (§4 principle 6, "LESSONS-LEARNT
+    exactly as `scripts/retrieve` already does it") did not obviously
+    imply. If the human's intent was for lessons to have independent
+    recall power, this narrows it; flagged for the reviewer/human to
+    weigh rather than treated as self-evidently correct.
+  - **The `awk`-based `match_triggers` redesign's `tolower()`/`index()`/
+    `ENVIRON` behavior was verified in this fix round only against
+    macOS's own `/usr/bin/awk`** (`{command: "awk -v x=... 'BEGIN{print
+x}' | od -c", output: confirmed -v processes backslash escapes,
+ENVIRON does not}`), not against whatever `awk` this plugin's CI
+    actually runs (this codebase already handles GNU-vs-BSD divergence
+    elsewhere, e.g. `stat -c` vs `stat -f` throughout the helper scripts —
+    the same class of platform risk could apply to `awk` variants,
+    though `tolower`/`index`/`ENVIRON` are POSIX-mandated awk features I
+    am not aware of any common implementation (gawk, mawk, nawk) lacking
+    — a knowledge-based claim, not one I independently verified on
+    Linux in this pass).

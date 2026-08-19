@@ -158,3 +158,18 @@ grep -qi "symlink" "$ROOT/skills/skillify/SKILL.md"
 assert_ok $? "#18 skillify offers the symlink alternative (human-ratified)"
 grep -qi "canonical basename\|episode gate keys on" "$ROOT/skills/skillify/SKILL.md"
 assert_ok $? "#18 the gate limitation of renamed organs is stated, not silent"
+
+# --- jit-recall spec §4.6: consolidate gains step 2b, the encoding-time question ---
+# The markdown formatter hook reflows a non-standard ordinal ("2b.") into
+# an indented continuation of item 2, not column 0 -- same established
+# reflow already visible on the pre-existing "8b." step
+# (skills/consolidate/SKILL.md:120). Anchored on content, tolerant of
+# leading whitespace, instead of requiring an unreflowed "^2b." start.
+grep -qE "2b\. \*\*Encoding-time cue question" "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "consolidate gains step 2b"
+grep -q "what would you have needed to" "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "step 2b carries the encoding-time cue question"
+grep -q "append-trigger" "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "step 2b names the append-trigger helper"
+awk '/^2\. \*\*Type every candidate/{a=NR} /2b\. \*\*Encoding-time cue question/{b=NR} /^3\. \*\*Citations/{c=NR} END{exit !(a && b && c && a<b && b<c)}' "$ROOT/skills/consolidate/SKILL.md"
+assert_ok $? "step 2b sits between step 2 and step 3, in order"

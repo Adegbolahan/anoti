@@ -30,6 +30,7 @@ scripts/append-record <store.yaml>              # record as JSON on stdin
 scripts/append-event <store.yaml> <record-id> <action> <by> <note...>
 scripts/append-evidence <store.yaml> <record-id> <type> <note> [refs...]
 scripts/append-evidence <store.yaml> <record-id>     # or evidence JSON on stdin: {type, note, date?, refs?}
+scripts/append-trigger <store.yaml> <record-id> <keyword>...  # append-only tool-use-time cues (§2b)
 scripts/set-ratification <store.yaml> <record-id> <approved|rejected|pending> <note...>  # field + audit event
 scripts/set-status <store.yaml> <record-id> <speculative|probable|established> <note...> # claims only
 scripts/session-consume <session-id> candidates [--ids id1,id2]  # mark candidates consumed after their writes land
@@ -62,6 +63,17 @@ process violation the audit counts, not a technical impossibility.
    evidence-bearing), `preference` (user taste), `decision` (choice +
    rationale), `goal` (desired state + success criteria), `policy`
    (operating rule). A value is never mislabeled as a claim.
+   2b. **Encoding-time cue question (for `claim`/`policy`/`decision`
+   candidates likely to matter mid-task, not only at review time):** ask
+   "what would you have needed to _see_ — a command, a file path, an
+   error string — to be reminded of this at the moment it mattered?" If
+   the answer names concrete text, capture it as `triggers:` on the
+   record the moment it is appended: `scripts/append-trigger <store>
+<id> <keyword>...`. Skip silently for candidates with no natural
+   tool-use-time cue (e.g. a `preference` about communication style) —
+   not every record needs triggers, and forcing the question onto every
+   candidate would just produce noise triggers that degrade the hook's
+   precision (§4.3.3).
 3. **Citations:** a claim without evidence references is `speculative` at
    best; a claim whose statement cannot be falsified is rejected as a
    claim (retype or drop).
@@ -73,7 +85,7 @@ process violation the audit counts, not a technical impossibility.
    relationship + new open question), never resolved by overwrite.
    Relationships write mechanically:
    `scripts/append-relationship <store> <id> <refines|contradicts>
-   <target-id> "<note>"` — the contradicts case still files its open
+<target-id> "<note>"` — the contradicts case still files its open
    question via append-question.
 6. **Scope routing:** about-this-project → project store; about-the-user
    or about-how-agents-work → global store. A lesson whose applicability
@@ -99,16 +111,16 @@ process violation the audit counts, not a technical impossibility.
    `scripts/append-record <store>` (validates, runs regen-index and
    trust automatically). Ratification decisions:
    `scripts/set-ratification <store> <id> <approved|rejected|pending>
-   "<note>"`; claim-ladder moves: `scripts/set-status <store> <id>
-   <speculative|probable|established> "<note>"` — each writes the field
+"<note>"`; claim-ladder moves: `scripts/set-status <store> <id>
+<speculative|probable|established> "<note>"` — each writes the field
    AND its audit event atomically (append-event alone never moved a
    field: issue #10). Other trail entries:
    `scripts/append-event <store> <id> <action> <by> "<note>"`. Episode
    transitions: `scripts/set-episode <session-id> <state>`. IDs allocate
    as max-existing + 1.
-8b. **Mark candidates consumed** the moment their writes land:
+   8b. **Mark candidates consumed** the moment their writes land:
    `scripts/session-consume <session-id> candidates --ids <the ids just
-   applied>` (or no `--ids` once every approved candidate is written).
+applied>` (or no `--ids` once every approved candidate is written).
    Skipping this leaves applied candidates collectable and re-proposable
    next consolidation — the staleness half of the failure issue #9
    reported (D021).
@@ -117,7 +129,7 @@ process violation the audit counts, not a technical impossibility.
 10. **Questions:** promote surviving report doubts mechanically — and
     when a candidate ANSWERS an existing open question, retire it in the
     same breath: `scripts/resolve-question <store> <id> "<what answered
-    it>"` (issue #14). When a candidate shows a resolution's named
+it>"` (issue #14). When a candidate shows a resolution's named
     reopen condition has fired, flip it back:
     `scripts/reopen-question <store> <id> "<which condition fired>"` —
     build `{id, date, question, raised_by, context, status, refs}` as

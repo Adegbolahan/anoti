@@ -777,6 +777,23 @@ different places:
    not literal verified code — the **contract** is: a `recall_cache`
    entry never outlives the suppression episode that made it stale.
 
+   **Correction, 2026-08-19 (fix round, reviewer Task 12 cycle 2):** the
+   illustrative logic above computes "just expired" as a stateless
+   recheck of `presence-feedback.tsv` alone — and implemented literally
+   (as the first build did) that check is true identically on every
+   firing for as long as the row sits in its expired state, purging
+   `recall_cache` every firing rather than once, which defeats the N=10
+   dedupe permanently for any pair nobody clears. That is not what "just
+   expired" means and violates this section's own contract. The
+   corrected mechanism (shipped): persist this session's freshly
+   computed `suppressed` set as `.suppressed_prev` in `*.presence.yaml`
+   at the end of every firing; each firing diffs its own `suppressed`
+   against `.suppressed_prev`; only a pair present last firing and absent
+   this firing is a genuine once-only transition, and only its id's
+   `recall_cache` entry is purged — and the purge runs **before** the
+   recall loop so a same-firing `rc_set` for the newly-unsuppressed id
+   survives. Reviewer-reproduced, mutation-pinned (TEST A/B/C).
+
 **Everything else in the pipeline is unchanged:** `tag_prio`, the `sort` tie-break (project >
 global > lessons, then id ascending,
 `docs/specs/2026-08-19-jit-recall-design.md:528-544`), the `recall_cache`

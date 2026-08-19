@@ -859,6 +859,44 @@ grep -qE $'retrospect\tfiled' .anoti/telemetry.log; assert_ok $? "filed branch t
 assert_eq "$?" "1" "invalid state rejected"
 ); rm -rf "$tmp"
 
+# --- mark-retrospect: named pairs (adaptive suppression §4.3.4) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+# item 10: existing forms stay byte-identical (direct regression against the SAME assertions already at test_helpers.sh:817-823, re-run here on a fresh dir to confirm no cross-contamination from the new arg-parsing path)
+"$ROOT/scripts/mark-retrospect" rY empty; assert_ok $? "backward-compat: empty exits 0"
+grep -qE $'retrospect\tempty' .anoti/telemetry.log; assert_ok $? "backward-compat: empty branch telemetry shape unchanged"
+"$ROOT/scripts/mark-retrospect" rY filed irrelevant-injections 3 >/dev/null
+grep -qE $'irrelevant=3$' .anoti/telemetry.log; assert_ok $? "backward-compat: count-only form, NO pairs= suffix when no pairs given"
+# item 11: named pairs -- id:trigger feeds scripts/feedback mark; id-only is audit-only
+"$ROOT/scripts/mark-retrospect" rY filed irrelevant-injections 2 "D001:cd chain" "D009" >/dev/null
+grep -qF -- 'pairs=D001:cd chain,D009' .anoti/telemetry.log; assert_ok $? "pairs= field is comma-joined, id-only un-suffixed"
+c1="$(grep -c $'^D001\tcd chain' .anoti/presence-feedback.tsv 2>/dev/null || echo 0)"
+assert_eq "$c1" "1" "id:trigger pair fed scripts/feedback mark"
+c2="$(grep -c '^D009' .anoti/presence-feedback.tsv 2>/dev/null)"; c2="${c2:-0}"
+assert_eq "$c2" "0" "id-only token is audit-trail ONLY, no feedback-store write"
+# a colon inside the trigger itself splits on the FIRST colon only
+"$ROOT/scripts/mark-retrospect" rY filed irrelevant-injections 1 "D025:edit:CHANGELOG.md" >/dev/null
+grep -qE $'^D025\tedit:CHANGELOG.md\t1\t' .anoti/presence-feedback.tsv; assert_ok $? "first-colon-only split: id=D025, trigger=edit:CHANGELOG.md (trigger's own colon preserved)"
+); rm -rf "$tmp"
+
+# --- mark-retrospect: guard cases (fix-round IMPORTANT 3/4, spec §6 items 14-15) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+"$ROOT/scripts/mark-retrospect" rZ filed irrelevant-injections 1 "D001:" 2>err1.log >/dev/null
+grep -qF "malformed pair token" err1.log; assert_ok $? "'D001:' (empty trigger half) rejected with stderr note"
+[ -s .anoti/presence-feedback.tsv ] 2>/dev/null; assert_eq "$?" "1" "'D001:' wrote NO row"
+grep -qE $'irrelevant=1$' .anoti/telemetry.log; assert_ok $? "'D001:' still writes the base irrelevant=1 line"
+"$ROOT/scripts/mark-retrospect" rZ filed irrelevant-injections 1 ":cd-chain" 2>err2.log >/dev/null
+grep -qF "malformed pair token" err2.log; assert_ok $? "':cd-chain' (empty id half) rejected with stderr note"
+[ -s .anoti/presence-feedback.tsv ] 2>/dev/null; assert_eq "$?" "1" "':cd-chain' wrote NO row"
+"$ROOT/scripts/mark-retrospect" rZ filed irrelevant-injections 1 "L:a1b2c3d4" 2>err3.log >/dev/null
+grep -qF "lesson ids cannot be named" err3.log; assert_ok $? "'L:a1b2c3d4' (lesson id) rejected outright"
+[ -s .anoti/presence-feedback.tsv ] 2>/dev/null; assert_eq "$?" "1" "'L:a1b2c3d4' wrote NO row (not accepted as id=L trigger=a1b2c3d4)"
+! grep -qF "L:a1b2c3d4" .anoti/telemetry.log; assert_ok $? "'L:a1b2c3d4' does not even appear in the pairs= telemetry field"
+"$ROOT/scripts/mark-retrospect" rZ filed irrelevant-injections 1 "L:a1b2c3d4:cd chain" 2>err4.log >/dev/null
+grep -qF "lesson ids cannot be named" err4.log; assert_ok $? "'L:a1b2c3d4:cd chain' (spurious trigger appended) rejected the SAME way -- idhalf is L either way"
+); rm -rf "$tmp"
+
 # --- cleanup-session summary line (spec §4.8) ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 mkdir -p .anoti/sessions

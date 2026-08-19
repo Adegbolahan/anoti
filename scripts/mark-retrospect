@@ -1,8 +1,12 @@
 #!/bin/bash
-# mark-retrospect <session-id> <empty|filed> [irrelevant-injections N] -- mechanical, one durable
-# telemetry line. Closes "did the retrospective run" (spec §4.8 gap 2).
-# The optional count is the retrospective's answer to "how many presence
-# injections this session were irrelevant?" — the precision metric's source.
+# mark-retrospect <session-id> <empty|filed> [irrelevant-injections N [pair ...]] --
+# mechanical, one durable telemetry line. Closes "did the retrospective
+# run" (spec: jit-recall §4.8 gap 2). The optional count is the
+# retrospective's answer to "how many presence injections this session
+# were irrelevant?" -- the precision metric's source. Each optional pair
+# is <record-id> (audit only) or <record-id>:<trigger> (feeds adaptive
+# suppression via scripts/feedback mark). Spec: docs/specs/2026-08-19-
+# adaptive-suppression-design.md §4.3.4
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir" --require)" || exit 1
@@ -10,11 +14,45 @@ sid="${1:?usage: mark-retrospect <session-id> <empty|filed>}"
 state="${2:?state required (empty|filed)}"
 case "$state" in empty|filed) ;; *) echo "mark-retrospect: state must be empty|filed" >&2; exit 1 ;; esac
 irr=""
+pairs_field=""
 if [ "${3:-}" = "irrelevant-injections" ]; then
   irr="${4:?count required}"; case "$irr" in ''|*[!0-9]*) echo "mark-retrospect: count must be numeric" >&2; exit 1 ;; esac
+  shift 4
+  pairs_csv=""
+  for tok in "$@"; do
+    [ -n "$tok" ] || continue
+    idhalf="${tok%%:*}"
+    if [ "$idhalf" = "$tok" ]; then
+      trighalf=""; haspair=0
+    else
+      trighalf="${tok#*:}"; haspair=1
+    fi
+    # GUARD 1: empty-half check (IMPORTANT 4) -- "D001:" -> trighalf="" rejected;
+    # ":cd-chain" -> idhalf="" rejected.
+    if [ -z "$idhalf" ] || { [ "$haspair" = "1" ] && [ -z "$trighalf" ]; }; then
+      echo "mark-retrospect: skipping malformed pair token '$tok' (empty id or trigger half)" >&2
+      continue
+    fi
+    # GUARD 2: lesson-id collision (IMPORTANT 3) -- lesson ids are always
+    # "L:<hash>", so their mandatory colon forces idhalf="L" whether bare
+    # or with a spurious trigger appended. Outright reject (§7: lessons
+    # carry no authored triggers, so there is no pairing to suppress).
+    if [ "$idhalf" = "L" ]; then
+      echo "mark-retrospect: skipping '$tok' -- lesson ids cannot be named for suppression (adaptive-suppression §7)" >&2
+      continue
+    fi
+    if [ "$haspair" = "1" ]; then
+      "$SELF/feedback" mark "$idhalf" "$trighalf" >/dev/null 2>&1
+      pairs_csv="${pairs_csv}${idhalf}:${trighalf},"
+    else
+      pairs_csv="${pairs_csv}${idhalf},"
+    fi
+  done
+  pairs_csv="${pairs_csv%,}"
+  [ -n "$pairs_csv" ] && pairs_field="$(printf '\tpairs=%s' "$pairs_csv")"
 fi
 if [ -n "$irr" ]; then
-  printf '%s\t%s\t%s\t%s\tirrelevant=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" "$irr" >> "$AD/telemetry.log" 2>/dev/null || true
+  printf '%s\t%s\t%s\t%s\tirrelevant=%s%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" "$irr" "$pairs_field" >> "$AD/telemetry.log" 2>/dev/null || true
 else
   printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" >> "$AD/telemetry.log" 2>/dev/null || true
 fi

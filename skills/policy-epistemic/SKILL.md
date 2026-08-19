@@ -28,6 +28,14 @@ description: Universal anoti operating policy — hypothesis before test, every 
    the artifact is shaped the way it is.
 5. End every report with a **questions/doubts** section. Doubts you don't
    surface are doubts the system inherits silently.
+6. When a verification claim rests on one instrument, prefer the one
+   nearer to ground truth: a DOM query or a database read settles what a
+   screenshot or a raw-text grep can only suggest — screenshot < DOM
+   query < DB query, ordered by distance from the system's actual state.
+   Before trusting the farther instrument, ask what result would make it
+   FAIL to find the thing (G004) or FAIL to have looked properly (G008)
+   — if a nearer instrument was available and unused, that is a finding,
+   not sufficient evidence.
 
 **Binds:** the skeptic agent (refutation), the GROUNDING evidence model
 (citations become `evidence:` entries), the universal report contract.

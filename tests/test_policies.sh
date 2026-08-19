@@ -17,3 +17,15 @@ grep -qi "issue" "$ROOT/skills/policy-retrospect/SKILL.md" && grep -qi "outward-
 assert_ok $? "retrospect routes anoti friction to human-gated issues"
 grep -qi "cite it by ID" "$ROOT/skills/policy-epistemic/SKILL.md"
 assert_ok $? "#4a epistemic: implementing artifacts cite record IDs"
+
+# --- jit-recall spec §4.9: evidence-kind ordering, rule 6 ---
+# The spec's own verbatim text wraps "screenshot < DOM" / "query < DB
+# query" across two source lines (spec:1080-1081) -- join+squeeze before
+# matching so the check is resilient to that wrap instead of requiring a
+# single-line rendering the spec itself never produces.
+tr '\n' ' ' < "$ROOT/skills/policy-epistemic/SKILL.md" | tr -s ' ' | grep -q "screenshot < DOM query < DB query"
+assert_ok $? "policy-epistemic carries the evidence-kind ordering rule"
+grep -qE "^6\. When a verification claim" "$ROOT/skills/policy-epistemic/SKILL.md"
+assert_ok $? "evidence-kind rule is numbered 6, after the existing 5 rules"
+grep -qE "G004.*FAIL|FAIL.*G004" "$ROOT/skills/policy-epistemic/SKILL.md"
+assert_ok $? "rule 6 cites G004/G008 by id"

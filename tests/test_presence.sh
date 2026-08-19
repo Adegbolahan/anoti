@@ -255,3 +255,15 @@ elapsed="$(awk -v a="$start" -v b="$end" 'BEGIN{printf "%.3f", b-a}')"
 awk -v e="$elapsed" 'BEGIN{exit !(e < 2.5)}'
 assert_ok $? "perf: recall duty completes in <2.5s on 300+300 records (got ${elapsed}s)"
 ); rm -rf "$tmp"
+
+# --- cycle-2 review: jq is the nearer instrument for JSON, never nudged; templates leaf symlink ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+n() { printf '{"session_id":"nj","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":%s},"tool_response":"ok"}' "$(printf '%s' "$1" | jq -Rs .)" | "$ROOT/scripts/presence"; }
+out="$(n 'curl -s https://api.example.com/status | jq .healthy')"
+printf '%s' "$out" | grep -qi "evidence-kind"; assert_eq "$?" "1" "curl | jq is structured parsing — the nudge stays silent (jq dropped from the list)"
+out="$(n 'curl -s https://x -o f.json && jq . f.json')"
+printf '%s' "$out" | grep -qi "evidence-kind"; assert_eq "$?" "1" "curl && jq stays silent"
+out="$(n 'curl -s URL | grep title')"
+printf '%s' "$out" | grep -qi "evidence-kind"; assert_ok $? "curl | grep still fires (regression pin)"
+); rm -rf "$tmp"

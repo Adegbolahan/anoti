@@ -28,7 +28,10 @@ case "$tool" in
         # consumer project's templates/TODOS.md etc.)
         tdir="$(cd "$SELF/../templates" 2>/dev/null && pwd -P)"
         pdir="$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)"
-        [ -n "$tdir" ] && [ "$pdir" = "$tdir" ] && exit 0 ;;
+        # the LEAF must be a real file inside that dir too — a symlink
+        # planted at templates/GROUNDING.yaml pointing at a live store
+        # would otherwise ride the exemption (cycle-2 review)
+        if [ -n "$tdir" ] && [ "$pdir" = "$tdir" ] && [ ! -L "$p" ]; then exit 0; fi ;;
     esac
     case "$p" in
       *ROADMAP.md|*HIGH-LEVEL-STORIES.md)

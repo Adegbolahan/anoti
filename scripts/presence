@@ -164,7 +164,7 @@ nudge_block=""
 # FIX (MAJOR #2, jit-recall fix round, spec §4.3.5): a fetch command
 # (curl|wget) at a command position, piped or chained (| ; && ||, `tr`
 # splits each char of && into its own newline) into a text-inspection
-# command (grep|sed|awk|head|tail|jq) -- segment-aware, mirroring
+# command (grep|sed|awk|head|tail) -- segment-aware, mirroring
 # scripts/inhibit's `tr ';&|' '\n'` row pattern. Whole-word match per
 # segment (awk's default field split), not a raw substring test: "curl"
 # inside "curl-agent" is a different word and never matches; "seen" is
@@ -181,7 +181,9 @@ if printf '%s' "$cmd" | tr ';&|' '\n' | awk '
     for (i = 1; i <= NF; i++) {
       w = tolower($i)
       if (w == "curl" || w == "wget") has_fetch = 1
-      if (seen && (w == "grep" || w == "sed" || w == "awk" || w == "head" || w == "tail" || w == "jq")) found = 1
+      # jq deliberately absent: structured JSON parsing IS the nearer
+      # instrument, so nudging against it would be backwards (cycle-2 review)
+      if (seen && (w == "grep" || w == "sed" || w == "awk" || w == "head" || w == "tail")) found = 1
     }
     if (has_fetch) seen = 1
   }

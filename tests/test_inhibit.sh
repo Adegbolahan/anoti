@@ -57,3 +57,15 @@ out="$(cd "$ROOT" && printf '{"session_id":"tp","tool_name":"Edit","tool_input":
 out="$(printf '{"session_id":"tp","tool_name":"Edit","tool_input":{"file_path":"GROUNDING.yaml"}}' | "$ROOT/scripts/inhibit")"
 printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "the live store is still gated"
 ); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti fakeplugin/scripts fakeplugin/templates live
+cp "$ROOT"/scripts/inhibit "$ROOT"/scripts/anoti-dir fakeplugin/scripts/
+printf 'schema_version: 3\n' > live/GROUNDING.yaml
+ln -s "$tmp/live/GROUNDING.yaml" fakeplugin/templates/GROUNDING.yaml
+cd fakeplugin
+out="$(printf '{"session_id":"sl","tool_name":"Edit","tool_input":{"file_path":"templates/GROUNDING.yaml"}}' | ./scripts/inhibit)"
+printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "a symlinked leaf under templates/ that escapes the templates dir is STILL gated"
+rm templates/GROUNDING.yaml && printf '# tpl\n' > templates/GROUNDING.yaml
+out="$(printf '{"session_id":"sl","tool_name":"Edit","tool_input":{"file_path":"templates/GROUNDING.yaml"}}' | ./scripts/inhibit)"
+[ -z "$out" ]; assert_ok $? "a real file inside the plugin's templates dir stays exempt"
+); rm -rf "$tmp"

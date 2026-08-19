@@ -1,9 +1,17 @@
 h="$ROOT/hooks/hooks.json"
 [ -f "$h" ]; assert_ok $? "hooks.json exists"
-jq -e '.hooks | has("SessionStart") and has("UserPromptSubmit") and has("PreToolUse") and has("PreCompact") and has("Stop") and has("SessionEnd")' "$h" >/dev/null 2>&1
-assert_ok $? "all six events wired"
+jq -e '.hooks | has("SessionStart") and has("UserPromptSubmit") and has("PreToolUse") and has("PreCompact") and has("Stop") and has("SessionEnd") and has("PostToolUse") and has("PostToolUseFailure")' "$h" >/dev/null 2>&1
+assert_ok $? "all eight events wired"
 assert_eq "$(jq -r '.hooks.SessionStart[0].hooks[0].timeout' "$h")" "10" "retrieve timeout 10s"
 assert_eq "$(jq -r '.hooks.PreToolUse[0].matcher' "$h")" "Bash|Write|Edit|NotebookEdit" "inhibition matcher scoped"
+jq -e '.hooks | has("PostToolUse") and has("PostToolUseFailure")' "$h" >/dev/null 2>&1
+assert_ok $? "PostToolUse and PostToolUseFailure both wired"
+assert_eq "$(jq -r '.hooks.PostToolUse[0].matcher' "$h")" "Bash|Write|Edit|NotebookEdit" "presence matcher scoped (PostToolUse)"
+assert_eq "$(jq -r '.hooks.PostToolUseFailure[0].matcher' "$h")" "Bash|Write|Edit|NotebookEdit" "presence matcher scoped (PostToolUseFailure)"
+assert_eq "$(jq -r '.hooks.PostToolUse[0].hooks[0].command' "$h")" "\${CLAUDE_PLUGIN_ROOT}/scripts/presence" "PostToolUse points at presence"
+assert_eq "$(jq -r '.hooks.PostToolUseFailure[0].hooks[0].command' "$h")" "\${CLAUDE_PLUGIN_ROOT}/scripts/presence" "PostToolUseFailure points at the SAME script"
+assert_eq "$(jq -r '.hooks.PostToolUse[0].hooks[0].timeout' "$h")" "5" "presence timeout 5s (PostToolUse)"
+assert_eq "$(jq -r '.hooks.PostToolUseFailure[0].hooks[0].timeout' "$h")" "5" "presence timeout 5s (PostToolUseFailure)"
 # every referenced script exists and is executable (resolve ${CLAUDE_PLUGIN_ROOT} to repo root)
 for cmd in $(jq -r '.. | .command? // empty' "$h"); do
   real="${cmd/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}"

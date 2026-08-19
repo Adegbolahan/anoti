@@ -59,6 +59,24 @@ tel() { printf '%s\t%s\tpresence\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$s
 # --- store resolution + warn-once (fx-first: absent is silent, present-but-bad warns once) ---
 warned_g="$(yq -r '.warned.global // false' "$pf" 2>/dev/null || echo false)"
 warned_p="$(yq -r '.warned.project // false' "$pf" 2>/dev/null || echo false)"
+warned_f="$(yq -r '.warned.feedback // false' "$pf" 2>/dev/null || echo false)"
+threshold="$(cfgk feedback_threshold)"; [ -n "$threshold" ] || threshold=3
+cutoff="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"
+ff="$AD/presence-feedback.tsv"
+suppressed=""; expired_ids=""
+if fx "$ff"; then
+  if feedback_shape_ok "$ff"; then
+    suppressed="$(awk -F'\t' -v th="$threshold" -v cutoff="$cutoff" \
+      'NF==5 && $3+0>=th && $4>=cutoff {print $1"\t"$2}' "$ff" 2>/dev/null)"
+    expired_ids="$(awk -F'\t' -v th="$threshold" -v cutoff="$cutoff" \
+      'NF==5 && $3+0>=th && $4<cutoff {print $1}' "$ff" 2>/dev/null | sort -u)"
+  else
+    if [ "$warned_f" != "true" ]; then
+      try_emit "- presence-feedback.tsv: present but not parseable; suppression disabled this session (fix or remove it)" \
+        && { tel warn feedback; warned_f=true; }
+    fi
+  fi
+fi
 gstore=""; pstore=""; lstore=""
 if fx "$HOME/.claude/anoti/GROUNDING.yaml"; then
   if gstore="$(resolve_global)"; then :; else
@@ -81,10 +99,55 @@ fi
 lstore="$(resolve_lessons)" || lstore=""
 
 # --- duty (a): JIT recall ---
-p_matches=""; g_matches=""
+p_matches=""; g_matches=""; supp_this_firing=""
 case "$tool" in Bash) export MT_EVENT=bash ;; Edit|Write|NotebookEdit) export MT_EVENT=edit ;; *) export MT_EVENT="" ;; esac
-[ -n "$pstore" ] && p_matches="$(match_triggers "$pstore" "$haystack" "")"
-[ -n "$gstore" ] && g_matches="$(match_triggers "$gstore" "$haystack" "[global] ")"
+# DEVIATION from the plan's own illustrative shape (spec:1289 explicitly
+# licenses a cleaner mechanism -- "the contract... is what Task 12
+# checks, not this literal mechanism"): the plan's GREEN code accumulated
+# excluded pairs into the $supp_this_firing SHELL VARIABLE from inside
+# suppression_filtered_matches, but every call site is
+# `p_matches="$(suppression_filtered_matches ...)"` -- a command
+# substitution, which forks a subshell. Any variable assignment made
+# inside that subshell (including to supp_this_firing) is invisible to
+# the parent once the subshell exits; only the function's STDOUT
+# (captured into p_matches/g_matches) crosses back. Confirmed via
+# `bash -x` trace: supp_this_firing was correctly populated inside the
+# subshell and silently reverted to "" in the parent immediately after.
+# Fixed by routing excluded pairs through a FILE (an OS-level side
+# effect, which does cross the subshell boundary) instead of a variable.
+supp_tmp="$(mktemp)"
+suppression_filtered_matches() {  # $1=store $2=label -- match_triggers' exact 4-col shape (hits\tid\tlabel\tstatement), suppressed pairs excluded; excluded pairs appended to $supp_tmp (a file, not a variable -- see DEVIATION note above)
+  local store="$1" label="$2" pairs
+  pairs="$(match_trigger_pairs "$store" "$haystack")"
+  [ -n "$pairs" ] || return 0
+  # DEVIATION: $suppressed is MULTI-LINE (one id\ttrigger pair per line
+  # once more than one pair is suppressed) -- `awk -v supp="$suppressed"`
+  # broke on macOS's shipped awk (BWK "one true awk") with "awk: newline
+  # in string ... at source line 1" the moment two pairs were suppressed
+  # in the same firing (confirmed by direct reproduction, item 7).
+  # Per this task's own house contract ("awk via ENVIRON never -v for
+  # user text"), routed through ENVIRON instead, matching the exact
+  # export/ENVIRON idiom match_trigger_pairs itself already uses for
+  # MT_HAY (scripts/store-resolve).
+  export SUPP="$suppressed"
+  printf '%s\n' "$pairs" | awk -F'\t' -v label="$label" -v suppfile="$supp_tmp" '
+    BEGIN {
+      supp = ENVIRON["SUPP"]
+      n = split(supp, lines, "\n")
+      for (i = 1; i <= n; i++) { split(lines[i], f, "\t"); if (f[1] != "") sup[f[1] SUBSEP f[2]] = 1 }
+    }
+    {
+      if (($1, $2) in sup) { print $1 "\t" $2 >> suppfile; next }
+      cnt[$1]++; stmt[$1] = $3
+    }
+    END { for (id in cnt) { printf "%s\t%s\t%s\t%s\n", cnt[id], id, label, stmt[id] }; close(suppfile) }
+  '
+  unset SUPP
+}
+[ -n "$pstore" ] && p_matches="$(suppression_filtered_matches "$pstore" "")"
+[ -n "$gstore" ] && g_matches="$(suppression_filtered_matches "$gstore" "[global] ")"
+supp_this_firing="$(cat "$supp_tmp" 2>/dev/null)"
+rm -f "$supp_tmp"
 
 matched_trigs=""
 [ -n "$pstore" ] && matched_trigs="${matched_trigs}
@@ -165,6 +228,11 @@ EOF
 [ -n "${any_cut:-}" ] && try_emit "(full text: anoti recall <id> — cut: ${cut_ids% })"
 recall_detail="${recall_detail%,}"
 [ -n "$recall_detail" ] && tel recall "$recall_detail"
+supp_this_firing="$(printf '%s\n' "$supp_this_firing" | sed '/^[[:space:]]*$/d' | sort -u)"
+if [ -n "$supp_this_firing" ]; then
+  supp_csv="$(printf '%s\n' "$supp_this_firing" | awk -F'\t' '{printf "%s%s:%s", (NR>1?",":""), $1, $2}')"
+  tel suppressed "$supp_csv"
+fi
 
 # --- duty (c) computed before (b): priority order is recall > nudge > frame ---
 cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)"
@@ -223,6 +291,15 @@ if [ "$slow_classified" = "true" ] && [ $((tool_calls - last_reanchor)) -ge "$N"
   fi
 fi
 
+if [ -n "$expired_ids" ]; then
+  while IFS= read -r eid; do
+    [ -n "$eid" ] || continue
+    recall_cache_local="$(printf '%s\n' "$recall_cache_local" | awk -F'\t' -v id="$eid" '$1!=id')"
+  done <<EOF
+$expired_ids
+EOF
+fi
+
 # --- persist presence-state ---
 # same rc_get/rc_set TSV substitute (see the DEVIATION note above): build
 # the JSON object with one awk pass instead of iterating array keys.
@@ -232,8 +309,8 @@ rc_json="$(printf '%s\n' "$recall_cache_local" | sed '/^[[:space:]]*$/d' | awk -
   END { printf "}" }
 ')"
 [ -n "$rc_json" ] || rc_json="{}"
-TC="$((tool_calls + 1))" LR="$last_reanchor" RC="$rc_json" WG="$warned_g" WP="$warned_p" \
-  yq ".tool_calls = strenv(TC) | .last_frame_reanchor = strenv(LR) | .recall_cache = (strenv(RC) | fromjson) | .warned.global = (strenv(WG) == \"true\") | .warned.project = (strenv(WP) == \"true\")" "$pf" > "$pf.tmp.$$" \
+TC="$((tool_calls + 1))" LR="$last_reanchor" RC="$rc_json" WG="$warned_g" WP="$warned_p" WF="$warned_f" \
+  yq ".tool_calls = strenv(TC) | .last_frame_reanchor = strenv(LR) | .recall_cache = (strenv(RC) | fromjson) | .warned.global = (strenv(WG) == \"true\") | .warned.project = (strenv(WP) == \"true\") | .warned.feedback = (strenv(WF) == \"true\")" "$pf" > "$pf.tmp.$$" \
   && mv "$pf.tmp.$$" "$pf"
 
 if [ -n "$lines" ]; then

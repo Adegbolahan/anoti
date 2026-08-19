@@ -287,3 +287,26 @@ assert_ok $? "compaction re-anchor: an EMPTY .goal does not swallow .scope.in (C
 printf '%s' "$ctx9" | grep -qF -- "scripts/store-resolve — scope:"
 assert_eq "$?" "1" "compaction re-anchor: scope text is not shifted into the goal position (CRITICAL #1 sweep regression guard)"
 ); rm -rf "$tmp"
+
+# --- 0.5.25: cut digest lines carry a handle ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+git init -q -b main .
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+printf '%s' '{"id":"QL","date":"2026-08-19","question":"'"$(printf 'q%.0s' $(seq 1 300))"'","raised_by":"session","status":"open"}' | "$ROOT/scripts/append-question" GROUNDING.yaml >/dev/null 2>&1
+mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$(printf '{"session_id":"h"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q "QL: q.*…"; assert_ok $? "a cut question line is marked as cut"
+printf '%s' "$out" | grep -qi "cut lines\|truncated.*yq\|full text"; assert_ok $? "digest names how to pull a cut line's full text"
+); rm -rf "$tmp"
+tmp="$(mktemp -d)"; ( cd "$tmp"
+git init -q -b main .
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+# em-dash straddling the 220-char cut: the marker must never split a codepoint (skeptic 2026-08-19)
+long="$(printf 'x%.0s' $(seq 1 216))— tail text here"
+printf '%s' "{\"id\":\"QMB\",\"date\":\"2026-08-19\",\"question\":\"$long\",\"raised_by\":\"session\",\"status\":\"open\"}" | "$ROOT/scripts/append-question" GROUNDING.yaml >/dev/null 2>&1
+yq -i ".index += [{\"ref\":\"D001\",\"type\":\"claim\",\"topic\":\"t\",\"statement\":\"$long\"}]" GROUNDING.yaml
+mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$(printf '{"session_id":"mb"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+printf '%s' "$out" | grep -q $'\xef\xbf\xbd'; assert_eq "$?" "1" "no replacement character: cuts never split a multibyte codepoint"
+printf '%s' "$out" | grep -q "…"; assert_ok $? "cut marker present on the multibyte rows"
+); rm -rf "$tmp"

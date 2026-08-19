@@ -13,6 +13,7 @@ BUDGET_TOTAL="${PRESENCE_BUDGET_TOTAL_OVERRIDE:-1200}"   # test-only override, s
 MAX_RECORDS=3
 STMT_CAP=220
 FRAME_CAP=200
+any_cut=""; cut_ids=""
 N=10
 
 input="$(cat 2>/dev/null || true)"
@@ -21,11 +22,14 @@ tool="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)" || exit
 case "$tool" in Bash|Write|Edit|NotebookEdit) ;; *) exit 0 ;; esac
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
 [ -n "$sid" ] || exit 0
-tin="$(printf '%s' "$input" | jq -c '.tool_input // {}' 2>/dev/null | cut -c1-8000)"
+# match over the FULL tool text (bounded at 256KB for memory); caps apply
+# only to what is injected — a trigger past byte 8000 of a build log used
+# to be a silent miss (codag-ideas 2026-08-19)
+tin="$(printf '%s' "$input" | jq -c '.tool_input // {}' 2>/dev/null | cut -c1-262144)"
 if [ "$event" = "PostToolUseFailure" ]; then
-  outcome="$(printf '%s' "$input" | jq -r '.error // empty' 2>/dev/null | cut -c1-8000)"
+  outcome="$(printf '%s' "$input" | jq -r '.error // empty' 2>/dev/null | cut -c1-262144)"
 else
-  outcome="$(printf '%s' "$input" | jq -c '.tool_response // {}' 2>/dev/null | cut -c1-8000)"
+  outcome="$(printf '%s' "$input" | jq -c '.tool_response // {}' 2>/dev/null | cut -c1-262144)"
 fi
 haystack="$tin $outcome"
 
@@ -146,6 +150,8 @@ while IFS= read -r row; do
   if [ "$n_picked" -ge "$MAX_RECORDS" ]; then skipped_more=$((skipped_more + 1)); continue; fi
   ltag=""; case "$label" in "[global] "*) ltag="global" ;; esac
   s="$(printf '%s' "$stmt" | cut -c1-"$STMT_CAP")"
+  # a cut is a pointer, not a loss: mark it and remember to name the pull
+  if [ "${#stmt}" -gt "$STMT_CAP" ]; then s="${s}…"; any_cut=1; cut_ids="${cut_ids}${id} "; fi
   line="- ${label}${id}: ${s}"
   if try_emit "$line"; then
     recall_detail="${recall_detail}${id}[${ltag}],"
@@ -156,6 +162,7 @@ done <<EOF
 $ranked
 EOF
 [ "$skipped_more" -gt 0 ] && try_emit "(+$skipped_more more matched)"
+[ -n "${any_cut:-}" ] && try_emit "(full text: anoti recall <id> — cut: ${cut_ids% })"
 recall_detail="${recall_detail%,}"
 [ -n "$recall_detail" ] && tel recall "$recall_detail"
 

@@ -47,8 +47,9 @@ match_triggers() {  # $1=store $2=haystack $3=label ("" or "[global] ")
     }
     END {
       for (id in cnt) {
-        s = stmt[id]; if (length(s) > 220) s = substr(s, 1, 220)
-        printf "%s\t%s\t%s\t%s\n", cnt[id], id, label, s
+        # full statement out; consumers cut for display and mark the cut
+        # with a retrieval handle (codag-ideas 2026-08-19)
+        printf "%s\t%s\t%s\t%s\n", cnt[id], id, label, stmt[id]
       }
     }
   '
@@ -97,8 +98,7 @@ match_topic_statement() {  # $1=store $2=keyword $3=label ("" or "[global] ")
     stmt="$(printf '%s' "$row" | cut -f3)"
     [ -n "$id" ] || continue
     if printf '%s' "$topic" | grep -qiF -- "$kw" || printf '%s' "$stmt" | grep -qiF -- "$kw"; then
-      s="$(printf '%s' "$stmt" | cut -c1-220)"
-      printf '1\t%s\t%s\t%s\n' "$id" "$label" "$s"
+      printf '1\t%s\t%s\t%s\n' "$id" "$label" "$stmt"
     fi
   done
 }
@@ -107,7 +107,7 @@ match_lessons() {  # $1=lessons-file $2=keyword
   [ -n "$kw" ] || return 0
   [ -f "$lf" ] || return 0
   grep -iF -- "$kw" "$lf" 2>/dev/null | grep '^- ' | while IFS= read -r line; do
-    stmt="$(printf '%s' "$line" | sed 's/^- //' | cut -c1-220)"
+    stmt="$(printf '%s' "$line" | sed 's/^- //')"
     hash="$(printf '%s' "$line" | shasum -a 256 | cut -c1-8)"
     printf '1\tL:%s\t\t%s\n' "$hash" "$stmt"
   done

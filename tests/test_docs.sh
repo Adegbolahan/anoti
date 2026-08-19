@@ -74,3 +74,7 @@ for s in "$ROOT"/scripts/*; do
   printf '%s' "$help_out" | grep -q -- "$n" || { echo "anoti help missing: $n" >&2; ok=0; }
 done; [ "$ok" = 1 ]
 assert_ok $? "D025: every helper is listed by anoti help"
+grep -qi "fail open\|fails open\|fail-open" "$ROOT/README.md" && grep -qi "never to a block\|never block" "$ROOT/README.md"
+assert_ok $? "README states the fail-open guarantee in one sentence"
+grep -qi "fail open\|fails open\|fail-open" "$ROOT/skills/demo/SKILL.md"
+assert_ok $? "demo states the fail-open guarantee"

@@ -57,6 +57,9 @@ printf '%s\n' "$out" | while IFS= read -r row; do
         status="unknown"
       fi ;;
   esac
-  echo "- ${label}${id} [${status}]: ${stmt}"
+  # cut for display; a cut is a pointer, not a loss (codag-ideas 2026-08-19)
+  disp="$(printf '%s' "$stmt" | cut -c1-220)"
+  [ "${#stmt}" -gt 220 ] && disp="${disp}… (full: yq '.records[] | select(.id == \"${id}\")' on the store)"
+  echo "- ${label}${id} [${status}]: ${disp}"
 done
 echo "</anoti-recall-results>"

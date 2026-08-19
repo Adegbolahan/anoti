@@ -44,6 +44,13 @@ standard.
   mechanical write helpers — the model never hand-serializes YAML.
   One entry point for all of them: `scripts/anoti <action> [args...]`;
   `scripts/anoti help` is the index.
+- **Fail-open guarantee:** every anoti hook degrades to vanilla Claude
+  Code — if a hook errors, times out, or finds no workspace, the session
+  proceeds exactly as it would without anoti, never to a block. The only
+  blocks are by design: the deny list's catastrophic actions, the
+  human-gated memory-organ writes, and edits on the default branch (D020
+  — a feature branch or worktree, or the human's `allow-default-branch`
+  override). Consequential commands ask; they never silently block.
 - **Commands:** `/anoti:new`, `/anoti:implement` (feature workflow with a
   mandatory spec gate), `/anoti:review-work` (pre-ship review with an
   evidence contract and cycle cap), `/anoti:update`, `/anoti:review`

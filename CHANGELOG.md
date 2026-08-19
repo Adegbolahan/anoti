@@ -3,6 +3,30 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.25] — 2026-08-19
+
+- Codag-research ideas, deliberated and adopted (the contrast was more
+  instructive than the overlap — see docs/plans for the research trail):
+  - **Match over the full tool text, cap only the injection.** The presence
+    hook matched triggers against the first 8000 chars of tool input/
+    output — a cue past byte 8000 of a build log was a silent miss. The
+    match window is now 256 KB (bounded for memory); display caps apply
+    only to what is injected. Test-pinned with a 120 KB haystack.
+  - **A cut is a pointer, not a loss.** Every truncated line in the digest
+    (index rows, questions, lessons) and in presence/recall output is
+    marked (…) and the block names how to pull the full text (`anoti
+    recall <id>`, `yq` by id). The matcher now emits full statements;
+    consumers cut and mark.
+  - **Fail-open stated as a product guarantee** in README and the demo:
+    every hook degrades to vanilla Claude Code, never to a block — the
+    only blocks are the deny list's catastrophic actions and the
+    human-gated organ writes, by design.
+  - Adaptive suppression (a project-level TTL feedback cache that learns
+    irrelevant (record, trigger) pairs from the retrospective's marks,
+    visible and reversible, ordered before the Q006 ranker gate) is being
+    spec'd — docs/specs/2026-08-19-adaptive-suppression-design.md — not
+    built in this release.
+
 ## [0.5.24] — 2026-08-19
 
 - Field-review batch (classifier tax, presence precision, cascade fit):

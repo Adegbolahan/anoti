@@ -267,3 +267,19 @@ printf '%s' "$out" | grep -qi "evidence-kind"; assert_eq "$?" "1" "curl && jq st
 out="$(n 'curl -s URL | grep title')"
 printf '%s' "$out" | grep -qi "evidence-kind"; assert_ok $? "curl | grep still fires (regression pin)"
 ); rm -rf "$tmp"
+
+# --- codag ideas (0.5.25): match over the full text; handles on cut lines ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+"$ROOT/scripts/append-trigger" GROUNDING.yaml D001 "needle phrase deep in output" >/dev/null 2>&1
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+big="$(head -c 120000 /dev/zero | tr '\0' 'x')"
+out="$(printf '{"session_id":"deep","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"make test"},"tool_response":%s}' "$(printf '%s needle phrase deep in output' "$big" | jq -Rs .)" | HOME="$tmp/nohome" "$ROOT/scripts/presence")"
+printf '%s' "$out" | grep -q "D001"; assert_ok $? "a trigger beyond byte 8000 of tool output now matches (full-text match, capped injection)"
+yq -i '.records[0].statement = "A long statement. " + ("lorem ipsum " * 40)' GROUNDING.yaml 2>/dev/null || yq -i '.records[0].statement = "A long statement. lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum lorem ipsum"' GROUNDING.yaml
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
+out="$(printf '{"session_id":"cut","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"echo needle phrase deep in output"},"tool_response":"ok"}' | HOME="$tmp/nohome" "$ROOT/scripts/presence")"
+printf '%s' "$out" | grep -q "…"; assert_ok $? "a cut statement is marked as cut"
+printf '%s' "$out" | grep -qi "full text: anoti recall D001\|full: anoti recall D001\|anoti recall"; assert_ok $? "the cut carries its retrieval handle (the cut is a pointer, not a loss)"
+); rm -rf "$tmp"

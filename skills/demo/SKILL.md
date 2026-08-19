@@ -28,6 +28,13 @@ recall, periodic frame re-anchor, an evidence-kind nudge) — silent
 unless something actually matches. Skills are invoked: they carry the
 procedures the hooks point you into.
 
+Guarantee worth knowing before anything else: **every hook fails open** —
+an error, a timeout, or no workspace means the session proceeds exactly as
+vanilla Claude Code, never a block. Blocks come only by design: the deny
+list (catastrophic actions), the human-gated organ writes, and edits on
+the default branch (D020); consequential commands ask, never silently
+block.
+
 ## When to use what
 
 | Situation                              | Use                                 | Why                                                                                                     |

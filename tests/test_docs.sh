@@ -54,3 +54,20 @@ grep -q "anoti recall <topic-keywords>" "$ROOT/commands/recall.md"
 assert_ok $? "recall command names the mechanical pre-check as step 0"
 awk '/Mechanical pre-check/{a=NR} /^1\. Query both stores/{b=NR} END{exit !(a && b && a<b)}' "$ROOT/commands/recall.md"
 assert_ok $? "step 0 precedes the existing step 1"
+
+# --- D025 orientation currency: every command is routed in the demo; every skill is mapped ---
+for c in "$ROOT"/commands/*.md; do
+  n="$(basename "$c" .md)"
+  grep -q -- "$n" "$ROOT/skills/demo/SKILL.md" || { echo "demo routing table missing command: $n" >&2; false; break; }
+done
+assert_ok $? "D025: every /anoti command appears in the demo's routing table"
+for d in "$ROOT"/skills/*/; do
+  n="$(basename "$d")"
+  grep -q -- "$n" "$ROOT/docs/SKILL-MAP.md" || { echo "SKILL-MAP missing skill: $n" >&2; false; break; }
+done
+assert_ok $? "D025: every skill appears in SKILL-MAP"
+for s in "$ROOT"/scripts/*; do
+  n="$(basename "$s")"; [ -x "$s" ] && [ "$n" != "anoti" ] || continue
+  "$ROOT/scripts/anoti" help | grep -q -- "$n" || { echo "anoti help missing: $n" >&2; false; break; }
+done
+assert_ok $? "D025: every helper is listed by anoti help"

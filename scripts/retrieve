@@ -113,6 +113,14 @@ if [ -n "$PSTORE" ]; then
     try_emit "- recall coverage: $rw/$rt project records carry triggers — the presence hook surfaces only cued records; consolidate step 2b (the encoding-time question) adds them"
   fi
 fi
+FF="$AD/presence-feedback.tsv"
+if [ -n "$PSTORE" ] && fx "$FF"; then
+  fth="$(cfgk feedback_threshold)"; [ -n "$fth" ] || fth=3
+  fco="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"
+  fn="$(awk -F'\t' -v th="$fth" -v cutoff="$fco" 'NF==5 && $3+0>=th && $4>=cutoff' "$FF" 2>/dev/null | wc -l | tr -d ' ')"
+  fn="${fn:-0}"
+  [ "$fn" -gt 0 ] 2>/dev/null && try_emit "- presence: $fn (record,trigger) pairs suppressed — anoti feedback list"
+fi
 LL="$(cfgk lessons_path)"; [ -n "$LL" ] || LL=LESSONS-LEARNT.md
 if fx "$LL"; then
   lc="$(grep -c '^- ' "$LL" 2>/dev/null)"; lc="${lc:-0}"

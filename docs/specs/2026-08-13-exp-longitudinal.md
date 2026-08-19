@@ -90,12 +90,84 @@ not a commitment to build either.
 - **Presence precision (added 2026-08-19, field review):** relevant
   injections / total injections per audited week, where "irrelevant" is
   the retrospective's own count (`mark-retrospect … irrelevant-injections
-  N` telemetry) over the `presence recall` lines. **Re-ranker filter
+N` telemetry) over the `presence recall` lines. **Re-ranker filter
   justified** (Q006: a small cross-encoder scoring keyword candidates,
   local, fail-open, only when candidates exist) when precision stays
-  below 50% across two consecutive audited weeks AFTER the mechanical
-  precision measures (event-scoped triggers, cue-quality guidance,
-  remove-trigger) have shipped — never before them.
+  below 50% across two consecutive audited weeks AFTER adaptive
+  suppression (docs/specs/2026-08-19-adaptive-suppression-design.md,
+  itself built on the earlier mechanical measures — event-scoped
+  triggers, cue-quality guidance, remove-trigger) has shipped and two
+  audited weeks have passed — never before it.
+
+**Adaptive suppression KEEP/telemetry-only/REVERT (pre-registered, frozen
+2026-08-19):** compare Presence precision across two windows, each drawn
+from this file's own existing weekly-audit cadence
+(`docs/specs/2026-08-13-exp-longitudinal.md:112-114`, first audit
+2026-08-20, weekly thereafter) — never a bespoke measurement window.
+
+**Baseline window, with an explicit fallback (MINOR 11, reviewer
+finding — this repo's audit cadence starts 2026-08-20 and adaptive
+suppression is expected to ship within days of that, so two full audited
+PRE-ship weeks may simply not exist yet):**
+
+- **Primary:** the two most recently completed audited weeks immediately
+  BEFORE adaptive suppression ships, if both exist.
+- **Fallback, stated plainly rather than left as a silent gap:** if fewer
+  than two pre-ship audited weeks exist, the baseline is instead **the
+  first two audited weeks AFTER shipping** — defensible only because
+  suppression cannot act at all until a pair accumulates 3 marks within
+  30 days (§4.2), so a freshly-shipped mechanism's first two weeks are a
+  reasonable, if imperfect, proxy for "before it had any effect" (it
+  barely acts early). Under this fallback, the **post-ship window**
+  becomes the two audited weeks immediately **following** the fallback
+  baseline (weeks 3-4 after ship, compared against weeks 1-2) — this
+  makes the whole comparison a **within-post-ship** measurement, not a
+  true before/after one, and any conclusion drawn from it carries
+  correspondingly **weaker inference**, labeled as such wherever it is
+  cited — the same "observational, no counterfactual arm" honesty this
+  file's own Method section already states up front
+  (`docs/specs/2026-08-13-exp-longitudinal.md:19-23`).
+- Under the **primary** path, the post-ship window is simply the two
+  audited weeks immediately after ship, as originally specified.
+
+**Three outcomes, not two (MINOR 12, reviewer finding — folding "no
+effect" and "regressed" into one bucket hid a real failure mode: a
+mechanism that makes precision WORSE is a different, more urgent finding
+than one that merely does nothing):**
+
+- **KEEP** — adaptive suppression is credited as the cause of any
+  precision gain and stays the load-bearing precision mechanism — when
+  mean post-ship precision is **≥15 percentage points higher** than mean
+  baseline precision.
+- **Telemetry-only** — the mechanism's marks/suppressions keep recording
+  (nothing is removed or disabled), but it is no longer treated as a
+  source of further expected precision gain — when the change is **between
+  -10 and +15 points** (a rise below the KEEP bar, or a fall that does not
+  reach the REVERT bar). This is not a rollback: `presence-feedback.tsv`
+  and `scripts/feedback` stay exactly as built; "telemetry-only" describes
+  how future gates read the evidence, not a code change.
+- **REVERT** — when mean post-ship precision is **≥10 percentage points
+  LOWER** than mean baseline precision (the mechanism is actively making
+  things worse, e.g. by suppressing pairs a later trigger context would
+  have found relevant). Filed as a **corrective TODO** — matching this
+  file's own existing decision-rule shape for a filed action rather than
+  an autonomous code change ("two incidents in one audit → a corrective
+  TODO," `docs/specs/2026-08-13-exp-longitudinal.md:43-44`) — to disable
+  the suppression check pending human review (e.g., an effectively
+  unreachable `feedback_threshold` override, §4.7, or a dedicated
+  disable flag; the exact mechanism is an implementation decision for
+  that TODO, not fixed here) while `presence-feedback.tsv` continues
+  accumulating for audit. Not an automatic rollback: this is a metrics
+  and gate document, not a deployment mechanism, and every other
+  decision rule in this file resolves to a filed human action, not
+  self-executing code.
+- **Every outcome opens Q006's gate identically:** the "two audited
+  weeks have passed" clause in §4.8's amended Presence-precision bullet
+  is satisfied the moment this comparison runs (primary or fallback
+  path), regardless of which of the three outcomes it resolves to — the
+  wait exists to give the mechanical measure a fair chance to work, not
+  to hide an unfavorable result from the ranker gate.
+
 - **Tier 3 justified** when ≥2 audited weeks show recurring
   advisory-pattern telemetry lines (a drift pattern the hook can match
   but not judge, per §4.11) that the main session did not act on within
@@ -146,6 +218,17 @@ spot-audit.
   role system; not invented here, only made explicit); grader: the human
   (`docs/specs/2026-08-13-exp-longitudinal.md:17`, "the human spot-audits
   its counts"); skills loaded: policy-reader-run, policy-epistemic.
+- 2026-08-19 (later still) — amended per
+  `docs/specs/2026-08-19-adaptive-suppression-design.md`: the Q006
+  re-ranker gate's "AFTER the mechanical precision measures... have
+  shipped" clause is reworded to name adaptive suppression specifically
+  and require two full audited weeks to pass after it ships before the
+  gate can fire — adaptive suppression is itself a mechanical precision
+  measure and the pre-registered discipline (`docs/specs/2026-08-13-exp-longitudinal.md:103-108`)
+  requires it be given the same fair chance the earlier measures were.
+  Also adds §"Adaptive suppression KEEP/telemetry-only/REVERT" as a new,
+  independent pre-registered gate for the suppression mechanism's own
+  disposition (below).
 
 ## Execution routing
 

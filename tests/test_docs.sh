@@ -88,3 +88,25 @@ sma="$(grep -n 'PostToolUse/PostToolUseFailure hook' "$ROOT/docs/SKILL-MAP.md" |
 smb="$(grep -n '\`scripts/feedback\` (list/clear)' "$ROOT/docs/SKILL-MAP.md" | head -1 | cut -d: -f1)"
 [ -n "$sma" ] && [ -n "$smb" ] && [ "$sma" -lt "$smb" ]
 assert_ok $? "scripts/feedback row sits directly after the presence-hook row it extends"
+
+# --- adaptive-suppression spec §4.8/§4.9: Q006 gate reorder + KEEP/telemetry-only/REVERT ---
+LONG="$ROOT/docs/specs/2026-08-13-exp-longitudinal.md"
+grep -qF "AFTER adaptive" "$LONG" && grep -qF "docs/specs/2026-08-19-adaptive-suppression-design.md" "$LONG"
+assert_ok $? "longitudinal spec Q006 gate reworded to name adaptive suppression specifically"
+grep -qE "2026-08-19 \(later still\) — amended per" "$LONG"
+assert_ok $? "dated changelog entry for the adaptive-suppression amendment"
+grep -qF "Adaptive suppression KEEP/telemetry-only/REVERT" "$LONG"
+assert_ok $? "new pre-registered KEEP/telemetry-only/REVERT subsection present"
+grep -qF "15 percentage points higher" "$LONG"
+assert_ok $? "KEEP bar states the exact 15-point threshold"
+grep -qF "10 percentage points" "$LONG" && grep -qi "LOWER" "$LONG"
+assert_ok $? "REVERT bar states the exact 10-point regression threshold"
+grep -qi "telemetry-only" "$LONG"
+assert_ok $? "three-way outcome includes telemetry-only, not just KEEP/REVERT"
+grep -qi "weaker inference" "$LONG"
+assert_ok $? "fallback baseline path is labeled as carrying weaker inference"
+la="$(grep -n 'Presence precision (added 2026-08-19, field review)' "$LONG" | head -1 | cut -d: -f1)"
+lb="$(grep -n 'Adaptive suppression KEEP/telemetry-only/REVERT' "$LONG" | head -1 | cut -d: -f1)"
+lc="$(grep -n 'Tier 3 justified' "$LONG" | head -1 | cut -d: -f1)"
+[ -n "$la" ] && [ -n "$lb" ] && [ -n "$lc" ] && [ "$la" -lt "$lb" ] && [ "$lb" -lt "$lc" ]
+assert_ok $? "adaptive-suppression subsection sits between Presence-precision and Tier-3-justified, inside the Tier-1 gate section"

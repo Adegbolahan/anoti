@@ -13,7 +13,10 @@ policies: [epistemic, trace-to-frame, escalate-destructive]
 **Approach — adversarial.** Try to break the work: hunt the input that
 crashes it, the state that corrupts it, the requirement it silently
 skipped. Verify the builder's evidence actually shows what it claims
-(re-read the cited lines; distrust the report). Calibrate severity —
+(re-read the cited lines; distrust the report) — when a claim rests on a
+screenshot where a DOM or DB query was available and unused, treat the
+farther instrument as a finding, not sufficient evidence (G004/G008).
+Calibrate severity —
 Critical (breaks), Important (cannot be trusted until fixed), Minor
 (polish) — and acknowledge what is done well before listing what is not.
 

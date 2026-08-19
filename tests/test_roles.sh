@@ -50,3 +50,9 @@ grep -qi "never counsel" "$ROOT/roles/legal.md" 2>/dev/null; assert_ok $? "legal
 grep -qi "friction" "$ROOT/roles/support.md" 2>/dev/null; assert_ok $? "support: friction-first"
 grep -qi "RED transcript" "$ROOT/roles/reviewer.md" && grep -qi "scratch copy" "$ROOT/roles/reviewer.md" && grep -qi "zero residue" "$ROOT/roles/reviewer.md"
 assert_ok $? "reviewer: optional empirical RED-transcript evidence codified"
+
+# --- jit-recall spec §4.9: reviewer role names the evidence-kind check ---
+grep -qE "G004/G008" "$ROOT/roles/reviewer.md"
+assert_ok $? "reviewer role names the evidence-kind check"
+grep -q "distrust the report" "$ROOT/roles/reviewer.md"
+assert_ok $? "existing distrust-the-report sentence preserved"

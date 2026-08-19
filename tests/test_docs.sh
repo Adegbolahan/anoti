@@ -45,3 +45,7 @@ grep -q "presence" "$ROOT/docs/SKILL-MAP.md"
 assert_ok $? "SKILL-MAP names the presence hook as an entry point"
 grep -q "anoti recall" "$ROOT/docs/SKILL-MAP.md"
 assert_ok $? "SKILL-MAP names the anoti recall CLI"
+
+# --- jit-recall spec §4.1: README names the presence hook ---
+grep -qi "presence hook" "$ROOT/README.md"
+assert_ok $? "README names the presence hook"

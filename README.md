@@ -31,10 +31,13 @@ standard.
 
 ## What you get
 
-- **Six lifecycle hooks:** retrieval with a provenance trust boundary,
+- **Eight lifecycle hooks:** retrieval with a provenance trust boundary,
   an attention classifier (zero overhead on trivial prompts), an
   inhibition decision table with a versioned deny-list, session-state
-  persistence across compaction, and a consolidation gate.
+  persistence across compaction, a **presence hook firing on every
+  matched tool call** (just-in-time recall, periodic frame re-anchor,
+  an evidence-kind nudge, telemetry — silent by default), and a
+  consolidation gate.
 - **Governed memory** (`GROUNDING.yaml`, schema v3): typed records
   (claim/preference/decision/goal/policy), separated epistemic and
   ratification status, append-only event logs, a generated index, and

@@ -173,3 +173,7 @@ grep -q "append-trigger" "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "step 2b names the append-trigger helper"
 awk '/^2\. \*\*Type every candidate/{a=NR} /2b\. \*\*Encoding-time cue question/{b=NR} /^3\. \*\*Citations/{c=NR} END{exit !(a && b && c && a<b && b<c)}' "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "step 2b sits between step 2 and step 3, in order"
+
+# --- jit-recall spec §4.1: demo skill names the presence hook ---
+grep -qi "presence" "$ROOT/skills/demo/SKILL.md"
+assert_ok $? "demo skill names the presence hook in its routing material"

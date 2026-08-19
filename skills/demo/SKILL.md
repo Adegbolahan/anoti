@@ -21,25 +21,28 @@ Hooks are automatic: session start injects the memory digest, every
 real prompt is offered fast/slow classification (machine notifications
 are exempt; the verdict is yours to log), risky tool calls —
 Bash/Write/Edit/NotebookEdit — hit the inhibition table, and the Stop
-gate blocks when memory candidates await. Skills are invoked: they
-carry the procedures the hooks point you into.
+gate blocks when memory candidates await, and every matched
+Bash/Write/Edit/NotebookEdit call also fires the presence hook (JIT
+recall, periodic frame re-anchor, an evidence-kind nudge) — silent
+unless something actually matches. Skills are invoked: they carry the
+procedures the hooks point you into.
 
 ## When to use what
 
-| Situation                              | Use                                 | Why                                                     |
-| -------------------------------------- | ----------------------------------- | ------------------------------------------------------- |
-| Novel, ambiguous, or consequential ask | attend skill                        | frame before work; everything later traces to it        |
-| Multi-step or multi-role work          | deliberate skill                    | hypotheses, hat assignment, spawn budget, cascade       |
-| Building a feature end-to-end          | /anoti:implement                    | the full cycle with spec and review gates wired         |
-| About to commit anything               | git skill                           | branches (never the default branch), staging, finishing |
-| Discovery worth remembering            | consolidate skill                   | typed candidates, helpers only, human ratifies          |
-| Need memory mid-task                   | /anoti:recall                       | query the stores instead of re-deriving                 |
+| Situation                              | Use                                 | Why                                                                                                     |
+| -------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Novel, ambiguous, or consequential ask | attend skill                        | frame before work; everything later traces to it                                                        |
+| Multi-step or multi-role work          | deliberate skill                    | hypotheses, hat assignment, spawn budget, cascade                                                       |
+| Building a feature end-to-end          | /anoti:implement                    | the full cycle with spec and review gates wired                                                         |
+| About to commit anything               | git skill                           | branches (never the default branch), staging, finishing                                                 |
+| Discovery worth remembering            | consolidate skill                   | typed candidates, helpers only, human ratifies                                                          |
+| Need memory mid-task                   | /anoti:recall                       | query the stores instead of re-deriving                                                                 |
 | Implementation ready to ship           | /anoti:review-work                  | pre-ship drift check (not an adversarial control — that is policy-adversarial-handoff's reviewer spawn) |
-| Drafting or amending ROADMAP / stories | direction skill                     | both direction organs are human-owned; format + freshness rules |
-| Pending records / promotions           | /anoti:review                       | the human ratification ritual                           |
-| Weekly health / staleness              | /anoti:audit                        | longitudinal metrics + staleness sweep                  |
-| anoti itself misbehaved                | feedback skill                      | field report → human-gated issue on the anoti repo      |
-| New or drifted workspace               | /anoti:new, /anoti:update, skillify | scaffold, migrate by ratified diff                      |
+| Drafting or amending ROADMAP / stories | direction skill                     | both direction organs are human-owned; format + freshness rules                                         |
+| Pending records / promotions           | /anoti:review                       | the human ratification ritual                                                                           |
+| Weekly health / staleness              | /anoti:audit                        | longitudinal metrics + staleness sweep                                                                  |
+| anoti itself misbehaved                | feedback skill                      | field report → human-gated issue on the anoti repo                                                      |
+| New or drifted workspace               | /anoti:new, /anoti:update, skillify | scaffold, migrate by ratified diff                                                                      |
 
 ## The three whys behind every rule
 

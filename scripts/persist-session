@@ -14,5 +14,6 @@ sf="$d/$sid.yaml"
 if [ ! -f "$sf" ]; then
   printf 'session:\n  id: %s\nepisode: idle\n' "$sid" > "$sf.tmp" && mv "$sf.tmp" "$sf"
 fi
-yq ".session.flushed = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
+TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  yq ".session.flushed = strenv(TS) | .session.compacted_at = strenv(TS)" "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
 exit 0

@@ -15,3 +15,13 @@ printf '{"session_id":"def"}' | "$ROOT/scripts/cleanup-session"
 printf 'not json' | "$ROOT/scripts/persist-session" 2>/dev/null
 assert_ok $? "persist-session fails open on garbage input"
 ); rm -rf "$tmp"
+
+# --- persist-session compacted_at stamp (spec §4.7 fallback signal) ---
+tmp="$(mktemp -d)"; ( cd "$tmp"
+mkdir -p .anoti
+printf '{"session_id":"pc"}' | "$ROOT/scripts/persist-session"
+grep -q "compacted_at" .anoti/sessions/pc.yaml
+assert_ok $? "persist-session stamps compacted_at"
+yq -e '.session.compacted_at' .anoti/sessions/pc.yaml >/dev/null 2>&1
+assert_ok $? "compacted_at is valid, readable YAML"
+); rm -rf "$tmp"

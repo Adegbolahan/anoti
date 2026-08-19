@@ -267,4 +267,11 @@ builder (D011). Integration: human-gated merge of branch `review-debt`.
   hook-side writer's bounded lock wait. Also fixed in code: state dir
   created before locking (fresh clone spun ~60 s), `awk -v` escape
   processing broke dedupe on backslash subjects (ENVIRON now).
+- 2026-08-19 (review round 2, COMPLIANT-WITH-RESIDUE → residue closed):
+  the hook awks now apply the helper's full shape rule including the
+  created-date column (the two surfaces agree on every row); `observe`
+  calls `anoti-dir --root` without `--require` so an `ANOTI_DIR`-only
+  workspace with no markers fires (root = the hook's cwd); a state dir
+  minted by the helper carries the `.gitignore` trust writes; the
+  `STORE_LOCK_MAX_TRIES` bound is test-pinned.
 

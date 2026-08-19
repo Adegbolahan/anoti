@@ -38,6 +38,7 @@ add_row() {
   # state dir may not exist yet (fresh clone before trust) -- create it
   # BEFORE locking, or lock_store spins on an uncreatable lock dir
   [ -d "$AD" ] || mkdir -p "$AD" 2>/dev/null || { echo "review-debt: cannot create state dir $AD" >&2; return 1; }
+  [ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore" 2>/dev/null || true
   lock_store "$ff" || return 1
   trap 'unlock_store "$ff"' EXIT
   [ -f "$ff" ] || : > "$ff"
@@ -109,7 +110,9 @@ case "$sub" in
     # practice); the spec dir resolves from the PROJECT ROOT (anoti-dir --root:
     # the marker dir, never dirname of a configurable state_dir — D016)
     pd="$(cd "$(dirname "$p")" 2>/dev/null && pwd -P)" || exit 0
-    root="$("$SELF/anoti-dir" --root --require 2>/dev/null)" || exit 0
+    # anchoring was established by --require above; under ANOTI_DIR with no
+    # markers in the tree --root yields pwd -P (the hook's cwd IS the project)
+    root="$("$SELF/anoti-dir" --root 2>/dev/null)" || exit 0
     cd "$root" 2>/dev/null || exit 0
     sd="$(cfgk spec_dir)"; [ -n "$sd" ] || sd=docs/specs
     sd="${sd%/}"; sd="${sd#./}"

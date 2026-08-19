@@ -55,6 +55,11 @@ cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
 t0="$(date +%s)"; id="$(timeout 8 "$RD" add s1 "fresh" 2>/dev/null || "$RD" add s1 "fresh")"; t1="$(date +%s)"
 assert_eq "$id" "R1" "add creates the state dir on a fresh clone instead of spinning"
 [ $((t1 - t0)) -lt 5 ]; assert_ok $? "…and returns promptly"
+[ -f .anoti/.gitignore ] && [ "$(cat .anoti/.gitignore)" = "*" ]; assert_ok $? "a minted state dir carries the gitignore trust would have written"
+# STORE_LOCK_MAX_TRIES bounds the wait (spec §5): a held lock + a small bound -> exit 1 fast
+mkdir .anoti/review-debt.tsv.lock; t0="$(date +%s)"; STORE_LOCK_MAX_TRIES=5 "$RD" add s1 "blocked" >/dev/null 2>&1; rc=$?; t1="$(date +%s)"; rmdir .anoti/review-debt.tsv.lock
+assert_eq "$rc" "1" "held lock + STORE_LOCK_MAX_TRIES=5: writer gives up (exit 1)"
+[ $((t1 - t0)) -lt 5 ]; assert_ok $? "…within seconds, not the ~60s default"
 assert_eq "$("$ROOT/scripts/anoti-dir" --root)" "$(pwd -P)" "anoti-dir --root prints the marker dir"
 mkdir -p sub/deeper; assert_eq "$(cd sub/deeper && "$ROOT/scripts/anoti-dir" --root)" "$(pwd -P)" "anoti-dir --root walks up from a subdir"
 mkdir -p .claude .state/anoti; printf -- '---\nstate_dir: .state/anoti\n---\n' > .claude/anoti.local.md
@@ -102,6 +107,9 @@ grep -q $'\tdocs/specs/y.md\topen' "$abs/review-debt.tsv"; assert_ok $? "observe
 rm .claude/anoti.local.md; mkdir -p .envdir
 ANOTI_DIR="$tmp/.envdir" bash -c 'printf "{\"session_id\":\"s1\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"%s/docs/specs/z.md\"}}" "$1" | "$2" observe' _ "$tmp" "$RD"
 grep -q $'\tdocs/specs/z.md\topen' .envdir/review-debt.tsv; assert_ok $? "observe fires under ANOTI_DIR"
+rm GROUNDING.yaml; mkdir -p .envonly
+ANOTI_DIR="$tmp/.envonly" bash -c 'printf "{\"session_id\":\"s1\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"%s/docs/specs/w.md\"}}" "$1" | "$2" observe' _ "$tmp" "$RD"
+grep -q $'\tdocs/specs/w.md\topen' .envonly/review-debt.tsv; assert_ok $? "observe fires under ANOTI_DIR with NO markers in the tree (root = cwd)"
 ); rm -rf "$tmp"
 
 # --- 3. Stop gate: block once while this session's debt is open (§4.4) ---
@@ -137,6 +145,8 @@ printf 'garbage\n' > .anoti/review-debt.tsv; rm -f .anoti/sessions/s1.review-deb
 out="$(printf '{"session_id":"s1"}' | "$G")"; assert_eq "$out" "" "malformed ledger: Stop gate fails open"
 printf 'R1\t2026-08-19\ts1\tvalid row\topen\t2026-08-19\t\nstray line\n' > .anoti/review-debt.tsv
 out="$(printf '{"session_id":"s1"}' | "$G")"; assert_eq "$out" "" "PARTIALLY malformed ledger: whole file treated as empty (helpers refuse it too)"
+printf 'R1\t19-08-2026\ts1\tbad date\topen\t19-08-2026\t\n' > .anoti/review-debt.tsv
+out="$(printf '{"session_id":"s1"}' | "$G")"; assert_eq "$out" "" "bad created-date row: Stop gate treats the ledger as malformed (same rule as the helper)"
 ); rm -rf "$tmp"
 
 # --- 4. inhibit: ask at integration while debt is open (§4.5) ---
@@ -166,6 +176,8 @@ out="$(inh 'gh pr merge 12 --squash')"; assert_eq "$(printf '%s' "$out" | jq -r 
 git checkout -q main
 printf 'R1\t2026-08-19\ts1\tvalid row\topen\t2026-08-19\t\nstray line\n' > .anoti/review-debt.tsv
 out="$(inh 'git merge feat')"; assert_eq "$out" "" "partially malformed ledger: no debt ask (fail-open, whole file)"
+printf 'R1\t19-08-2026\ts1\tbad date\topen\t19-08-2026\t\n' > .anoti/review-debt.tsv
+out="$(inh 'git merge feat')"; assert_eq "$out" "" "bad created-date row: no debt ask (helper and hook agree)"
 ); rm -rf "$tmp"
 
 # --- 5. digest line (§4.7) ---
@@ -183,6 +195,8 @@ printf 'garbage\n' > .anoti/review-debt.tsv
 out="$("$ROOT/scripts/digest")"; printf '%s' "$out" | grep -q "review debt"; assert_eq "$?" "1" "digest: malformed ledger is silent (fail-open)"
 printf 'R1\t2026-08-19\ts1\tvalid row\topen\t2026-08-19\t\nstray line\n' > .anoti/review-debt.tsv
 out="$("$ROOT/scripts/digest")"; printf '%s' "$out" | grep -q "review debt"; assert_eq "$?" "1" "digest: partially malformed ledger is silent (whole file)"
+printf 'R1\t19-08-2026\ts1\tbad date\topen\t19-08-2026\t\n' > .anoti/review-debt.tsv
+out="$("$ROOT/scripts/digest")"; printf '%s' "$out" | grep -q "review debt"; assert_eq "$?" "1" "digest: bad created-date row is silent (helper and hook agree)"
 ); rm -rf "$tmp"
 
 # --- 6. wiring + orientation currency (§4.3, §4.6, D025) ---

@@ -111,7 +111,7 @@ case "$tool" in
       fi
       if [ -n "$integ" ]; then
         # whole-file shape check: any malformed line -> treated as empty (fail-open, spec §5)
-        owed="$(awk -F'\t' 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $5=="open" { s=s $1 " " $4 "; "; n++ } END { if (!bad && n) printf "%s\t%d", s, n }' "$AD/review-debt.tsv" 2>/dev/null)"
+        owed="$(awk -F'\t' 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||$2!~/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $5=="open" { s=s $1 " " $4 "; "; n++ } END { if (!bad && n) printf "%s\t%d", s, n }' "$AD/review-debt.tsv" 2>/dev/null)"
         if [ -n "$owed" ]; then
           tab="$(printf '\t')"; n="${owed##*"$tab"}"; subj="${owed%"$tab"*}"
           decide ask "$n adversarial review(s) owed: ${subj%; } — review (anoti review-debt close <id> \"<verdict>\") or defer with a written reason (anoti review-debt defer <id> \"<reason>\") before integrating"

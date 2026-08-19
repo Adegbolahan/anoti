@@ -21,7 +21,7 @@ review_debt_block() {
   # whole-file shape check inside the awk: any malformed non-empty line ->
   # the ledger is treated as empty (fail-open; the helpers refuse to write
   # through it too, so the two surfaces agree)
-  rows="$(awk -F'\t' -v s="$sid" 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $3==s && $5=="open" { r=r $1 " " $4 "; "; i=i sep $1; sep="," } END { if (!bad && r!="") printf "%s\t%s", r, i }' "$rd" 2>/dev/null)"
+  rows="$(awk -F'\t' -v s="$sid" 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||$2!~/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $3==s && $5=="open" { r=r $1 " " $4 "; "; i=i sep $1; sep="," } END { if (!bad && r!="") printf "%s\t%s", r, i }' "$rd" 2>/dev/null)"
   [ -n "$rows" ] || return 0
   tab="$(printf '\t')"; ids="${rows##*"$tab"}"; rows="${rows%"$tab"*}"
   mkdir -p "$AD/sessions" 2>/dev/null; : > "$mk" 2>/dev/null

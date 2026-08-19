@@ -32,6 +32,10 @@ their message (CI enforces the section exists and is non-empty).
   the helpers' refusal; dedupe via ENVIRON (backslash subjects);
   telemetry verbs are the subcommands; `gh pr merge` asks from any
   branch; `STORE_LOCK_MAX_TRIES` bounds the hook-side writer's wait.
+  Round 2 residue closed: hook awks apply the full shape rule (created
+  date included) so helper and hooks agree on every row; `observe` fires
+  in an `ANOTI_DIR`-only workspace; a helper-minted state dir is
+  gitignored; the lock bound is test-pinned.
 
 ## [0.5.26] — 2026-08-19
 

@@ -29,3 +29,14 @@ grep -qE "^6\. When a verification claim" "$ROOT/skills/policy-epistemic/SKILL.m
 assert_ok $? "evidence-kind rule is numbered 6, after the existing 5 rules"
 grep -qE "G004.*FAIL|FAIL.*G004" "$ROOT/skills/policy-epistemic/SKILL.md"
 assert_ok $? "rule 6 cites G004/G008 by id"
+
+# --- adaptive-suppression spec §4.3.5: policy-retrospect rule 2 names id[:trigger] pairs ---
+retro_joined="$(tr '\n' ' ' < "$ROOT/skills/policy-retrospect/SKILL.md" | tr -s ' ')"
+printf '%s' "$retro_joined" | grep -qF "name each one you can identify"
+assert_ok $? "retrospect rule 2: names candidates individually, not just a count"
+printf '%s' "$retro_joined" | grep -qF "docs/specs/2026-08-19-adaptive-suppression-design.md"
+assert_ok $? "retrospect rule 2 cites the adaptive-suppression spec"
+printf '%s' "$retro_joined" | grep -qF 'an `id:trigger` pair accumulates toward silencing that exact pairing after three marks within 30 days'
+assert_ok $? "retrospect rule 2 states the exact three-marks/30-day suppression rule"
+printf '%s' "$retro_joined" | grep -qF "can never be named this way"
+assert_ok $? "retrospect rule 2 rejects lesson ids from the pair grammar"

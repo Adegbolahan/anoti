@@ -15,11 +15,24 @@ each run it.)
 1. **What went well** — mechanisms, decisions, or moves that earned their
    cost; cite the moment that shows it.
 2. **What didn't** — friction, wrong turns, misleading signals — and,
-   since 0.5.24, **which presence injections were irrelevant** (count
-   them; record via `scripts/mark-retrospect <sid> <empty|filed>
-   irrelevant-injections N` so the audit can score precision); cite the
-   moment. A retrospective that finds no friction in nontrivial work is
-   suspect, not clean.
+   since 0.5.24, **which presence injections were irrelevant**: count
+   them, and name each one you can identify — by record id, and by its
+   trigger too when you can tell which trigger on that record actually
+   fired (the `presence recall <id>[label]` telemetry line names the
+   record; if only one of its triggers could plausibly match the tool
+   call that just ran, name it — otherwise leave the trigger off rather
+   than guess, since a wrong trigger name silently suppresses the wrong
+   cue). Record via `scripts/mark-retrospect <sid> <empty|filed>
+irrelevant-injections N [<id>[:<trigger>] ...]` — N is still the raw
+   count the precision metric reads; the trailing tokens are what
+   adaptive suppression (docs/specs/2026-08-19-adaptive-suppression-design.md)
+   learns from: an `id:trigger` pair accumulates toward silencing that
+   exact pairing after three marks within 30 days, an id alone is audit
+   trail only. A lesson id (`L:<hash>`) can never be named this way —
+   lessons carry no `triggers:` of their own, so there is no pairing to
+   suppress; naming one is silently rejected with a warning, not written.
+   Cite the moment. A retrospective that finds no friction in
+   nontrivial work is suspect, not clean.
 3. **What should be skillified** — any procedure performed twice, or
    performed once with obvious generality: candidate for a skill, policy,
    or helper script. File as a TODOS entry naming the repeatable steps.

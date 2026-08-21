@@ -118,3 +118,24 @@ assert_ok $? "adaptive-suppression subsection sits between Presence-precision an
 # column 1 ---
 grep -qE '^  N` telemetry\) over the `presence recall` lines\.' "$LONG"
 assert_ok $? "longitudinal spec §4.8 bullet: telemetry-line continuation keeps its 2-space indent (byte-verbatim vs spec:900)"
+
+# --- organ-home currency (field report 2026-08-21): a command or skill that names a
+# default organ path must also name the .claude/anoti.local.md key that overrides it
+# (issues #16/#18). Skills whose whole subject is the default format (spec, plan,
+# direction) and the bootstrap skill name the keys explicitly; everything else must too.
+for f in "$ROOT"/commands/*.md "$ROOT"/skills/*/SKILL.md; do
+  rel="${f#"$ROOT"/}"
+  case "$rel" in skills/skillify/SKILL.md|skills/feedback/SKILL.md|commands/audit.md) continue ;; esac
+  ok=1
+  # a citation of one of THIS repo's dated design documents (docs/specs/2026-…) is a reference, not an organ home
+  grep -E 'docs/specs/' "$f" | grep -qvE 'docs/specs/[0-9]{4}-[0-9]{2}-[0-9]{2}-' && ! grep -q 'spec_dir' "$f" && ok=0
+  grep -q 'docs/plans/' "$f" && ! grep -q 'plan_dir' "$f" && ok=0
+  grep -q 'docs/reviews/' "$f" && ! grep -q 'reviews_dir' "$f" && ok=0
+  grep -q 'docs/HIGH-LEVEL-STORIES.md' "$f" && ! grep -q 'story_path' "$f" && ok=0
+  grep -q 'docs/ROADMAP.md' "$f" && ! grep -q 'roadmap_path' "$f" && ok=0
+  [ "$ok" -eq 1 ]; assert_ok $? "organ-home currency: $rel names the override key for every default organ path it mentions"
+done
+grep -q 'reviews_dir' "$ROOT/skills/skillify/SKILL.md"; assert_ok $? "skillify adoption map lists reviews_dir"
+grep -q 'reviews_dir' "$ROOT/commands/review-work.md"; assert_ok $? "review-work resolves the reviews home via reviews_dir"
+grep -q 'story_path' "$ROOT/commands/implement.md" && grep -q 'spec_dir' "$ROOT/commands/implement.md"; assert_ok $? "implement resolves organ homes from .claude/anoti.local.md"
+

@@ -3,6 +3,19 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.28] — 2026-08-21
+
+- **Organ homes honoured by the commands** (field report 2026-08-21: a
+  brownfield project with organs under `.claude/project/…` had to remap
+  every path `/anoti:implement` names by hand): `commands/implement.md`
+  and `commands/review-work.md`, plus the attend, deliberate, direction,
+  demo, and plan skills, now name each `docs/…` path as the default and
+  the `.claude/anoti.local.md` key that overrides it (`story_path:`,
+  `roadmap_path:`, `spec_dir:`, `plan_dir:`, and the new `reviews_dir:`
+  for review reports — added to skillify's adoption map). Currency
+  gate: `tests/test_docs.sh` fails any command or skill that names a
+  default organ path without naming its key.
+
 ## [0.5.27] — 2026-08-19
 
 - **Review-debt ledger** (spec

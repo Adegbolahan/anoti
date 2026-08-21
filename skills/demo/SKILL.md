@@ -107,4 +107,7 @@ consolidate skill, where the human ratifies.
 
 docs/SKILL-MAP.md (every path in and out), the design spec in
 docs/specs/, docs/HIGH-LEVEL-STORIES.md (the value standard the frames
-trace to).
+trace to). Brownfield layouts: every `docs/…` organ above is a default —
+`.claude/anoti.local.md` frontmatter (`spec_dir:`, `plan_dir:`,
+`reviews_dir:`, `story_path:`, `roadmap_path:`, `todos_path:`,
+`lessons_path:`) remaps it, and commands and skills follow the map.

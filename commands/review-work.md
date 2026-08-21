@@ -59,7 +59,9 @@ design decision, not a fourth attempt (see D011: fix rounds resume the
 original builder; findings relayed verbatim).
 
 **No blockers:** write the report to
-`docs/reviews/us-XXX-cycle-N.md` FIRST (evidence before assertion), then
+`<reviews home>/us-XXX-cycle-N.md` FIRST (evidence before assertion;
+`docs/reviews/` by default, `reviews_dir:` in `.claude/anoti.local.md`
+when the workspace adopted another home — issues #16/#18), then
 declare READY. Report format:
 
 ```

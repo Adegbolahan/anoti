@@ -34,7 +34,8 @@ adds at most a short documentation note, never a retrieval pointer.
 ## Migration
 
 **Organ adoption map (issues #16/#18)** — which organs adopt, and how:
-`spec_dir:`/`plan_dir:` map the spec and plan homes; `todos_path:`,
+`spec_dir:`/`plan_dir:`/`reviews_dir:` map the spec, plan, and review
+homes; `todos_path:`,
 `lessons_path:`, `roadmap_path:`, `story_path:` map the four hook-read
 organs (all in `.claude/anoti.local.md` frontmatter, all resolved
 case-exactly; D012's fixed paths stay the defaults). GROUNDING.yaml and

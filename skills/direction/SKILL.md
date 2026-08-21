@@ -10,6 +10,11 @@ every change is a draft via policy-draft-for-ratification, and the
 inhibition hook mechanically denies writes outside a consolidation flow.
 The human merges; ownership never transfers.
 
+Both organs live at `docs/ROADMAP.md` and `docs/HIGH-LEVEL-STORIES.md`
+by default; a brownfield workspace maps them with `roadmap_path:` /
+`story_path:` in `.claude/anoti.local.md` (issue #18) and the hooks,
+digest, and skills follow the mapping.
+
 ## docs/ROADMAP.md — required shape (adopted 2026-08-13)
 
 Structure (adopted external template, hardened with anoti guardrails):

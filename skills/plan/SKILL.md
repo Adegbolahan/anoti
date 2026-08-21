@@ -6,8 +6,9 @@ description: anoti plan standard — the required shape for implementation plans
 # Plan
 
 Where: story-scoped plans are story-first — `docs/plans/us-XXX-plan.md`
-— matching their spec (`docs/specs/us-XXX-*.md`) and reviews
-(`docs/reviews/us-XXX-cycle-N.md`). Standalone plans are date-first:
+— matching their spec (`docs/specs/us-XXX-*.md`; `spec_dir:` when
+mapped) and reviews (`docs/reviews/us-XXX-cycle-N.md`; `reviews_dir:`
+when mapped). Standalone plans are date-first:
 `docs/plans/YYYY-MM-DD-<topic>.md` (implementation) or
 `docs/plans/YYYY-MM-DD-<topic>-cascade.md` (ratified cascade plans, per
 the deliberate skill's lifetime rule: durable work files its plan before

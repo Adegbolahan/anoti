@@ -6,14 +6,22 @@ You are implementing one feature end-to-end. Follow the phases exactly;
 never skip one. This is the feature-scale form of the anoti cascade —
 classify slow, build the attention frame first (attend skill).
 
+**Organ homes:** every path below is the default; a brownfield workspace
+maps its own in `.claude/anoti.local.md` frontmatter (`story_path:`,
+`roadmap_path:`, `spec_dir:`, `plan_dir:`, `reviews_dir:` — issues
+#16/#18) and that mapping wins. Read the frontmatter once in Phase 0
+and use the mapped paths everywhere after; never assume `docs/`.
+
 ## Phase 0: Discovery (every time — do not rush)
 
-- Read `docs/HIGH-LEVEL-STORIES.md` (find or draft the story; which US-id
-  does this serve?) and `docs/ROADMAP.md` (which phase; what is already
-  delivered). Read the memory digest's relevant records via
+- Read the stories organ (`docs/HIGH-LEVEL-STORIES.md`, or `story_path:`)
+  — find or draft the story; which US-id does this serve? — and the
+  roadmap (`docs/ROADMAP.md`, or `roadmap_path:`) — which phase; what is
+  already delivered. Read the memory digest's relevant records via
   `/anoti:recall` if the topic has history.
-- If a spec exists in `docs/specs/`, read it; if a plan exists in
-  `docs/plans/`, read it.
+- If a spec exists in the spec home (`docs/specs/`, or `spec_dir:`),
+  read it; if a plan exists in the plan home (`docs/plans/`, or
+  `plan_dir:`), read it.
 - **Pattern research:** read 2-3 existing modules; match structure,
   naming, error handling, and test patterns exactly. Note exact versions
   before adding any dependency.
@@ -29,10 +37,11 @@ classify slow, build the attention frame first (attend skill).
 
 A spec file MUST exist before Phase 1. If missing: ask all clarifying
 questions, wait for answers, then write it per the **spec skill**
-(`skills/spec/SKILL.md`) to `docs/specs/us-XXX-<name>.md` (story-first
-naming) with
-testable acceptance criteria. Register the story in
-`docs/HIGH-LEVEL-STORIES.md` (draft-for-ratification — the human merges).
+(`skills/spec/SKILL.md`) to `<spec home>/us-XXX-<name>.md` (story-first
+naming; `docs/specs/` by default, `spec_dir:` when mapped) with
+testable acceptance criteria. Register the story in the stories organ
+(`docs/HIGH-LEVEL-STORIES.md`, or `story_path:`; draft-for-ratification
+— the human merges).
 Then write a TodoWrite checklist of every AC + prerequisite + gap.
 
 ## Phase 1: Plan
@@ -43,8 +52,8 @@ conductor's plan then feeds this phase.
 
 Per the **plan skill**: file inventory in dependency order, exact
 integration contracts, risks with mitigations. Save to
-`docs/plans/us-XXX-plan.md`; present the summary and **wait for
-approval**. After approval, produce the context handoff (story, ACs,
+`<plan home>/us-XXX-plan.md` (`docs/plans/` by default, `plan_dir:` when
+mapped); present the summary and **wait for approval**. After approval, produce the context handoff (story, ACs,
 contracts, prerequisites, mitigations, file order) so nothing is lost to
 compaction — persist it in session state.
 

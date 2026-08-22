@@ -679,6 +679,10 @@ records: # generated — do not edit by hand
         action: trigger-removed
         by: session
         note: edit:skills/skillify/
+      - date: "2026-08-22"
+        action: trigger-added
+        by: session
+        note: edit:skills/bootstrap/ (0.5.29 rename; replaces edit:skills/skillify/)
     triggers:
       - "edit:templates/"
       - "edit:skills/bootstrap/"

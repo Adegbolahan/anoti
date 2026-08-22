@@ -38,21 +38,46 @@ review_debt_block() {
 # been recorded (mark-retrospect). Runs only when nothing above blocked.
 # cleanup-session (SessionEnd) keeps the state as abandoned when the check
 # never happened, so the next session's digest surfaces it.
+# Stop fires at the end of EVERY turn (never only at close), so this cannot
+# know the session is ending. Contract: remind ONCE when the session first
+# turns nontrivial, and once more if a recorded retrospective goes stale
+# (>= NUDGE_EVENTS presence/inhibit events after the last mark). The real
+# close path is cleanup-session (SessionEnd): an unrecorded or stale
+# retrospective keeps the state as abandoned, and the next session's digest
+# surfaces it for the reopen procedure (policy-retrospect).
+nudge_threshold() { case "${NUDGE_EVENTS:-}" in ''|*[!0-9]*|0) echo 40 ;; *) echo "$NUDGE_EVENTS" ;; esac; }
 retrospect_nudge() {
   mk="$AD/sessions/$sid.retrospect-nudged"
-  [ -f "$mk" ] && return 0
-  grep -qE "$(printf '\t')${sid}$(printf '\t')retrospect$(printf '\t')" "$AD/telemetry.log" 2>/dev/null && return 0
-  slow=0; frames=0
-  if [ -f "$sf" ] && yq -e '.' "$sf" >/dev/null 2>&1; then
-    slow="$(yq -r '[.classifications // [] | .[] | select(.verdict == "slow")] | length' "$sf" 2>/dev/null || echo 0)"
-    frames="$(yq -r '.frames // [] | length' "$sf" 2>/dev/null || echo 0)"
+  th="$(nudge_threshold)"
+  # column-anchored (awk, not an unanchored ERE with the sid as a pattern):
+  # events = presence/inhibit lines for this sid; after = those after the
+  # LAST mark-retrospect line for this sid (or all, when none)
+  read -r ev after marked <<EOF2
+$(awk -F'\t' -v s="$sid" '$2==s && ($3=="presence"||$3=="inhibit") {n++; a++} $2==s && $3=="retrospect" {m=1; a=0} END {printf "%d %d %d\n", n+0, a+0, m+0}' "$AD/telemetry.log" 2>/dev/null || echo "0 0 0")
+EOF2
+  case "$ev$after$marked" in ''|*[!0-9]*) return 0 ;; esac
+  if [ "$marked" -eq 1 ]; then
+    # recorded: re-arm only when stale, and only once per staleness window
+    [ "$after" -ge "$th" ] || return 0
+    [ -f "$mk" ] && [ "$(cat "$mk" 2>/dev/null)" = "stale:$after" ] && return 0
+    reason="anoti: the retrospective recorded for this session is stale — $after tool events since it (threshold $th). Before this session ends, re-run policy-retrospect over the later work (anything to skillify? irrelevant injections?) and record it again: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. A stale mark keeps the state as abandoned at session end."
+    note="stale after=$after"
+    mkdir -p "$AD/sessions" 2>/dev/null; printf 'stale:%s' "$after" > "$mk" 2>/dev/null
+  else
+    [ -f "$mk" ] && return 0
+    slow=0; frames=0
+    if [ -f "$sf" ] && yq -e '.' "$sf" >/dev/null 2>&1; then
+      slow="$(yq -r '[.classifications // [] | .[] | select(.verdict == "slow")] | length' "$sf" 2>/dev/null || echo 0)"
+      frames="$(yq -r '.frames // [] | length' "$sf" 2>/dev/null || echo 0)"
+    fi
+    case "$slow$frames" in *[!0-9]*) return 0 ;; esac
+    [ "$slow" -gt 0 ] || [ "$frames" -gt 0 ] || [ "$ev" -ge "$th" ] || return 0
+    reason="anoti: this session is now nontrivial and no retrospective is recorded (policy-retrospect). Before it ends: anything to skillify? — a procedure performed twice becomes a queue entry (anoti append-todo <todos> \"skillify: <steps>\") or a skill now (skillify skill); count the presence injections that were irrelevant; then record it: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. This reminder fires once; unrecorded (or recorded then followed by $th+ more tool events), the session state is kept as abandoned and resurfaces next session."
+    note="slow=$slow frames=$frames events=$ev"
+    mkdir -p "$AD/sessions" 2>/dev/null; printf 'first' > "$mk" 2>/dev/null
   fi
-  ev="$(awk -F'\t' -v s="$sid" '$2==s && ($3=="presence" || $3=="inhibit") {n++} END {print n+0}' "$AD/telemetry.log" 2>/dev/null || echo 0)"
-  case "$slow$frames$ev" in *[!0-9]*) return 0 ;; esac
-  [ "$slow" -gt 0 ] || [ "$frames" -gt 0 ] || [ "$ev" -ge "${NUDGE_EVENTS:-40}" ] || return 0
-  mkdir -p "$AD/sessions" 2>/dev/null; : > "$mk" 2>/dev/null
-  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect-nudge" "block" "slow=$slow frames=$frames events=$ev" >> "$AD/telemetry.log" 2>/dev/null || true
-  jq -n --arg r "anoti: nontrivial session closing without a retrospective (policy-retrospect). Anything to skillify? — a procedure performed twice becomes a queue entry (anoti append-todo <todos> \"skillify: <steps>\") or a skill now (skillify skill); count the presence injections that were irrelevant; then record it: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. Unrecorded, the session state is kept as abandoned and resurfaces next session." '{decision:"block",reason:$r}'
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect-nudge" "block" "$note" >> "$AD/telemetry.log" 2>/dev/null || true
+  jq -n --arg r "$reason" '{decision:"block",reason:$r}'
   exit 0
 }
 review_debt_then_nudge() { review_debt_block; retrospect_nudge; }

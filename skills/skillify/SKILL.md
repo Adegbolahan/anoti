@@ -47,7 +47,7 @@ re-files it) — and stop.
 | Scope                                 | Home                               | Gate                                              |
 | ------------------------------------- | ---------------------------------- | ------------------------------------------------- |
 | This project only                     | `.claude/skills/<name>/SKILL.md`   | write it; commit with the work (git skill)        |
-| Every project of this user            | `~/.claude/skills/<name>/SKILL.md` | **human-gated** — propose, the human says yes     |
+| Every project of this user | `~/.claude/skills/<name>/SKILL.md` | **human-gated** — propose, the human says yes; human absent → queue the draft under `<state-dir>/feedback/` and `anoti append-pending …` (D024) |
 | anoti's own craft (governed-workflow) | `skills/<name>/` in the plugin     | via the **feedback** skill — an issue, not a push |
 
 Claude Code loads `.claude/skills/` and `~/.claude/skills/` live — no

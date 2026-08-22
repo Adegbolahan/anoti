@@ -9,7 +9,7 @@
 
 | Root                                             | Fires                                             | Leads to                                                                                                |
 | ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; bootstrap offer (bare repos); `/anoti:review` nudge          |
+| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; bootstrap offer (bare repos); `/anoti:review` nudge; abandoned-state count → policy-retrospect reopen → `resolve-abandoned` |
 | UserPromptSubmit hook (`classify`)               | every prompt                                      | fast path (silence) or **attend**                                                                       |
 | PreToolUse hook (`inhibit`)                      | matched tools                                     | allow / ask / deny; deny message routes to `/anoti:consolidate`                                         |
 | Stop hook (`consolidation-gate`)                 | candidate episodes; open review debt; nontrivial session without a retrospective | `/anoti:consolidate`; review-debt close/defer; policy-retrospect → skillify (once per session)            |

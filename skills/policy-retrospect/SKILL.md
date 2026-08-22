@@ -68,10 +68,17 @@ Never manufacture reflection for a session that carried no weight.
 **Binds:** the consolidate skill (the retrospective is its reflective
 step), LESSONS-LEARNT, TODOS, skillify (consumes the skillify queue).
 
-**Violation handling:** a nontrivial session closing without a recorded
-retrospective is nudged once by the Stop hook ("anything to
-skillify?"); if it still closes unrecorded, SessionEnd keeps its state
-as abandoned and the next session's digest surfaces it (the
-abandoned-state path); repeated skips are themselves a lesson to file.
+**Violation handling:** when a session first turns nontrivial, the Stop
+hook reminds once ("anything to skillify?"); a recorded retrospective
+followed by 40+ more tool events is **stale** and is reminded once
+more. A session that ends unrecorded or stale keeps its state as
+`<sid>.abandoned.yaml` (SessionEnd) and the next session's digest
+surfaces it. **Reopen procedure** (the digest names it): read the
+abandoned file and that sid's telemetry lines (`awk -F'\t' '$2=="<sid>"'
+<state-dir>/telemetry.log`), answer the five questions over that trail,
+route as usual, record `anoti mark-retrospect <that-sid> empty|filed
+…`, then `anoti resolve-abandoned <that-sid>` (or `--skip "<reason>"`
+when the trail is genuinely not worth it — a written reason, never
+silence). Repeated skips are themselves a lesson to file.
 `mark-retrospect` is the record — an unmarked retrospective did not
 happen, as far as the system can tell.

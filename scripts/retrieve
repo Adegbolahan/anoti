@@ -209,8 +209,11 @@ if [ -f "$AD/pending.md" ]; then
   pu="$(grep -c '^- \[ \]\|^- [^[]' "$AD/pending.md" 2>/dev/null)"; pu="${pu:-0}"
   [ "$pu" -gt 0 ] && emit "- pending human-absent escalations: $pu unresolved (see $AD/pending.md)"
 fi
-ab="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1 || true)"
-[ -n "$ab" ] && emit "- abandoned session state found: $ab (surfaced, not auto-loaded)"
+abn="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | wc -l | tr -d ' ')"; abn="${abn:-0}"
+if [ "$abn" -gt 0 ] 2>/dev/null; then
+  ab="$(ls -tr "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1)"
+  emit "- abandoned session state found: $abn file(s), oldest $ab (surfaced, not auto-loaded) — reopen: run policy-retrospect over its trail, anoti mark-retrospect <that-sid> …, then anoti resolve-abandoned <that-sid>"
+fi
 if [ -z "$lines" ]; then
   if [ -d .git ] && ! fx GROUNDING.yaml; then
     ctx="<anoti-memory-digest>

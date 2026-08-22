@@ -628,3 +628,4 @@ enforcement layer.
   classify hook is silent in unanchored directories (US-002). Frame gains story_ref; the
   retrieval digest surfaces HIGH-LEVEL-STORIES as the value standard.
 - 2026-08-13 — Component tree refreshed to 0.4.0 reality (15 scripts incl. mechanical helpers, document-format skills, retrospect policy, seven commands, benchmark dir); requirements-analyst wired to the direction skill.
+- 2026-08-22 — naming correction (human): the workspace bootstrap/maintenance skill this spec calls `skillify` is `skills/bootstrap/` from 0.5.29; `skillify` now names what the retrospective always routed to it — session→skill extraction (see `skills/skillify/SKILL.md`). Earlier mentions above are historical.

@@ -125,7 +125,7 @@ assert_ok $? "longitudinal spec §4.8 bullet: telemetry-line continuation keeps 
 # direction) and the bootstrap skill name the keys explicitly; everything else must too.
 for f in "$ROOT"/commands/*.md "$ROOT"/skills/*/SKILL.md; do
   rel="${f#"$ROOT"/}"
-  case "$rel" in skills/skillify/SKILL.md|skills/feedback/SKILL.md|commands/audit.md) continue ;; esac
+  case "$rel" in skills/bootstrap/SKILL.md|skills/feedback/SKILL.md|commands/audit.md) continue ;; esac
   ok=1
   # a citation of one of THIS repo's dated design documents (docs/specs/2026-…) is a reference, not an organ home
   grep -E 'docs/specs/' "$f" | grep -qvE 'docs/specs/[0-9]{4}-[0-9]{2}-[0-9]{2}-' && ! grep -q 'spec_dir' "$f" && ok=0
@@ -135,7 +135,7 @@ for f in "$ROOT"/commands/*.md "$ROOT"/skills/*/SKILL.md; do
   grep -q 'docs/ROADMAP.md' "$f" && ! grep -q 'roadmap_path' "$f" && ok=0
   [ "$ok" -eq 1 ]; assert_ok $? "organ-home currency: $rel names the override key for every default organ path it mentions"
 done
-grep -q 'reviews_dir' "$ROOT/skills/skillify/SKILL.md"; assert_ok $? "skillify adoption map lists reviews_dir"
+grep -q 'reviews_dir' "$ROOT/skills/bootstrap/SKILL.md"; assert_ok $? "bootstrap adoption map lists reviews_dir"
 grep -q 'reviews_dir' "$ROOT/commands/review-work.md"; assert_ok $? "review-work resolves the reviews home via reviews_dir"
 grep -q 'story_path' "$ROOT/commands/implement.md" && grep -q 'spec_dir' "$ROOT/commands/implement.md"; assert_ok $? "implement resolves organ homes from .claude/anoti.local.md"
 

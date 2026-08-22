@@ -1,92 +1,110 @@
 ---
 name: skillify
-description: anoti workspace bootstrap and maintenance — scaffold the document system into a project, adopt brownfield docs, migrate schema versions. Invoke to set up or maintain an anoti workspace.
+description: anoti skill extraction — examine the session (and the retrospective's skillify queue in TODOS) for a procedure performed twice or once with obvious generality, and write it as a reusable skill the agent can invoke next time. Invoke when a procedure just recurred, when TODOS carries a `skillify:` entry, or when the retrospective names a candidate.
 ---
 
 # Skillify
 
-The organ-maintenance function: creates and maintains the externalized
-workspace (GROUNDING.yaml, ROADMAP.md, HIGH-LEVEL-STORIES.md, TODOS.md,
-LESSONS-LEARNT.md, specs/, plans/).
+Turn a procedure this session proved into a skill the next session can
+invoke. The retrospective asks "what should be skillified" every session
+and files candidates to TODOS; this skill consumes that queue and writes
+the skill — so the same steps are never re-derived from scratch a third
+time. (Workspace scaffolding is the **bootstrap** skill; until 0.5.29 it
+wore this name.)
 
-## Bootstrap contract
+## Inputs
 
-- **Idempotent:** re-running creates only what is missing; it NEVER
-  overwrites an existing file. Safe to run twice by construction.
-- **Dry-run first when asked:** `--dry-run` prints the plan (what would be
-  created, what exists and is left alone) without touching anything.
-- Source of truth is `templates/` in the plugin; project root is the git
-  toplevel (or CWD with a warning if not a repo).
-- Git hygiene: append `templates/gitignore-fragment` (`.anoti/`) to the
-  project `.gitignore` if missing; workspace files themselves are
-  committed — shared ground truth deserves history.
-- After creating GROUNDING.yaml from the template: run
-  `scripts/validate-workspace`, `scripts/regen-index`, then
-  `scripts/trust` so retrieval loads it from the first session.
+1. **The session trail** — what was actually run: commands, file edits,
+   the order, the checks that proved it worked, the mistakes on the way.
+   A skill is written from evidence, not from how the procedure "should"
+   go (policy-epistemic).
+2. **The skillify queue** — TODOS entries prefixed `skillify:` (filed by
+   policy-retrospect question 3), each naming the repeatable steps.
+3. **An explicit ask** — the human says "make this a skill".
 
-## Brownfield adoption
+## Extraction test (all four, or stop)
 
-Existing docs map onto organs; only gaps are created; existing content is
-referenced in place, never rewritten. An existing CLAUDE.md is left as the
-instruction layer — retrieval belongs to the SessionStart hook, so skillify
-adds at most a short documentation note, never a retrieval pointer.
+- **Recurred or general:** performed twice (this session or across
+  sessions — cite both moments), or once with obvious generality (name
+  the other situations it covers).
+- **Deterministic core:** the steps can be written as commands and
+  checks another session can follow without re-deriving them. Judgment
+  steps are allowed only when named as judgment with the criteria.
+- **Not already a skill:** list `skills/` (plugin), `.claude/skills/`
+  (project), `~/.claude/skills/` (personal); a near-match is amended,
+  never twinned.
+- **Verifiable:** the skill carries a way to tell it worked (a command
+  whose output differs between done and not-done — G004).
 
-## Migration
+A one-off, a procedure whose steps are still being discovered, or one
+whose only content is "use tool X carefully" fails the test: leave the
+TODOS entry open with a one-line reason, and stop.
 
-**Organ adoption map (issues #16/#18)** — which organs adopt, and how:
-`spec_dir:`/`plan_dir:`/`reviews_dir:` map the spec, plan, and review
-homes; `todos_path:`,
-`lessons_path:`, `roadmap_path:`, `story_path:` map the four hook-read
-organs (all in `.claude/anoti.local.md` frontmatter, all resolved
-case-exactly; D012's fixed paths stay the defaults). GROUNDING.yaml and
-the state dir stay fixed by design. Where a team prefers no config, a
-root symlink to the adopted file also works — propose it, the human
-ratifies; never ship it silently. Note honestly: the episode gate keys
-on canonical basenames (*TODOS.md, *ROADMAP.md, …), so an adopted organ
-under a different filename is not gate-protected — say so in the
-bootstrap report when it applies.
+## Where it lives (scope routing, like memory)
 
-**Adopted organ homes (issue #16):** before scaffolding `docs/specs/`
-or `docs/plans/`, look for existing spec/plan homes (a `.claude/project/`
-tree, a `specs/` dir, wherever the project already files them). If found,
-DO NOT scaffold the default directories — record the adopted homes as
-`spec_dir:`/`plan_dir:` in `.claude/anoti.local.md` frontmatter (the
-same file that carries `state_dir:`), and the spec/plan skills will file
-there. The bootstrap record states **exactly what it created** — a
-record claiming "only X was created" while the scaffold also minted
-organ directories is the store disagreeing with the filesystem, the
-exact failure mode this system exists to prevent.
+| Scope                                 | Home                               | Gate                                              |
+| ------------------------------------- | ---------------------------------- | ------------------------------------------------- |
+| This project only                     | `.claude/skills/<name>/SKILL.md`   | write it; commit with the work (git skill)        |
+| Every project of this user            | `~/.claude/skills/<name>/SKILL.md` | **human-gated** — propose, the human says yes     |
+| anoti's own craft (governed-workflow) | `skills/<name>/` in the plugin     | via the **feedback** skill — an issue, not a push |
 
-**Case-insensitive collision check (issue #11):** before creating any
-organ file, list the target directory and compare names exactly. If an
-existing file matches an organ name only case-insensitively (a project's
-own `roadmap.md` vs the `ROADMAP.md` organ), STOP — on a
-case-insensitive filesystem the template write would silently target the
-project's file. Report the collision and let the human rule: adopt the
-existing file as the organ (brownfield), rename one, or skip that organ.
-Adoption is always explicit, never accidental.
+Claude Code loads `.claude/skills/` and `~/.claude/skills/` live — no
+restart — and invokes a skill on its `description`, so the description
+is the trigger: write it as the situations that should summon the skill,
+not as a summary of its contents; keep `description` + `when_to_use`
+under 1,536 characters (the listing truncates there).
 
-The workspace records the plugin/schema version that scaffolded it. On
-mismatch: take a dated backup of each affected file into
-`<state-dir>/backups/` (gitignored with the state dir; copy one out and
-commit it if the project wants it tracked — opt-in, never default),
-produce the migration as a proposed diff, and the human ratifies before
-anything is applied — no silent upgrades. The update report states the
-backup location. Grandfathering rule for evidence-less `established`
-claims: demote to `probable` with a `{action: demoted, note: grandfathered;
-evidence pending}` event.
+## Shape of the written skill
 
-## Maintenance map (which document updates on which event)
+```
+---
+name: <kebab-case, matches the directory>
+description: <when to invoke: the situations, the symptoms, the ask>
+---
+# <Name>
+**When:** the trigger situations, one line each.
+**Procedure:** numbered steps with the exact commands and paths; every
+judgment step labeled "(judgment: <criteria>)".
+**Verify:** the command(s) whose output proves it worked.
+**Pitfalls:** the mistakes made while discovering it, each with the fix.
+**Binds:** which anoti skills or policies apply when running it.
+```
 
-- Design accepted → `docs/specs/YYYY-MM-DD-<topic>-design.md` (format: the spec skill)
-- Implementation planned → `docs/plans/` (format: the plan skill)
-- Direction changes → ROADMAP.md (format: the direction skill; draft-for-ratification; human merges)
-- Scope of "good" changes → HIGH-LEVEL-STORIES.md (format: the direction skill; same gate)
-- Work begun/finished → TODOS.md (checked items are history; never delete)
-- Process lesson learned → LESSONS-LEARNT.md
-- Discovery made → GROUNDING.yaml via the consolidate skill only
+Supporting files (a script, a checklist) sit beside `SKILL.md` and are
+referenced as `${CLAUDE_SKILL_DIR}/<file>`. Scripts stay small and
+idempotent; a skill that needs a helper the plugin should own goes
+through the feedback skill instead.
 
-## Uninstall
+## Procedure
 
-The workspace is plain files and simply remains — designed degradation.
-Offer (never force) removal of `.anoti/` ephemera.
+1. **Pick the candidate** — from the queue or the trail; cite both
+   occurrences (or the generality argument).
+2. **Run the extraction test** above; record a failing candidate's
+   reason on its TODOS entry and stop.
+3. **Write the skill** in the shape above, from the trail, into the
+   scope-routed home. Project and personal homes are created with
+   `mkdir -p`; a personal write waits for the human's yes.
+4. **Verify it from cold:** read the written skill as a stranger and run
+   its Verify step once — a skill that cannot be followed from its own
+   text is rewritten, not shipped.
+5. **Consume the queue entry:** `scripts/complete-todo <todos> "<match>"
+"written: <path>"` — the TODOS entry is the record that the candidate
+   became a skill.
+6. **Commit** the project skill with the work it came from (git skill);
+   a personal skill is not in any repo — say where it landed.
+
+## Rules
+
+- Helpers and organs stay the plugin's: a project skill never hand-edits
+  GROUNDING.yaml, TODOS.md, LESSONS-LEARNT.md, or session state — it
+  calls `scripts/anoti <action>` like everything else.
+- A skill encodes procedure; a **lesson** encodes insight and a
+  **policy record** encodes a boundary — route each to its organ
+  (policy-retrospect). When a skill's first step is "remember that…",
+  that line is a lesson, not a step.
+- Never skillify the act of reading memory or running the cycle — those
+  are anoti's, and a duplicate drifts.
+
+**Binds:** policy-retrospect (files the queue), consolidate step 11
+(routes to it), the git skill (commits it), the feedback skill (anoti-
+craft candidates), policy-escalate-destructive (the personal-scope gate).

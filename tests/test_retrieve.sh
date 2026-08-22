@@ -88,7 +88,7 @@ tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
 git init -q .
 out="$(printf '{"session_id":"s1"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext' 2>/dev/null)"
-printf '%s' "$out" | grep -qi "skillify"; assert_ok $? "bare git repo gets skillify bootstrap offer"
+printf '%s' "$out" | grep -qi "bootstrap skill"; assert_ok $? "bare git repo gets the bootstrap offer"
 ); rm -rf "$tmp"
 tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
@@ -288,8 +288,9 @@ printf '%s' "$ctx9" | grep -qF -- "scripts/store-resolve — scope:"
 assert_eq "$?" "1" "compaction re-anchor: scope text is not shifted into the goal position (CRITICAL #1 sweep regression guard)"
 ); rm -rf "$tmp"
 
-# --- 0.5.25: cut digest lines carry a handle ---
+# --- 0.5.25: cut digest lines carry a handle (HOME isolated: the real global store's size must not decide this test) ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
 git init -q -b main .
 cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
 printf '%s' '{"id":"QL","date":"2026-08-19","question":"'"$(printf 'q%.0s' $(seq 1 300))"'","raised_by":"session","status":"open"}' | "$ROOT/scripts/append-question" GROUNDING.yaml >/dev/null 2>&1
@@ -297,6 +298,16 @@ mkdir -p .anoti && "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null 2>&1
 out="$(printf '{"session_id":"h"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
 printf '%s' "$out" | grep -q "QL: q.*…"; assert_ok $? "a cut question line is marked as cut"
 printf '%s' "$out" | grep -qi "cut lines\|truncated.*yq\|full text"; assert_ok $? "digest names how to pull a cut line's full text"
+# budget pressure (2026-08-22: a 13-record global store pushed the digest past BUDGET and the
+# try_emit footer vanished): a large trusted global store must not drop the footer
+mkdir -p "$HOME/.claude/anoti"; cp "$ROOT/tests/fixtures/store_valid.yaml" "$HOME/.claude/anoti/GROUNDING.yaml"
+for i in $(seq 1 14); do
+  printf '{"id":"G%02d","date":"2026-08-20","type":"claim","topic":"t.g%d","statement":"%s","epistemic_status":"probable","ratification":"approved","source":{"type":"observation","context":"x"},"events":[{"date":"2026-08-20","action":"created","by":"session"}]}' "$i" "$i" "$(printf 'long statement %.0s' $(seq 1 20))" | "$ROOT/scripts/append-record" "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null 2>&1
+done
+"$ROOT/scripts/trust" --global "$HOME/.claude/anoti/GROUNDING.yaml" >/dev/null 2>&1
+out="$(printf '{"session_id":"h2"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+n="$(printf '%s' "$out" | wc -c | tr -d ' ')"; [ "$n" -gt 4000 ]; assert_ok $? "setup: the digest is over budget ($n chars)"
+printf '%s' "$out" | grep -q "cut lines"; assert_ok $? "over budget, the cut-line footer is still emitted (core line, not try_emit)"
 ); rm -rf "$tmp"
 tmp="$(mktemp -d)"; ( cd "$tmp"
 git init -q -b main .

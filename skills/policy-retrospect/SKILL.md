@@ -37,7 +37,10 @@ each run it.)
    that finds no friction in nontrivial work is suspect, not clean.
 3. **What should be skillified** — any procedure performed twice, or
    performed once with obvious generality: candidate for a skill, policy,
-   or helper script. File as a TODOS entry naming the repeatable steps.
+   or helper script. File as a TODOS entry naming the repeatable steps
+   (prefix `skillify:`); the **skillify skill** consumes that queue and
+   writes the skill — invoke it now if the candidate already recurred
+   this session, otherwise the next session that hits it does.
 4. **What should become a lesson** — process insight worth surviving the
    session: write to LESSONS-LEARNT with why + how-to-apply. A lesson
    that becomes falsifiable and gathers evidence graduates into a

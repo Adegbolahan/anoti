@@ -55,7 +55,8 @@ block.
 | Pending records / promotions               | /anoti:review                                 | the human ratification ritual                                                                                                                                                                                        |
 | Weekly health / staleness                  | /anoti:audit                                  | longitudinal metrics + staleness sweep                                                                                                                                                                               |
 | anoti itself misbehaved                    | feedback skill                                | field report → human-gated issue on the anoti repo                                                                                                                                                                   |
-| New or drifted workspace                   | /anoti:new, /anoti:update, skillify           | scaffold, migrate by ratified diff                                                                                                                                                                                   |
+| A procedure you did twice this session     | skillify skill                                | turn it into a project skill (`.claude/skills/<name>/SKILL.md`) the agent can invoke next time — from the retrospective's skillify queue in TODOS; global skills are human-gated like global memory |
+| New or drifted workspace                   | /anoti:new, /anoti:update, bootstrap skill    | scaffold, migrate by ratified diff                                                                                                                                                                                   |
 
 ## The three whys behind every rule
 

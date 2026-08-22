@@ -9,7 +9,7 @@
 
 | Root                                             | Fires                                             | Leads to                                                                                                |
 | ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge          |
+| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; bootstrap offer (bare repos); `/anoti:review` nudge          |
 | UserPromptSubmit hook (`classify`)               | every prompt                                      | fast path (silence) or **attend**                                                                       |
 | PreToolUse hook (`inhibit`)                      | matched tools                                     | allow / ask / deny; deny message routes to `/anoti:consolidate`                                         |
 | Stop hook (`consolidation-gate`)                 | candidate episodes                                | `/anoti:consolidate`                                                                                    |
@@ -36,11 +36,12 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | ----------- | --------------------------------------------------------------------------------------------------------------- |
 | attend      | classify hook; implement; policy-trace-to-frame                                                                 |
 | deliberate  | **attend (handoff)**; implement (multi-component note); plan skill; practitioner; policy-parallel-breadth       |
-| consolidate | Stop gate; inhibit deny message; /anoti:consolidate; implement; consolidator agent; skillify; policy-retrospect |
-| skillify    | retrieve bootstrap offer; /anoti:new; /anoti:update; direction skill                                            |
-| spec        | implement (spec gate); skillify maintenance map; **architect role**                                             |
-| plan        | deliberate lifetime rule; conductor role; skillify maintenance map                                              |
-| direction   | visionary, product-manager, requirements-analyst roles; skillify                                                |
+| consolidate | Stop gate; inhibit deny message; /anoti:consolidate; implement; consolidator agent; bootstrap; policy-retrospect |
+| bootstrap   | retrieve bootstrap offer; /anoti:new; /anoti:update; direction skill (named skillify before 0.5.29)             |
+| skillify    | policy-retrospect (what should be skillified → TODOS queue); consolidate step 11; demo routing row              |
+| spec        | implement (spec gate); bootstrap maintenance map; **architect role**                                            |
+| plan        | deliberate lifetime rule; conductor role; bootstrap maintenance map                                             |
+| direction   | visionary, product-manager, requirements-analyst roles; bootstrap                                               |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |
 | git         | implement (commit time); deliberate (execution step); every builder role before committing                      |
 | demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents   |

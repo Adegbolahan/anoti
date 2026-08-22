@@ -1,4 +1,4 @@
-for s in attend deliberate consolidate skillify; do
+for s in attend deliberate consolidate bootstrap skillify; do
   f="$ROOT/skills/$s/SKILL.md"
   [ -s "$f" ]; assert_ok $? "core skill exists: $s"
   assert_eq "$(sed -n 's/^name: //p' "$f" | head -1)" "$s" "frontmatter name matches: $s"
@@ -14,8 +14,8 @@ ok=0
 for t in claim preference decision goal policy; do grep -q "$t" "$ROOT/skills/consolidate/SKILL.md" 2>/dev/null || ok=1; done
 grep -q "regen-index" "$ROOT/skills/consolidate/SKILL.md" 2>/dev/null || ok=1
 assert_eq "$ok" "0" "consolidate covers all record types + regen-index"
-grep -qi "idempotent" "$ROOT/skills/skillify/SKILL.md" 2>/dev/null && grep -qi "dry-run" "$ROOT/skills/skillify/SKILL.md" 2>/dev/null
-assert_ok $? "skillify covers idempotent bootstrap + dry-run"
+grep -qi "idempotent" "$ROOT/skills/bootstrap/SKILL.md" 2>/dev/null && grep -qi "dry-run" "$ROOT/skills/bootstrap/SKILL.md" 2>/dev/null
+assert_ok $? "bootstrap covers idempotent scaffold + dry-run"
 grep -qi "lifetime" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -q "plans/" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
 assert_ok $? "deliberate carries the plan-persistence lifetime rule"
 grep -qi "resume the original builder" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null && grep -qi "pre-fix snapshot" "$ROOT/skills/deliberate/SKILL.md" 2>/dev/null
@@ -68,8 +68,8 @@ grep -qi "git skill" "$ROOT/commands/implement.md"
 assert_ok $? "implement cites the git skill at commit time"
 grep -qi "git skill" "$ROOT/skills/deliberate/SKILL.md"
 assert_ok $? "deliberate cites the git skill for execution"
-grep -qi "backups/" "$ROOT/skills/skillify/SKILL.md"
-assert_ok $? "#6 skillify names the backup home"
+grep -qi "backups/" "$ROOT/skills/bootstrap/SKILL.md"
+assert_ok $? "#6 bootstrap names the backup home"
 grep -q "append-todo" "$ROOT/skills/consolidate/SKILL.md" && grep -q "append-lesson" "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "#2 quick-reference includes todo/lesson helpers"
 f="$ROOT/skills/feedback/SKILL.md"
@@ -100,7 +100,7 @@ f="$ROOT/skills/demo/SKILL.md"
 assert_eq "$(sed -n 's/^name: //p' "$f" | head -1)" "demo" "demo skill name matches"
 grep -qi "when to use what" "$f"
 assert_ok $? "demo: routing promise in the body"
-ok=1; for w in attend deliberate consolidate feedback skillify "review-work" recall audit direction; do grep -q "$w" "$f" || { echo "demo missing route: $w" >&2; ok=0; }; done; [ "$ok" = 1 ]
+ok=1; for w in attend deliberate consolidate feedback skillify bootstrap "review-work" recall audit direction; do grep -q "$w" "$f" || { echo "demo missing route: $w" >&2; ok=0; }; done; [ "$ok" = 1 ]
 assert_ok $? "demo: routes cover the cycle and commands"
 grep -q "ANOTI_DIR" "$f" && grep -qi "scratch\|temp" "$f"
 assert_ok $? "demo: hands-on tour runs against scratch state only"
@@ -116,8 +116,8 @@ grep -qi "not an adversarial" "$ROOT/skills/demo/SKILL.md" || ! grep -qi "review
 assert_ok $? "demo does not mislabel review-work as adversarial"
 grep -qi "demo" "$ROOT/docs/SKILL-MAP.md"
 assert_ok $? "SKILL-MAP lists the demo skill"
-grep -qi "case-insensitive" "$ROOT/skills/skillify/SKILL.md"
-assert_ok $? "#11 skillify detects case-insensitive organ collisions"
+grep -qi "case-insensitive" "$ROOT/skills/bootstrap/SKILL.md"
+assert_ok $? "#11 bootstrap detects case-insensitive organ collisions"
 grep -q "set-ratification" "$ROOT/skills/consolidate/SKILL.md" && grep -q "set-status" "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "#10 consolidate quick-reference carries the field-writing helpers"
 ! grep -q 'Status/ratification changes:.*append-event' "$ROOT/skills/consolidate/SKILL.md"
@@ -144,19 +144,19 @@ grep -q "resolve-question" "$ROOT/skills/consolidate/SKILL.md"
 assert_ok $? "#14 consolidate quick-reference carries resolve-question"
 grep -qi "plugin root" "$ROOT/skills/spec/SKILL.md"
 assert_ok $? "spec routing resolves roles/SKILL-MAP from the plugin root (governed projects have no local copy)"
-grep -qi "spec_dir\|organ homes" "$ROOT/skills/skillify/SKILL.md"
-assert_ok $? "#16 skillify skips scaffolding adopted organ homes and records the mapping"
+grep -qi "spec_dir\|organ homes" "$ROOT/skills/bootstrap/SKILL.md"
+assert_ok $? "#16 bootstrap skips scaffolding adopted organ homes and records the mapping"
 grep -q "spec_dir" "$ROOT/skills/spec/SKILL.md"
 assert_ok $? "#16 spec skill files to the recorded organ home, not a hardcoded path"
 grep -q "plan_dir" "$ROOT/skills/plan/SKILL.md"
 assert_ok $? "#16 plan skill files to the recorded organ home"
-grep -qi "exactly what it created" "$ROOT/skills/skillify/SKILL.md"
+grep -qi "exactly what it created" "$ROOT/skills/bootstrap/SKILL.md"
 assert_ok $? "#16 the bootstrap record states exactly what was created"
-grep -q "todos_path" "$ROOT/skills/skillify/SKILL.md" && grep -q "roadmap_path" "$ROOT/skills/skillify/SKILL.md"
-assert_ok $? "#18 skillify names the organ-path keys for brownfield adoption"
-grep -qi "symlink" "$ROOT/skills/skillify/SKILL.md"
-assert_ok $? "#18 skillify offers the symlink alternative (human-ratified)"
-grep -qi "canonical basename\|episode gate keys on" "$ROOT/skills/skillify/SKILL.md"
+grep -q "todos_path" "$ROOT/skills/bootstrap/SKILL.md" && grep -q "roadmap_path" "$ROOT/skills/bootstrap/SKILL.md"
+assert_ok $? "#18 bootstrap names the organ-path keys for brownfield adoption"
+grep -qi "symlink" "$ROOT/skills/bootstrap/SKILL.md"
+assert_ok $? "#18 bootstrap offers the symlink alternative (human-ratified)"
+grep -qi "canonical basename\|episode gate keys on" "$ROOT/skills/bootstrap/SKILL.md"
 assert_ok $? "#18 the gate limitation of renamed organs is stated, not silent"
 
 # --- jit-recall spec §4.6: consolidate gains step 2b, the encoding-time question ---
@@ -198,3 +198,18 @@ da="$(grep -n 'append-trigger (consolidate step 2b)' "$ROOT/skills/demo/SKILL.md
 db="$(grep -n 'Injections keep firing at the wrong moment' "$ROOT/skills/demo/SKILL.md" | head -1 | cut -d: -f1)"
 [ -n "$da" ] && [ -n "$db" ] && [ "$da" -lt "$db" ]
 assert_ok $? "adaptive-suppression row follows the append-trigger row, per spec's insertion point"
+
+# --- skillify = session→skill extraction (human correction 2026-08-22; bootstrap is the scaffold skill) ---
+f="$ROOT/skills/skillify/SKILL.md"
+grep -q '\.claude/skills/<name>/SKILL\.md' "$f" && grep -q '~/.claude/skills/' "$f"; assert_ok $? "skillify routes project vs personal skill homes"
+grep -qi "human-gated" "$f"; assert_ok $? "skillify: personal-scope skills are human-gated"
+grep -q "complete-todo" "$f" && grep -q 'skillify:' "$f"; assert_ok $? "skillify consumes the retrospective's TODOS queue and ticks the entry"
+grep -qi "performed twice" "$f" && grep -qi "not already a skill" "$f"; assert_ok $? "skillify carries the extraction test (recurrence + no twin)"
+grep -q "feedback skill" "$f"; assert_ok $? "skillify routes anoti-craft candidates through feedback, never a push"
+grep -qi "bootstrap" "$f"; assert_ok $? "skillify names bootstrap as the scaffold skill (the old meaning)"
+grep -qi "scaffold\|bootstrap" "$f" | grep -qi "idempotent"; assert_eq "$?" "1" "skillify no longer carries the bootstrap contract"
+grep -qi "skillify skill" "$ROOT/skills/policy-retrospect/SKILL.md"; assert_ok $? "retrospect Q3 routes candidates to the skillify skill"
+grep -q "skillify" "$ROOT/skills/consolidate/SKILL.md" && grep -q '\.claude/skills/' "$ROOT/skills/consolidate/SKILL.md"; assert_ok $? "consolidate step 11 names where skillified procedures land"
+grep -rq "skillify" "$ROOT/scripts"; assert_eq "$?" "1" "no script still calls the scaffold skill skillify"
+grep -q "skillify" "$ROOT/commands/new.md" "$ROOT/commands/update.md"; assert_eq "$?" "1" "new/update commands name the bootstrap skill, not skillify"
+

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Stop hook: block exactly once per episode when candidates await consolidation;
-# block once per session while review debt this session opened is still open. Fail-open.
+# block once per session while review debt this session opened is still open;
+# nudge once per nontrivial session that has recorded no retrospective. Fail-open.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
@@ -29,13 +30,72 @@ review_debt_block() {
   jq -n --arg r "anoti: adversarial review owed for work this session opened: ${rows%; } — run the reviewer and close the row (anoti review-debt close <id> \"<verdict>\"), or defer it with a written reason (anoti review-debt defer <id> \"<reason>\"). Silent skipping is the failure mode this gate exists to prevent (D026)." '{decision:"block",reason:$r}'
   exit 0
 }
+# retrospect nudge (human ask 2026-08-22 — "skillify should have a session-end
+# hook that nudges the agent to check if there's anything to skillify"): a
+# SessionEnd hook cannot reach the model, so the Stop hook asks instead — once
+# per session, when the session is nontrivial (a slow classification, a frame,
+# or >= NUDGE_EVENTS presence/inhibit telemetry lines) and no retrospective has
+# been recorded (mark-retrospect). Runs only when nothing above blocked.
+# cleanup-session (SessionEnd) keeps the state as abandoned when the check
+# never happened, so the next session's digest surfaces it.
+# Stop fires at the end of EVERY turn (never only at close), so this cannot
+# know the session is ending. Contract: remind ONCE when the session first
+# turns nontrivial, and once more if a recorded retrospective goes stale
+# (>= NUDGE_EVENTS presence/inhibit events after the last mark). The real
+# close path is cleanup-session (SessionEnd): an unrecorded or stale
+# retrospective keeps the state as abandoned, and the next session's digest
+# surfaces it for the reopen procedure (policy-retrospect).
+nudge_threshold() { case "${NUDGE_EVENTS:-}" in ''|*[!0-9]*|0) echo 40 ;; *) [ "${#NUDGE_EVENTS}" -le 9 ] && echo "$NUDGE_EVENTS" || echo 40 ;; esac; }
+retrospect_nudge() {
+  mk="$AD/sessions/$sid.retrospect-nudged"
+  th="$(nudge_threshold)"
+  # column-anchored (awk, not an unanchored ERE with the sid as a pattern):
+  # events = presence/inhibit lines for this sid; after = those after the
+  # LAST mark-retrospect line for this sid (or all, when none)
+  read -r ev after marked <<EOF2
+$(awk -F'\t' -v s="$sid" '$2==s && ($3=="presence"||$3=="inhibit") {n++; a++} $2==s && $3=="retrospect" {m=1; a=0} END {printf "%d %d %d\n", n+0, a+0, m+0}' "$AD/telemetry.log" 2>/dev/null || echo "0 0 0")
+EOF2
+  case "$ev$after$marked" in ''|*[!0-9]*) return 0 ;; esac
+  if [ "$marked" -eq 1 ]; then
+    # recorded: re-arm only when stale, and only once per WINDOW of th events
+    # (the marker stores the event count at the last stale reminder; `after`
+    # grows every turn, so an equality check would re-block every turn)
+    [ "$after" -ge "$th" ] || return 0
+    # the marker stores the MONOTONIC event total at the last stale reminder
+    # (`after` resets at every mark, `ev` never does): once per th events
+    # since the last reminder, and staleness itself is measured from the mark
+    if [ -f "$mk" ]; then
+      last="$(cat "$mk" 2>/dev/null)"; last="${last#stale:}"
+      case "$last" in ''|*[!0-9]*) ;; *) [ $((ev - last)) -ge "$th" ] || return 0 ;; esac
+    fi
+    reason="anoti: the retrospective recorded for this session is stale — $after tool events since it (threshold $th). Before this session ends, re-run policy-retrospect over the later work (anything to skillify? irrelevant injections?) and record it again: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. A stale mark keeps the state as abandoned at session end."
+    note="stale after=$after"
+    mkdir -p "$AD/sessions" 2>/dev/null; printf 'stale:%s' "$ev" > "$mk" 2>/dev/null
+  else
+    [ -f "$mk" ] && return 0
+    slow=0; frames=0
+    if [ -f "$sf" ] && yq -e '.' "$sf" >/dev/null 2>&1; then
+      slow="$(yq -r '[.classifications // [] | .[] | select(.verdict == "slow")] | length' "$sf" 2>/dev/null || echo 0)"
+      frames="$(yq -r '.frames // [] | length' "$sf" 2>/dev/null || echo 0)"
+    fi
+    case "$slow$frames" in *[!0-9]*) return 0 ;; esac
+    [ "$slow" -gt 0 ] || [ "$frames" -gt 0 ] || [ "$ev" -ge "$th" ] || return 0
+    reason="anoti: this session is now nontrivial and no retrospective is recorded (policy-retrospect). Before it ends: anything to skillify? — a procedure performed twice becomes a queue entry (anoti append-todo <todos> \"skillify: <steps>\") or a skill now (skillify skill); count the presence injections that were irrelevant; then record it: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. This reminder fires once; unrecorded (or recorded then followed by $th+ more tool events), the session state is kept as abandoned and resurfaces next session."
+    note="slow=$slow frames=$frames events=$ev"
+    mkdir -p "$AD/sessions" 2>/dev/null; printf 'first' > "$mk" 2>/dev/null
+  fi
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect-nudge" "block" "$note" >> "$AD/telemetry.log" 2>/dev/null || true
+  jq -n --arg r "$reason" '{decision:"block",reason:$r}'
+  exit 0
+}
+review_debt_then_nudge() { review_debt_block; retrospect_nudge; }
 sf="$AD/sessions/$sid.yaml"
-if [ ! -f "$sf" ]; then review_debt_block; exit 0; fi
+if [ ! -f "$sf" ]; then review_debt_then_nudge; exit 0; fi
 if ! yq -e '.' "$sf" >/dev/null 2>&1; then
   echo "anoti: session state unreadable ($sf) — failing open; repair or remove it" >&2
   exit 0
 fi
-if [ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" != "candidate-detected" ]; then review_debt_block; exit 0; fi
+if [ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" != "candidate-detected" ]; then review_debt_then_nudge; exit 0; fi
 yq '.episode = "awaiting-approval"' "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
 jq -n '{decision:"block",reason:"anoti: memory candidates await consolidation. Review the candidates in the session state file and run /anoti:consolidate to propose them to the human, or set episode: idle to skip."}'
 exit 0

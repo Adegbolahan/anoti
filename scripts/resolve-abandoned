@@ -1,0 +1,19 @@
+#!/bin/bash
+# resolve-abandoned <session-id> [--skip <reason>] -- close a surfaced <sid>.abandoned.yaml: requires a mark-retrospect line for that sid (the reopen procedure ran), or an explicit --skip reason; logs telemetry; removes the file
+set -u
+SELF="$(cd "$(dirname "$0")" && pwd)"
+AD="$("$SELF/anoti-dir" --require)" || exit 1
+sid="${1:?usage: resolve-abandoned <session-id> [--skip <reason>]}"; shift
+# the sid names a file this helper removes: letters, digits, . _ - only (no traversal, no globs, no spaces)
+case "$sid" in ''|*[!A-Za-z0-9._-]*|.|..) echo "resolve-abandoned: invalid session id '$sid'" >&2; exit 1 ;; esac
+skip=""; [ "${1:-}" = "--skip" ] && { skip="${2:-}"; [ -n "$skip" ] || { echo "resolve-abandoned: --skip requires a written reason" >&2; exit 1; }; }
+f="$AD/sessions/$sid.abandoned.yaml"
+[ -f "$f" ] || { echo "resolve-abandoned: no abandoned state for '$sid'" >&2; exit 1; }
+marked="$(awk -F'\t' -v s="$sid" '$2==s && $3=="retrospect" {m=1} END {print m+0}' "$AD/telemetry.log" 2>/dev/null || echo 0)"
+if [ "$marked" != "1" ] && [ -z "$skip" ]; then
+  echo "resolve-abandoned: no retrospective recorded for '$sid' — run policy-retrospect over its trail and 'mark-retrospect $sid ...' first, or pass --skip \"<reason>\"" >&2; exit 1
+fi
+how=retrospected; [ -n "$skip" ] && how="skipped $(printf '%s' "$skip" | tr '\n\t' '  ')"
+printf '%s\t%s\tabandoned\tresolved\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "$how" >> "$AD/telemetry.log" 2>/dev/null || true
+rm -f "$f"
+echo "resolved: $sid ($how)"

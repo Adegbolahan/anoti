@@ -154,7 +154,9 @@ it>"` (issue #14). When a candidate shows a resolution's named
 11. **Run the session retrospective** (policy-retrospect, universal):
     what went well, what didn't, what to skillify, what to learn, what
     cannot be automated — each cited to the trail. Route: lessons →
-    LESSONS-LEARNT.md; skillify candidates → TODOS.md; cannot-automate
+    LESSONS-LEARNT.md; skillify candidates → TODOS.md (the skillify
+    skill consumes that queue: a candidate performed twice becomes a
+    project skill under `.claude/skills/`); cannot-automate
     boundaries → LESSONS-LEARNT.md (promotable to `policy` records).
     Trivial sessions route nothing — silence is the fast path.
 12. **Close the episode:** `scripts/set-episode <session-id> committed`.

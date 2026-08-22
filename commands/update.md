@@ -13,7 +13,7 @@ workspace documents and memory store.
 ## Process
 
 1. **Read versions.** The workspace's scaffold version (recorded by
-   skillify at bootstrap) versus the plugin's
+   the bootstrap skill at scaffold time) versus the plugin's
    `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` version.
 2. **Compare.**
    - Same → "Workspace is up to date (X.Y.Z)." Stop.
@@ -21,7 +21,7 @@ workspace documents and memory store.
      downgrade**: "This workspace was scaffolded by a version newer than
      the installed plugin. Update the plugin first."
    - Older → report the gap and continue.
-3. **Migrate via the skillify skill's migration contract:** dated backup
+3. **Migrate via the bootstrap skill's migration contract:** dated backup
    of each affected file, the migration produced as a **proposed diff**,
    the human ratifies before anything applies — no silent upgrades.
    Schema migrations follow the grandfathering rule (evidence-less

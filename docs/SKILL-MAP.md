@@ -9,10 +9,10 @@
 
 | Root                                             | Fires                                             | Leads to                                                                                                |
 | ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; skillify offer (bare repos); `/anoti:review` nudge          |
+| SessionStart hook (`retrieve`)                   | every session                                     | memory digest; demo-skill orientation line; bootstrap offer (bare repos); `/anoti:review` nudge; abandoned-state count → policy-retrospect reopen → `resolve-abandoned` |
 | UserPromptSubmit hook (`classify`)               | every prompt                                      | fast path (silence) or **attend**                                                                       |
 | PreToolUse hook (`inhibit`)                      | matched tools                                     | allow / ask / deny; deny message routes to `/anoti:consolidate`                                         |
-| Stop hook (`consolidation-gate`)                 | candidate episodes                                | `/anoti:consolidate`                                                                                    |
+| Stop hook (`consolidation-gate`)                 | candidate episodes; open review debt; nontrivial session without a retrospective | `/anoti:consolidate`; review-debt close/defer; policy-retrospect → skillify (once per session)            |
 | PostToolUse/PostToolUseFailure hook (`presence`) | matched tool calls (Bash/Write/Edit/NotebookEdit) | JIT recall (filtered by adaptive suppression); periodic frame re-anchor; evidence-kind nudge; telemetry |
 | `scripts/feedback` (list/clear)                  | on demand, or via `mark-retrospect`'s named pairs | inspect/undo adaptive suppression — presence-feedback.tsv (project-level, gitignored)                   |
 | `scripts/review-debt` (add/list/close/defer)     | ready-for-review (handoff policy); spec filed under `spec_dir` (PostToolUse `observe`, matcher Write) | review-debt.tsv (project-level, gitignored) → digest line; Stop gate block-once; inhibit `ask` at integration while open |
@@ -36,11 +36,12 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | ----------- | --------------------------------------------------------------------------------------------------------------- |
 | attend      | classify hook; implement; policy-trace-to-frame                                                                 |
 | deliberate  | **attend (handoff)**; implement (multi-component note); plan skill; practitioner; policy-parallel-breadth       |
-| consolidate | Stop gate; inhibit deny message; /anoti:consolidate; implement; consolidator agent; skillify; policy-retrospect |
-| skillify    | retrieve bootstrap offer; /anoti:new; /anoti:update; direction skill                                            |
-| spec        | implement (spec gate); skillify maintenance map; **architect role**                                             |
-| plan        | deliberate lifetime rule; conductor role; skillify maintenance map                                              |
-| direction   | visionary, product-manager, requirements-analyst roles; skillify                                                |
+| consolidate | Stop gate; inhibit deny message; /anoti:consolidate; implement; consolidator agent; bootstrap; policy-retrospect |
+| bootstrap   | retrieve bootstrap offer; /anoti:new; /anoti:update; skillify skill (named skillify before 0.5.29)              |
+| skillify    | policy-retrospect (what should be skillified → TODOS queue); consolidate step 11; demo routing row; Stop-hook retrospect nudge |
+| spec        | implement (spec gate); bootstrap maintenance map; **architect role**                                            |
+| plan        | deliberate lifetime rule; conductor role; bootstrap maintenance map                                             |
+| direction   | visionary, product-manager, requirements-analyst roles; bootstrap                                               |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |
 | git         | implement (commit time); deliberate (execution step); every builder role before committing                      |
 | demo        | SessionStart digest (orientation line); /anoti:new (post-scaffold); self-serve for new sessions and subagents   |

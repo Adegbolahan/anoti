@@ -3,6 +3,45 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.29] — 2026-08-22
+
+- **skillify means skill extraction; the scaffold skill is `bootstrap`**
+  (human correction 2026-08-22: "skillify was meant to be a procedure
+  that tells the agent to examine its session and create an applicable
+  skill so it can use it later"). `skills/skillify/` → `skills/bootstrap/`
+  (same contract, same tests; /anoti:new, /anoti:update, the retrieve
+  offer line, demo, SKILL-MAP updated). New `skills/skillify/SKILL.md`:
+  consumes policy-retrospect's `skillify:` TODOS queue, runs a four-part
+  extraction test (recurred or general, deterministic core, no existing
+  twin, verifiable), routes by scope like memory (project
+  `.claude/skills/<name>/SKILL.md` written and committed; personal
+  `~/.claude/skills/` human-gated; anoti-craft via the feedback skill),
+  prescribes the skill shape (When/Procedure/Verify/Pitfalls/Binds) and
+  ticks the queue entry with `complete-todo`. Naming decision queued for
+  ratification (D027 candidate).
+- **Retrospect reminder at Stop; stale-aware keep at SessionEnd; reopen
+  path** (human ask 2026-08-22: "skillify should have a session-end hook
+  that nudges the agent to check if there's anything to skillify"; a
+  SessionEnd hook cannot reach the model and Stop fires every turn, so
+  the design is a reminder plus a resurfacing path): the Stop hook
+  blocks once when a session first turns nontrivial (a slow
+  classification, a frame, or ≥`NUDGE_EVENTS` (40) presence/inhibit
+  telemetry lines) with "anything to skillify?" and the `mark-retrospect`
+  line that records the answer, and once more if a recorded mark goes
+  **stale** (≥40 further tool events) — after the consolidation and
+  review-debt blocks. `cleanup-session` keeps a nontrivial session's
+  state as `.abandoned.yaml` when the retrospective is unrecorded or
+  stale (column-anchored check — the gate's own telemetry never counts)
+  and clears the per-session markers first. The digest counts abandoned
+  files and names the reopen procedure (policy-retrospect: retrospect
+  over that sid's trail, `mark-retrospect <that-sid>`, then the new
+  `anoti resolve-abandoned <sid> [--skip "<reason>"]`).
+- **Digest cut-line footer is a core line** (found 2026-08-22: a
+  13-record global store pushed the digest over its 4,000-char budget
+  and the `try_emit` footer naming how to pull a cut line's full text
+  vanished — exactly when cuts happen). The retrieve test for it now
+  isolates `HOME` and pins the over-budget case.
+
 ## [0.5.28] — 2026-08-21
 
 - **Organ homes honoured by the commands** (field report 2026-08-21: a

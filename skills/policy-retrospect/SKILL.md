@@ -37,7 +37,10 @@ each run it.)
    that finds no friction in nontrivial work is suspect, not clean.
 3. **What should be skillified** — any procedure performed twice, or
    performed once with obvious generality: candidate for a skill, policy,
-   or helper script. File as a TODOS entry naming the repeatable steps.
+   or helper script. File as a TODOS entry naming the repeatable steps
+   (prefix `skillify:`); the **skillify skill** consumes that queue and
+   writes the skill — invoke it now if the candidate already recurred
+   this session, otherwise the next session that hits it does.
 4. **What should become a lesson** — process insight worth surviving the
    session: write to LESSONS-LEARNT with why + how-to-apply. A lesson
    that becomes falsifiable and gathers evidence graduates into a
@@ -65,6 +68,17 @@ Never manufacture reflection for a session that carried no weight.
 **Binds:** the consolidate skill (the retrospective is its reflective
 step), LESSONS-LEARNT, TODOS, skillify (consumes the skillify queue).
 
-**Violation handling:** a nontrivial session closed without a
-retrospective reopens at the next session start (the abandoned-state
-surfacing path); repeated skips are themselves a lesson to file.
+**Violation handling:** when a session first turns nontrivial, the Stop
+hook reminds once ("anything to skillify?"); a recorded retrospective
+followed by 40+ more tool events is **stale** and is reminded once
+more. A session that ends unrecorded or stale keeps its state as
+`<sid>.abandoned.yaml` (SessionEnd) and the next session's digest
+surfaces it. **Reopen procedure** (the digest names it): read the
+abandoned file and that sid's telemetry lines (`awk -F'\t' '$2=="<sid>"'
+<state-dir>/telemetry.log`), answer the five questions over that trail,
+route as usual, record `anoti mark-retrospect <that-sid> empty|filed
+…`, then `anoti resolve-abandoned <that-sid>` (or `--skip "<reason>"`
+when the trail is genuinely not worth it — a written reason, never
+silence). Repeated skips are themselves a lesson to file.
+`mark-retrospect` is the record — an unmarked retrospective did not
+happen, as far as the system can tell.

@@ -17,7 +17,7 @@ and helpers ship in the plugin and upgrade with it.
    if the target contains or equals `${CLAUDE_PLUGIN_ROOT}`, stop with an
    error. If the target has existing Claude Code files, ask: merge (add
    missing only) / overwrite (confirm twice) / abort.
-3. **Bootstrap via the skillify skill** — load `skills/skillify/SKILL.md`
+3. **Bootstrap via the bootstrap skill** — load `skills/bootstrap/SKILL.md`
    and follow its contract exactly (idempotent, create-only, templates
    from the plugin, `validate-workspace` + `regen-index` + `trust` on the
    new store, gitignore fragment for the state dir).

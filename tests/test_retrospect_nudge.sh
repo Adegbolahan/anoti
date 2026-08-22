@@ -27,6 +27,10 @@ for i in $(seq 1 40); do printf '2026-08-22T00:00:00Z\tt1\tpresence\trecall\tD00
 out="$(printf '{"session_id":"t1"}' | "$G")"; assert_eq "$(printf '%s' "$out" | jq -r .decision)" "block" "a mark followed by NUDGE_EVENTS tool events is stale: reminded once more"
 printf '%s' "$out" | jq -r .reason | grep -q "stale — 40 tool events since it"; assert_ok $? "stale reminder names the count"
 out="$(printf '{"session_id":"t1"}' | "$G")"; assert_eq "$out" "" "stale reminder fires once per staleness window"
+for i in $(seq 1 39); do printf '2026-08-22T00:00:00Z\tt1\tpresence\trecall\tD001[]\n' >> .anoti/telemetry.log; done
+out="$(printf '{"session_id":"t1"}' | "$G")"; assert_eq "$out" "" "events keep growing while stale: no re-block every turn (39 more: still inside the window)"
+printf '2026-08-22T00:00:00Z\tt1\tpresence\trecall\tD001[]\n' >> .anoti/telemetry.log
+out="$(printf '{"session_id":"t1"}' | "$G")"; assert_eq "$(printf '%s' "$out" | jq -r .decision)" "block" "a full further window (40 more) re-arms the stale reminder once"
 "$ROOT/scripts/mark-retrospect" t1 filed >/dev/null
 out="$(printf '{"session_id":"t1"}' | "$G")"; assert_eq "$out" "" "a fresh mark after the stale reminder: silent again"
 printf '2026-08-22T00:00:00Z\tt1\tpresence\trecall\tD001[]\n' >> .anoti/telemetry.log

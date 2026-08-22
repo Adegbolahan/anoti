@@ -57,9 +57,14 @@ $(awk -F'\t' -v s="$sid" '$2==s && ($3=="presence"||$3=="inhibit") {n++; a++} $2
 EOF2
   case "$ev$after$marked" in ''|*[!0-9]*) return 0 ;; esac
   if [ "$marked" -eq 1 ]; then
-    # recorded: re-arm only when stale, and only once per staleness window
+    # recorded: re-arm only when stale, and only once per WINDOW of th events
+    # (the marker stores the event count at the last stale reminder; `after`
+    # grows every turn, so an equality check would re-block every turn)
     [ "$after" -ge "$th" ] || return 0
-    [ -f "$mk" ] && [ "$(cat "$mk" 2>/dev/null)" = "stale:$after" ] && return 0
+    if [ -f "$mk" ]; then
+      last="$(cat "$mk" 2>/dev/null)"; last="${last#stale:}"
+      case "$last" in ''|*[!0-9]*) ;; *) [ $((after - last)) -ge "$th" ] || return 0 ;; esac
+    fi
     reason="anoti: the retrospective recorded for this session is stale — $after tool events since it (threshold $th). Before this session ends, re-run policy-retrospect over the later work (anything to skillify? irrelevant injections?) and record it again: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. A stale mark keeps the state as abandoned at session end."
     note="stale after=$after"
     mkdir -p "$AD/sessions" 2>/dev/null; printf 'stale:%s' "$after" > "$mk" 2>/dev/null

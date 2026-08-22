@@ -1,3 +1,7 @@
+# Every block below must be decided by ITS fixtures, never by the real ~/.claude/anoti:
+# isolate HOME for the whole file (skeptic 2026-08-22: it was passing only because
+# test_feedback.sh exported a scratch HOME and sources alphabetically before this file)
+HOME="$(mktemp -d)"; export HOME
 tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME"   # hermetic: no real global store
 cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml

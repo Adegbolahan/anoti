@@ -68,6 +68,10 @@ Never manufacture reflection for a session that carried no weight.
 **Binds:** the consolidate skill (the retrospective is its reflective
 step), LESSONS-LEARNT, TODOS, skillify (consumes the skillify queue).
 
-**Violation handling:** a nontrivial session closed without a
-retrospective reopens at the next session start (the abandoned-state
-surfacing path); repeated skips are themselves a lesson to file.
+**Violation handling:** a nontrivial session closing without a recorded
+retrospective is nudged once by the Stop hook ("anything to
+skillify?"); if it still closes unrecorded, SessionEnd keeps its state
+as abandoned and the next session's digest surfaces it (the
+abandoned-state path); repeated skips are themselves a lesson to file.
+`mark-retrospect` is the record — an unmarked retrospective did not
+happen, as far as the system can tell.

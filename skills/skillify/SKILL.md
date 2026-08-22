@@ -30,15 +30,17 @@ wore this name.)
 - **Deterministic core:** the steps can be written as commands and
   checks another session can follow without re-deriving them. Judgment
   steps are allowed only when named as judgment with the criteria.
-- **Not already a skill:** list `skills/` (plugin), `.claude/skills/`
-  (project), `~/.claude/skills/` (personal); a near-match is amended,
-  never twinned.
+- **Not already a skill:** list `${CLAUDE_PLUGIN_ROOT}/skills/` (anoti's
+  own), `.claude/skills/` (project), `~/.claude/skills/` (personal); a
+  near-match is amended, never twinned.
 - **Verifiable:** the skill carries a way to tell it worked (a command
   whose output differs between done and not-done — G004).
 
 A one-off, a procedure whose steps are still being discovered, or one
-whose only content is "use tool X carefully" fails the test: leave the
-TODOS entry open with a one-line reason, and stop.
+whose only content is "use tool X carefully" fails the test: close the
+queue entry with the reason — `scripts/complete-todo <todos> "<match>"
+"not skillified: <reason>"` (closed-with-reason is history; a recurrence
+re-files it) — and stop.
 
 ## Where it lives (scope routing, like memory)
 
@@ -49,7 +51,11 @@ TODOS entry open with a one-line reason, and stop.
 | anoti's own craft (governed-workflow) | `skills/<name>/` in the plugin     | via the **feedback** skill — an issue, not a push |
 
 Claude Code loads `.claude/skills/` and `~/.claude/skills/` live — no
-restart — and invokes a skill on its `description`, so the description
+restart to pick up a new or edited skill — with one documented
+exception: a top-level skills directory that did not exist when the
+session started needs a restart, so the first skill a project ever
+gets is verified by reading, not by invoking, until then. It invokes a
+skill on its `description`, so the description
 is the trigger: write it as the situations that should summon the skill,
 not as a summary of its contents; keep `description` + `when_to_use`
 under 1,536 characters (the listing truncates there).
@@ -79,8 +85,8 @@ through the feedback skill instead.
 
 1. **Pick the candidate** — from the queue or the trail; cite both
    occurrences (or the generality argument).
-2. **Run the extraction test** above; record a failing candidate's
-   reason on its TODOS entry and stop.
+2. **Run the extraction test** above; a failing candidate is closed
+   with its reason (`complete-todo … "not skillified: <reason>"`) — stop.
 3. **Write the skill** in the shape above, from the trail, into the
    scope-routed home. Project and personal homes are created with
    `mkdir -p`; a personal write waits for the human's yes.
@@ -107,4 +113,7 @@ through the feedback skill instead.
 
 **Binds:** policy-retrospect (files the queue), consolidate step 11
 (routes to it), the git skill (commits it), the feedback skill (anoti-
-craft candidates), policy-escalate-destructive (the personal-scope gate).
+craft candidates), the consolidate skill's global-tier gate (the same
+human gate governs personal-scope skills), the Stop hook's retrospect
+nudge (`scripts/consolidation-gate`: a nontrivial session closing
+without a retrospective is asked "anything to skillify?" once).

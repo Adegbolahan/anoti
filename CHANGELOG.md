@@ -19,6 +19,18 @@ their message (CI enforces the section exists and is non-empty).
   prescribes the skill shape (When/Procedure/Verify/Pitfalls/Binds) and
   ticks the queue entry with `complete-todo`. Naming decision queued for
   ratification (D027 candidate).
+- **Retrospect nudge at Stop; abandoned-state keep at SessionEnd** (human
+  ask 2026-08-22: "skillify should have a session-end hook that nudges
+  the agent to check if there's anything to skillify"; a SessionEnd hook
+  cannot reach the model, so the Stop hook asks): once per session, a
+  nontrivial session (a slow classification, a frame, or ≥40 presence/
+  inhibit telemetry lines — `NUDGE_EVENTS`) that has recorded no
+  retrospective is blocked once with "anything to skillify?" and the
+  `mark-retrospect` line that records the answer; consolidation and
+  review-debt blocks keep precedence. `cleanup-session` now keeps a
+  nontrivial session's state as `.abandoned.yaml` when no retrospective
+  was recorded (policy-retrospect's reopen rule, made mechanical) and
+  clears the once-per-session markers.
 - **Digest cut-line footer is a core line** (found 2026-08-22: a
   13-record global store pushed the digest over its 4,000-char budget
   and the `try_emit` footer naming how to pull a cut line's full text

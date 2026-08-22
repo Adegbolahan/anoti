@@ -1,6 +1,7 @@
 #!/bin/bash
 # Stop hook: block exactly once per episode when candidates await consolidation;
-# block once per session while review debt this session opened is still open. Fail-open.
+# block once per session while review debt this session opened is still open;
+# nudge once per nontrivial session that has recorded no retrospective. Fail-open.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
@@ -29,13 +30,39 @@ review_debt_block() {
   jq -n --arg r "anoti: adversarial review owed for work this session opened: ${rows%; } — run the reviewer and close the row (anoti review-debt close <id> \"<verdict>\"), or defer it with a written reason (anoti review-debt defer <id> \"<reason>\"). Silent skipping is the failure mode this gate exists to prevent (D026)." '{decision:"block",reason:$r}'
   exit 0
 }
+# retrospect nudge (human ask 2026-08-22 — "skillify should have a session-end
+# hook that nudges the agent to check if there's anything to skillify"): a
+# SessionEnd hook cannot reach the model, so the Stop hook asks instead — once
+# per session, when the session is nontrivial (a slow classification, a frame,
+# or >= NUDGE_EVENTS presence/inhibit telemetry lines) and no retrospective has
+# been recorded (mark-retrospect). Runs only when nothing above blocked.
+# cleanup-session (SessionEnd) keeps the state as abandoned when the check
+# never happened, so the next session's digest surfaces it.
+retrospect_nudge() {
+  mk="$AD/sessions/$sid.retrospect-nudged"
+  [ -f "$mk" ] && return 0
+  grep -qE "$(printf '\t')${sid}$(printf '\t')retrospect$(printf '\t')" "$AD/telemetry.log" 2>/dev/null && return 0
+  slow=0; frames=0
+  if [ -f "$sf" ] && yq -e '.' "$sf" >/dev/null 2>&1; then
+    slow="$(yq -r '[.classifications // [] | .[] | select(.verdict == "slow")] | length' "$sf" 2>/dev/null || echo 0)"
+    frames="$(yq -r '.frames // [] | length' "$sf" 2>/dev/null || echo 0)"
+  fi
+  ev="$(awk -F'\t' -v s="$sid" '$2==s && ($3=="presence" || $3=="inhibit") {n++} END {print n+0}' "$AD/telemetry.log" 2>/dev/null || echo 0)"
+  case "$slow$frames$ev" in *[!0-9]*) return 0 ;; esac
+  [ "$slow" -gt 0 ] || [ "$frames" -gt 0 ] || [ "$ev" -ge "${NUDGE_EVENTS:-40}" ] || return 0
+  mkdir -p "$AD/sessions" 2>/dev/null; : > "$mk" 2>/dev/null
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect-nudge" "block" "slow=$slow frames=$frames events=$ev" >> "$AD/telemetry.log" 2>/dev/null || true
+  jq -n --arg r "anoti: nontrivial session closing without a retrospective (policy-retrospect). Anything to skillify? — a procedure performed twice becomes a queue entry (anoti append-todo <todos> \"skillify: <steps>\") or a skill now (skillify skill); count the presence injections that were irrelevant; then record it: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. Unrecorded, the session state is kept as abandoned and resurfaces next session." '{decision:"block",reason:$r}'
+  exit 0
+}
+review_debt_then_nudge() { review_debt_block; retrospect_nudge; }
 sf="$AD/sessions/$sid.yaml"
-if [ ! -f "$sf" ]; then review_debt_block; exit 0; fi
+if [ ! -f "$sf" ]; then review_debt_then_nudge; exit 0; fi
 if ! yq -e '.' "$sf" >/dev/null 2>&1; then
   echo "anoti: session state unreadable ($sf) — failing open; repair or remove it" >&2
   exit 0
 fi
-if [ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" != "candidate-detected" ]; then review_debt_block; exit 0; fi
+if [ "$(yq -r '.episode // "idle"' "$sf" 2>/dev/null)" != "candidate-detected" ]; then review_debt_then_nudge; exit 0; fi
 yq '.episode = "awaiting-approval"' "$sf" > "$sf.tmp" 2>/dev/null && mv "$sf.tmp" "$sf"
 jq -n '{decision:"block",reason:"anoti: memory candidates await consolidation. Review the candidates in the session state file and run /anoti:consolidate to propose them to the human, or set episode: idle to skip."}'
 exit 0

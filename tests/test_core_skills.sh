@@ -207,9 +207,10 @@ grep -q "complete-todo" "$f" && grep -q 'skillify:' "$f"; assert_ok $? "skillify
 grep -qi "performed twice" "$f" && grep -qi "not already a skill" "$f"; assert_ok $? "skillify carries the extraction test (recurrence + no twin)"
 grep -q "feedback skill" "$f"; assert_ok $? "skillify routes anoti-craft candidates through feedback, never a push"
 grep -qi "bootstrap" "$f"; assert_ok $? "skillify names bootstrap as the scaffold skill (the old meaning)"
-grep -qi "scaffold\|bootstrap" "$f" | grep -qi "idempotent"; assert_eq "$?" "1" "skillify no longer carries the bootstrap contract"
+! grep -qi "dry-run" "$f"; assert_ok $? "skillify no longer carries the bootstrap contract (no dry-run scaffold token)"
 grep -qi "skillify skill" "$ROOT/skills/policy-retrospect/SKILL.md"; assert_ok $? "retrospect Q3 routes candidates to the skillify skill"
 grep -q "skillify" "$ROOT/skills/consolidate/SKILL.md" && grep -q '\.claude/skills/' "$ROOT/skills/consolidate/SKILL.md"; assert_ok $? "consolidate step 11 names where skillified procedures land"
-grep -rq "skillify" "$ROOT/scripts"; assert_eq "$?" "1" "no script still calls the scaffold skill skillify"
+grep -rqE "skillify[^.]*(bootstrap|scaffold)s" "$ROOT/scripts"; assert_eq "$?" "1" "no script still describes skillify as the scaffold (the Stop nudge names it with its new meaning)"
+grep -q "bootstrap skill" "$ROOT/scripts/retrieve"; assert_ok $? "retrieve's bare-repo offer names the bootstrap skill"
 grep -q "skillify" "$ROOT/commands/new.md" "$ROOT/commands/update.md"; assert_eq "$?" "1" "new/update commands name the bootstrap skill, not skillify"
 

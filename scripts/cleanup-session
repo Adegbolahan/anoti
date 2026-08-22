@@ -1,5 +1,6 @@
 #!/bin/bash
-# SessionEnd hook: remove finished session state; mark in-flight state abandoned. Fail-open.
+# SessionEnd hook: remove finished session state; mark in-flight state — and nontrivial
+# state with no recorded retrospective — abandoned so it resurfaces. Fail-open.
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
@@ -16,8 +17,14 @@ grep -qE "$(printf '\t')${sid}$(printf '\t')retrospect" "$AD/telemetry.log" 2>/d
 printf '%s\t%s\tsummary\tslow=%s\tframes=%s\tretrospect_ran=%s\tepisode=%s\n' \
   "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "${slow:-0}" "${frames:-0}" "$ran" "$ep" >> "$AD/telemetry.log" 2>/dev/null || true
 rm -f "$AD/sessions/$sid.presence.yaml" 2>/dev/null
+# a nontrivial session that recorded no retrospective is not finished
+# (policy-retrospect: it reopens at the next session start) — keep its state
+# as abandoned so the SessionStart digest surfaces it; a trivial one is removed
+nontrivial=false; { [ "${slow:-0}" -gt 0 ] || [ "${frames:-0}" -gt 0 ]; } 2>/dev/null && nontrivial=true
 case "$ep" in
-  idle|committed) rm -f "$sf" ;;
+  idle|committed)
+    if [ "$nontrivial" = true ] && [ "$ran" = false ]; then mv "$sf" "$AD/sessions/$sid.abandoned.yaml"; else rm -f "$sf"; fi ;;
   *) mv "$sf" "$AD/sessions/$sid.abandoned.yaml" ;;
 esac
+rm -f "$AD/sessions/$sid.retrospect-nudged" "$AD/sessions/$sid.review-debt-blocked" 2>/dev/null
 exit 0

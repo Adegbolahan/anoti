@@ -4,6 +4,8 @@ set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir" --require)" || exit 1
 sid="${1:?usage: resolve-abandoned <session-id> [--skip <reason>]}"; shift
+# the sid names a file this helper removes: letters, digits, . _ - only (no traversal, no globs, no spaces)
+case "$sid" in ''|*[!A-Za-z0-9._-]*|.|..) echo "resolve-abandoned: invalid session id '$sid'" >&2; exit 1 ;; esac
 skip=""; [ "${1:-}" = "--skip" ] && { skip="${2:-}"; [ -n "$skip" ] || { echo "resolve-abandoned: --skip requires a written reason" >&2; exit 1; }; }
 f="$AD/sessions/$sid.abandoned.yaml"
 [ -f "$f" ] || { echo "resolve-abandoned: no abandoned state for '$sid'" >&2; exit 1; }

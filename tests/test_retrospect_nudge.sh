@@ -45,6 +45,7 @@ printf '2026-08-22T00:00:00Z\tother\tpresence\trecall\t\tt7\tretrospect\tfiled\n
 out="$(printf '{"session_id":"t7"}' | "$G")"; assert_eq "$(printf '%s' "$out" | jq -r .decision)" "block" "a crafted line with the sid+retrospect in later columns does not count as a mark"
 out="$(printf '{"session_id":"t8"}' | NUDGE_EVENTS=abc "$G" 2>&1)"; assert_eq "$out" "" "non-numeric NUDGE_EVENTS: silent fallback to 40, no stderr noise"
 out="$(printf '{"session_id":"t8"}' | NUDGE_EVENTS=0 "$G" 2>&1)"; assert_eq "$out" "" "NUDGE_EVENTS=0 does not nudge every empty session"
+out="$(printf '{"session_id":"t8"}' | NUDGE_EVENTS=99999999999999999999999 "$G" 2>&1)"; assert_eq "$out" "" "overlong numeric NUDGE_EVENTS: silent fallback, no integer-expression noise"
 # event threshold: many presence/inhibit lines make a session nontrivial without a slow verdict
 for i in $(seq 1 40); do printf '2026-08-22T00:00:00Z\tt2\tpresence\trecall\tD001[]\n' >> .anoti/telemetry.log; done
 out="$(printf '{"session_id":"t2"}' | "$G")"; assert_eq "$(printf '%s' "$out" | jq -r .decision)" "block" "40 presence/inhibit telemetry lines reach NUDGE_EVENTS: nudge"
@@ -93,6 +94,9 @@ printf '{"session_id":"e4"}' | "$C"
 "$ROOT/scripts/append-classification" e5 slow "w" >/dev/null; "$ROOT/scripts/set-episode" e5 committed >/dev/null
 "$ROOT/scripts/mark-retrospect" e5 filed >/dev/null
 for i in $(seq 1 40); do printf '2026-08-22T00:00:00Z\te5\tinhibit\task\tx\n' >> .anoti/telemetry.log; done
+printf '{"session_id":"e5"}' | NUDGE_EVENTS=99999999999999999999999 "$C" 2>/dev/null
+[ -f .anoti/sessions/e5.abandoned.yaml ]; assert_ok $? "overlong NUDGE_EVENTS at SessionEnd falls back to 40: a stale session is still kept (not recorded as ran)"
+rm -f .anoti/sessions/e5.abandoned.yaml; "$ROOT/scripts/append-classification" e5 slow "w" >/dev/null; "$ROOT/scripts/set-episode" e5 committed >/dev/null
 printf '{"session_id":"e5"}' | "$C"
 [ -f .anoti/sessions/e5.abandoned.yaml ]; assert_ok $? "SessionEnd: a STALE retrospective keeps the state as abandoned"
 grep -q $'\te5\tsummary\tslow=1\tframes=0\tretrospect_ran=stale\t' .anoti/telemetry.log; assert_ok $? "summary line records retrospect_ran=stale"
@@ -103,7 +107,9 @@ printf '{"session_id":"e6"}' | "$C"
 [ ! -f .anoti/sessions/e6.retrospect-nudged ]; assert_ok $? "SessionEnd clears the marker even when no session yaml exists"
 # digest counts abandoned files and names the reopen path; resolve-abandoned closes them
 out="$(printf '{"session_id":"x"}' | "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
-printf '%s' "$out" | grep -q "abandoned session state found: 3 file(s), oldest .*abandoned.yaml.*resolve-abandoned"; assert_ok $? "digest counts abandoned files, names the oldest and the reopen/resolve path"
+printf '%s' "$out" | grep -q "abandoned session state found: 3 file(s), oldest sid e1 (.*e1.abandoned.yaml.*resolve-abandoned e1"; assert_ok $? "digest counts abandoned files, names the oldest SID (not just the path) and the reopen/resolve path"
+"$ROOT/scripts/resolve-abandoned" "../../decoy" --skip r 2>/dev/null; assert_eq "$?" "1" "resolve-abandoned refuses a traversal sid"
+"$ROOT/scripts/resolve-abandoned" "a b" --skip r 2>/dev/null; assert_eq "$?" "1" "resolve-abandoned refuses a sid with spaces"
 "$ROOT/scripts/resolve-abandoned" e1 2>/dev/null; assert_eq "$?" "1" "resolve-abandoned refuses a sid with no retrospective recorded"
 [ -f .anoti/sessions/e1.abandoned.yaml ]; assert_ok $? "…and leaves the file"
 "$ROOT/scripts/mark-retrospect" e1 filed >/dev/null; "$ROOT/scripts/resolve-abandoned" e1 >/dev/null; assert_ok $? "after the reopen procedure's mark, resolve-abandoned exits 0"

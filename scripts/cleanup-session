@@ -19,7 +19,7 @@ frames="$(yq -r '.frames // [] | length' "$sf" 2>/dev/null || echo 0)"
 # exactly "retrospect" — the Stop gate's own "retrospect-nudge" lines must not
 # count) AND fewer than NUDGE_EVENTS presence/inhibit events followed the last
 # one; stale = a mark exists but the session kept working past it; false = none
-th=40; case "${NUDGE_EVENTS:-}" in ''|*[!0-9]*|0) ;; *) th="$NUDGE_EVENTS" ;; esac
+th=40; case "${NUDGE_EVENTS:-}" in ''|*[!0-9]*|0) ;; *) [ "${#NUDGE_EVENTS}" -le 9 ] && th="$NUDGE_EVENTS" ;; esac
 read -r after marked <<EOF2
 $(awk -F'\t' -v s="$sid" '$2==s && ($3=="presence"||$3=="inhibit") {a++} $2==s && $3=="retrospect" {m=1; a=0} END {printf "%d %d\n", a+0, m+0}' "$AD/telemetry.log" 2>/dev/null || echo "0 0")
 EOF2

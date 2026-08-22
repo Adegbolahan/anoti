@@ -211,8 +211,8 @@ if [ -f "$AD/pending.md" ]; then
 fi
 abn="$(ls "$AD"/sessions/*.abandoned.yaml 2>/dev/null | wc -l | tr -d ' ')"; abn="${abn:-0}"
 if [ "$abn" -gt 0 ] 2>/dev/null; then
-  ab="$(ls -tr "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1)"
-  emit "- abandoned session state found: $abn file(s), oldest $ab (surfaced, not auto-loaded) — reopen: run policy-retrospect over its trail, anoti mark-retrospect <that-sid> …, then anoti resolve-abandoned <that-sid>"
+  ab="$(ls -tr "$AD"/sessions/*.abandoned.yaml 2>/dev/null | head -1)"; absid="$(basename "$ab" .abandoned.yaml)"
+  emit "- abandoned session state found: $abn file(s), oldest sid $absid ($ab; surfaced, not auto-loaded) — reopen: run policy-retrospect over its trail, anoti mark-retrospect $absid …, then anoti resolve-abandoned $absid"
 fi
 if [ -z "$lines" ]; then
   if [ -d .git ] && ! fx GROUNDING.yaml; then

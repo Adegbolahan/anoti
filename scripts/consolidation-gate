@@ -45,7 +45,7 @@ review_debt_block() {
 # close path is cleanup-session (SessionEnd): an unrecorded or stale
 # retrospective keeps the state as abandoned, and the next session's digest
 # surfaces it for the reopen procedure (policy-retrospect).
-nudge_threshold() { case "${NUDGE_EVENTS:-}" in ''|*[!0-9]*|0) echo 40 ;; *) echo "$NUDGE_EVENTS" ;; esac; }
+nudge_threshold() { case "${NUDGE_EVENTS:-}" in ''|*[!0-9]*|0) echo 40 ;; *) [ "${#NUDGE_EVENTS}" -le 9 ] && echo "$NUDGE_EVENTS" || echo 40 ;; esac; }
 retrospect_nudge() {
   mk="$AD/sessions/$sid.retrospect-nudged"
   th="$(nudge_threshold)"
@@ -61,15 +61,16 @@ EOF2
     # (the marker stores the event count at the last stale reminder; `after`
     # grows every turn, so an equality check would re-block every turn)
     [ "$after" -ge "$th" ] || return 0
+    # the marker stores the MONOTONIC event total at the last stale reminder
+    # (`after` resets at every mark, `ev` never does): once per th events
+    # since the last reminder, and staleness itself is measured from the mark
     if [ -f "$mk" ]; then
       last="$(cat "$mk" 2>/dev/null)"; last="${last#stale:}"
-      # a fresh mark resets `after` below the stored count: the window restarts
-      # from that mark, so `after >= th` alone re-arms; otherwise once per th
-      case "$last" in ''|*[!0-9]*) ;; *) if [ "$after" -ge "$last" ]; then [ $((after - last)) -ge "$th" ] || return 0; fi ;; esac
+      case "$last" in ''|*[!0-9]*) ;; *) [ $((ev - last)) -ge "$th" ] || return 0 ;; esac
     fi
     reason="anoti: the retrospective recorded for this session is stale — $after tool events since it (threshold $th). Before this session ends, re-run policy-retrospect over the later work (anything to skillify? irrelevant injections?) and record it again: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. A stale mark keeps the state as abandoned at session end."
     note="stale after=$after"
-    mkdir -p "$AD/sessions" 2>/dev/null; printf 'stale:%s' "$after" > "$mk" 2>/dev/null
+    mkdir -p "$AD/sessions" 2>/dev/null; printf 'stale:%s' "$ev" > "$mk" 2>/dev/null
   else
     [ -f "$mk" ] && return 0
     slow=0; frames=0

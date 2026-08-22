@@ -63,7 +63,9 @@ EOF2
     [ "$after" -ge "$th" ] || return 0
     if [ -f "$mk" ]; then
       last="$(cat "$mk" 2>/dev/null)"; last="${last#stale:}"
-      case "$last" in ''|*[!0-9]*) ;; *) [ $((after - last)) -ge "$th" ] || return 0 ;; esac
+      # a fresh mark resets `after` below the stored count: the window restarts
+      # from that mark, so `after >= th` alone re-arms; otherwise once per th
+      case "$last" in ''|*[!0-9]*) ;; *) if [ "$after" -ge "$last" ]; then [ $((after - last)) -ge "$th" ] || return 0; fi ;; esac
     fi
     reason="anoti: the retrospective recorded for this session is stale — $after tool events since it (threshold $th). Before this session ends, re-run policy-retrospect over the later work (anything to skillify? irrelevant injections?) and record it again: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. A stale mark keeps the state as abandoned at session end."
     note="stale after=$after"

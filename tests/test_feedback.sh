@@ -292,3 +292,34 @@ assert_ok $? "TEST C: transition firing injects T001"
 new_cached="$(yq -r '.recall_cache.T001' .anoti/sessions/sC.presence.yaml)"
 [ "$new_cached" != "$old_cached" ]; assert_ok $? "TEST C: stale pre-suppression cache entry REPLACED with the new tool_calls value (old=$old_cached new=$new_cached)"
 ); rm -rf "$tmp"
+
+# --- issue #23: writers stamp UTC, readers must compute cutoffs on the SAME calendar ---
+# Etc/GMT-14 (UTC+14) and Etc/GMT+12 (UTC-12) are 26h apart: at any instant at least one
+# of them has a local date different from UTC's, so a local-calendar cutoff would move.
+tmp="$(mktemp -d)"; ( cd "$tmp"
+HOME="$tmp/home"; export HOME; mkdir -p "$HOME"
+fb_mkfx "$tmp"
+on="$(date -u -v-30d +%F 2>/dev/null || date -u -d '30 days ago' +%F)"          # exactly 30 days ago, UTC: still inside the window
+off="$(date -u -v-31d +%F 2>/dev/null || date -u -d '31 days ago' +%F)"         # 31 days ago, UTC: expired
+printf 'T001\tcd chain\t3\t%s\t%s\nT001\tcd &&\t3\t%s\t%s\n' "$on" "$on" "$off" "$off" > .anoti/presence-feedback.tsv
+for tz in Etc/GMT-14 Etc/GMT+12; do
+  tzs="$(printf '%s' "$tz" | tr '/+' '_p')"   # sids must not contain / (they name a session file)
+  out="$(TZ=$tz "$F" list)"
+  printf '%s' "$out" | grep -qE $'^T001\tcd chain\t3\t.*\tyes$'; assert_ok $? "#23 list under TZ=$tz: a row stamped exactly 30 UTC-days ago is still suppressed (cutoff on the writers' calendar)"
+  printf '%s' "$out" | grep -qE $'^T001\tcd &&\t3\t.*\tno$'; assert_ok $? "#23 list under TZ=$tz: a row stamped 31 UTC-days ago has expired"
+  out="$(printf '{"session_id":"tz-%s","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd chain"},"tool_response":{}}' "$tzs" | TZ=$tz "$ROOT/scripts/presence" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+  printf '%s' "$out" | grep -q "T001"; assert_eq "$?" "1" "#23 presence under TZ=$tz: the 30-day-old suppression still silences T001 on 'cd chain'"
+  out="$(printf '{"session_id":"tz2-%s","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd &&"},"tool_response":{}}' "$tzs" | TZ=$tz "$ROOT/scripts/presence" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+  printf '%s' "$out" | grep -q "T001"; assert_ok $? "#23 presence under TZ=$tz: the expired (31-day) suppression no longer silences T001 on 'cd &&'"
+done
+# the 14-day review nudge: a probable record dated exactly 14 UTC-days ago nudges under both zones
+# (store_valid carries no probables, so the nudge can only come from age, not from the >=5 count rule)
+cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+d14="$(date -u -v-14d +%F 2>/dev/null || date -u -d '14 days ago' +%F)"
+printf '{"id":"P14","date":"%s","type":"claim","topic":"t.p14","statement":"probable fourteen days old","epistemic_status":"probable","ratification":"approved","source":{"type":"observation","context":"x"},"events":[{"date":"%s","action":"created","by":"session"}]}' "$d14" "$d14" | "$ROOT/scripts/append-record" GROUNDING.yaml >/dev/null 2>&1
+"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+for tz in Etc/GMT-14 Etc/GMT+12; do
+  out="$(printf '{"session_id":"tz3"}' | TZ=$tz "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
+  printf '%s' "$out" | grep -q "review recommended: .*oldest $d14"; assert_ok $? "#23 digest under TZ=$tz: a probable exactly 14 UTC-days old triggers the review nudge"
+done
+); rm -rf "$tmp"

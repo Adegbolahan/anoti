@@ -61,7 +61,7 @@ warned_g="$(yq -r '.warned.global // false' "$pf" 2>/dev/null || echo false)"
 warned_p="$(yq -r '.warned.project // false' "$pf" 2>/dev/null || echo false)"
 warned_f="$(yq -r '.warned.feedback // false' "$pf" 2>/dev/null || echo false)"
 threshold="$(cfgk feedback_threshold)"; [ -n "$threshold" ] || threshold=3
-cutoff="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"
+cutoff="$(date -u -v-30d +%F 2>/dev/null || date -u -d '30 days ago' +%F 2>/dev/null || echo "")"
 ff="$AD/presence-feedback.tsv"
 suppressed=""
 # FIX (IMPORTANT, D011 fix round, reviewer Task 12): this used to also

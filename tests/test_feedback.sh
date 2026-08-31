@@ -312,14 +312,47 @@ for tz in Etc/GMT-14 Etc/GMT+12; do
   out="$(printf '{"session_id":"tz2-%s","hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"cd &&"},"tool_response":{}}' "$tzs" | TZ=$tz "$ROOT/scripts/presence" | jq -r '.hookSpecificOutput.additionalContext // ""')"
   printf '%s' "$out" | grep -q "T001"; assert_ok $? "#23 presence under TZ=$tz: the expired (31-day) suppression no longer silences T001 on 'cd &&'"
 done
-# the 14-day review nudge: a probable record dated exactly 14 UTC-days ago nudges under both zones
-# (store_valid carries no probables, so the nudge can only come from age, not from the >=5 count rule)
-cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+# the 14-day review nudge, pinned on the writers' calendar under both zones.
+#
+# Why the base store's probables are demoted first: store_valid ships a
+# probable (D001, 2026-08-12) and `oldest` is the min date over ALL
+# probables, so with it in place the nudge fires whatever the record under
+# test is dated -- the assertion could not fail (G004). Demoting makes the
+# precondition true by construction instead of by assumption. The comment
+# that stood here claimed "store_valid carries no probables", which was
+# false, and that is exactly what made this block a time bomb: it passed
+# only while d14 still fell before 2026-08-12, and started failing on
+# 2026-08-26 for reasons having nothing to do with what it tests.
+#
+# Why two cases and not one: Etc/GMT-14 (UTC+14) and Etc/GMT+12 (UTC-12)
+# are 26h apart, so they are never on the same calendar date (verified
+# across all 24 hours of a day). A local-calendar cutoff therefore skews at
+# least one of them off the UTC boundary at every instant -- but which one
+# depends on the time of day, so a single case catches the regression only
+# part of the day. "Exactly 14 days old fires" catches the zone skewed
+# late; "13 days old does not fire" catches the zone skewed early.
+nudge_store() {  # $1 = date carried by the sole probable in the store
+  cp "$ROOT/tests/fixtures/store_valid.yaml" GROUNDING.yaml
+  yq -i '(.records[] | select(.epistemic_status == "probable") | .epistemic_status) = "established"' GROUNDING.yaml
+  printf '{"id":"P14","date":"%s","type":"claim","topic":"t.p14","statement":"probable at the review-nudge boundary","epistemic_status":"probable","ratification":"approved","source":{"type":"observation","context":"x"},"events":[{"date":"%s","action":"created","by":"session"}]}' "$1" "$1" | "$ROOT/scripts/append-record" GROUNDING.yaml >/dev/null
+  assert_ok $? "#23 nudge fixture: sole probable dated $1 appended"
+  "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+}
+nudge_line() {   # $1 = TZ; prints the nudge line, empty when it did not fire
+  printf '{"session_id":"tz3"}' | TZ="$1" "$ROOT/scripts/retrieve" \
+    | jq -r '.hookSpecificOutput.additionalContext // ""' \
+    | grep -E 'review recommended: [0-9]+ probable record' || true
+}
 d14="$(date -u -v-14d +%F 2>/dev/null || date -u -d '14 days ago' +%F)"
-printf '{"id":"P14","date":"%s","type":"claim","topic":"t.p14","statement":"probable fourteen days old","epistemic_status":"probable","ratification":"approved","source":{"type":"observation","context":"x"},"events":[{"date":"%s","action":"created","by":"session"}]}' "$d14" "$d14" | "$ROOT/scripts/append-record" GROUNDING.yaml >/dev/null 2>&1
-"$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
+d13="$(date -u -v-13d +%F 2>/dev/null || date -u -d '13 days ago' +%F)"
+nudge_store "$d14"
 for tz in Etc/GMT-14 Etc/GMT+12; do
-  out="$(printf '{"session_id":"tz3"}' | TZ=$tz "$ROOT/scripts/retrieve" | jq -r '.hookSpecificOutput.additionalContext // ""')"
-  printf '%s' "$out" | grep -q "review recommended: .*oldest $d14"; assert_ok $? "#23 digest under TZ=$tz: a probable exactly 14 UTC-days old triggers the review nudge"
+  printf '%s' "$(nudge_line "$tz")" | grep -q "oldest $d14"
+  assert_ok $? "#23 digest under TZ=$tz: a probable exactly 14 UTC-days old triggers the review nudge"
+done
+nudge_store "$d13"
+for tz in Etc/GMT-14 Etc/GMT+12; do
+  [ -z "$(nudge_line "$tz")" ]
+  assert_ok $? "#23 digest under TZ=$tz: a probable only 13 UTC-days old does NOT trigger the nudge"
 done
 ); rm -rf "$tmp"

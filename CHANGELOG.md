@@ -11,8 +11,12 @@ their message (CI enforces the section exists and is non-empty).
   14-day review nudge (`scripts/retrieve`) were computed on the local
   calendar, so windows ran a day long west of UTC and a day short east
   of it. All four now use `date -u` in both the BSD and GNU branches;
-  tests pin the boundary under `TZ=Etc/GMT-14` and `Etc/GMT+12` (one of
-  which always sits on a different date from UTC — G010). The consolidate
+  tests pin the boundary under `TZ=Etc/GMT-14` and `Etc/GMT+12` — 26h
+  apart, so never on the same calendar date as each other, which makes a
+  local cutoff detectable at any hour of the day (G010). The review-nudge
+  case asserts both directions (a probable exactly 14 UTC-days old fires;
+  one 13 days old does not) and demotes the fixture's own probable first,
+  so the assertion is able to fail at all (G004). The consolidate
   skill and `/anoti:review` now say note-text dates come from
   `date -u +%F` so notes and stamps agree.
 

@@ -66,7 +66,19 @@ case "$tool" in
     # the episode gate alone governs them. Fail-open on any git error.
     [ -n "$p" ] || exit 0
     [ -f "$AD/allow-default-branch" ] && exit 0
-    d="$(dirname "$p")"; [ -d "$d" ] || d="."
+    # Resolve the branch from the repo that actually CONTAINS the target:
+    # walk up to the nearest EXISTING ancestor, so a write that creates a
+    # new directory still resolves inside its own repo (#25). The previous
+    # fallback to "." read the session repo's branch whenever the parent
+    # was missing, denying correctly-branched writes in worktrees and
+    # sibling repos -- and misreporting the branch in the message. The walk
+    # terminates when dirname stops changing ("/" and "." are fixpoints),
+    # and leaves a relative path's "." alone: for "README.md" the session
+    # repo IS the right repo, so this must not be blanket fail-open.
+    d="$(dirname "$p")"
+    while [ ! -d "$d" ]; do
+      pd="$(dirname "$d")"; [ "$pd" = "$d" ] && break; d="$pd"
+    done
     br="$(git -C "$d" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
     [ -n "$br" ] || exit 0
     git -C "$d" check-ignore -q "$p" 2>/dev/null && exit 0

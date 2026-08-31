@@ -3,6 +3,27 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.31] — 2026-08-31
+
+- **The branch gate resolves the branch from the repo that contains the
+  target file** (#25, #24 — field reports). The gate resolved the target's
+  directory with `d="$(dirname "$p")"; [ -d "$d" ] || d="."`, so a write
+  whose parent directory did not exist yet fell back to the session cwd
+  and read *that* repo's branch. In a worktree or polyrepo session the cwd
+  is the main checkout on `main`, so a correctly-branched write was denied
+  naming a branch the target repo is not on — and creating the directory
+  first made the identical write succeed, which made the failure look
+  arbitrary. The fallback is replaced by a walk up to the nearest existing
+  ancestor, which for a new directory lands inside its own repo. A
+  relative path's `.` is deliberately left alone: there the session repo
+  *is* the right repo, so this is not a blanket fail-open and the gate
+  still denies genuine default-branch edits. `check-ignore` and the
+  `origin/HEAD` default-branch lookup inherit the corrected directory, so
+  a path gitignored in the target repo is now recognised as such.
+  Reproduced #24's exact recipe (a worktree created with
+  `git worktree add -b`, then a write to a new `.claude/skills/<name>/`
+  directory): denied before, allowed after — #24 is the same defect.
+
 ## [0.5.30] — 2026-08-23
 
 - **Readers compute date cutoffs on the writers' calendar** (#23, field

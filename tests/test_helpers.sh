@@ -214,6 +214,39 @@ out="$(printf '%s' '{"session_id":"bp","tool_name":"Edit","tool_input":{"file_pa
 [ -z "$out" ]; assert_ok $? "non-git directory is fail-open allowed"
 ); rm -rf "$tmp"
 
+# --- #25: the branch check resolves from the repo that CONTAINS the target,
+# including when the target's parent directory does not exist yet.
+# The old `[ -d "$d" ] || d="."` fallback read the SESSION repo's branch
+# whenever the parent was missing, so a write creating a new directory
+# inside a correctly-branched worktree or sibling repo was denied naming a
+# branch that repo is not on. `check-ignore` and the origin/HEAD default
+# lookup inherit the same `$d`, so they were resolved against the wrong
+# repo too. Field-reported as issue #25 (and, on the same symptom, #24).
+tmp="$(mktemp -d)"; (
+mk() { git init -q -b main "$1" && git -C "$1" -c user.email=t@t.t -c user.name=t commit --allow-empty -m init -q; }
+mk "$tmp/session"; mkdir -p "$tmp/session/.anoti"     # session cwd, on main
+mk "$tmp/other"; git -C "$tmp/other" switch -q -c feature-y; mkdir -p "$tmp/other/existing"
+cd "$tmp/session"
+ask() { printf '{"session_id":"bp25","tool_name":"Write","tool_input":{"file_path":"%s"}}' "$1" | "$ROOT/scripts/inhibit"; }
+
+out="$(ask "$tmp/other/existing/a.ts")"
+[ -z "$out" ]; assert_ok $? "#25: write into an EXISTING dir of a feature-branched repo is allowed"
+
+out="$(ask "$tmp/other/brand/new/dir/b.ts")"
+[ -z "$out" ]; assert_ok $? "#25: write whose parent dir does not exist yet resolves to the TARGET's repo, not the session repo"
+
+# the gate must not have gone soft: a missing-parent write inside a repo
+# that really is on the default branch is still denied.
+out="$(ask "$tmp/session/brand/new/c.ts")"
+printf '%s' "$out" | grep -q '"permissionDecision": *"deny"'
+assert_ok $? "#25: a missing-parent write inside a repo on main is STILL denied"
+
+# gitignored paths are recognised in the target repo, not the session repo
+printf 'ignored/\n' > "$tmp/other/.gitignore"
+out="$(ask "$tmp/other/ignored/deep/d.ts")"
+[ -z "$out" ]; assert_ok $? "#25: check-ignore is evaluated against the target repo"
+); rm -rf "$tmp"
+
 # --- #9 session-consume: mark-applied candidate consumption ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 mkdir -p .anoti

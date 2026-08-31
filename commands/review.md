@@ -20,7 +20,8 @@ and, if present, `~/.claude/anoti/GROUNDING.yaml`):
    - approve / reject / reopen → `scripts/set-ratification <store> <id>
      <approved|rejected|pending> "<note>"` — writes the field AND the
      audit event atomically (append-event alone never moved the field:
-     issue #10);
+     issue #10); a date in the note text comes from `date -u +%F`, the
+     calendar the helper stamps (issue #23);
    - promote / demote → `scripts/set-status <store> <id>
      <speculative|probable|established> "<note citing the evidence>"`.
      Promotion to `established` requires independent evidence (different

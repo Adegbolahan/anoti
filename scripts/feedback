@@ -34,7 +34,7 @@ case "$sub" in
     if ! fx "$ff"; then echo "feedback: no presence-feedback.tsv yet (nothing suppressed)"; exit 0; fi
     feedback_shape_ok "$ff" || { echo "feedback: presence-feedback.tsv is present but not parseable" >&2; exit 1; }
     th="$(cfgk feedback_threshold)"; [ -n "$th" ] || th=3
-    cutoff="$(date -v-30d +%F 2>/dev/null || date -d '30 days ago' +%F 2>/dev/null || echo "")"
+    cutoff="$(date -u -v-30d +%F 2>/dev/null || date -u -d '30 days ago' +%F 2>/dev/null || echo "")"
     printf 'record_id\ttrigger\tcount\tlast_marked\tfirst_marked\tsuppressed\n'
     awk -F'\t' -v th="$th" -v cutoff="$cutoff" '
       NF==5 { sup = ($3+0>=th && $4>=cutoff) ? "yes" : "no"

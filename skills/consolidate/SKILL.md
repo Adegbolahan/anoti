@@ -39,6 +39,11 @@ scripts/regen-index <store.yaml>
 scripts/validate-workspace <store.yaml>
 ```
 
+Dates inside note text you compose (`"review ritual YYYY-MM-DD: …"`)
+come from `date -u +%F` — every helper stamps its `date:` on the UTC
+calendar, and a note dated from the harness's local day disagrees with
+the stamp beside it by a day west or east of UTC (issue #23).
+
 **Gate and helpers, by design:** the inhibition gate intercepts raw
 Edit/Write on organ files; it does not intercept the helper scripts —
 running a helper IS the sanctioned path, and the episode discipline

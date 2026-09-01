@@ -321,8 +321,13 @@ done
 # precondition true by construction instead of by assumption. The comment
 # that stood here claimed "store_valid carries no probables", which was
 # false, and that is exactly what made this block a time bomb: it passed
-# only while d14 still fell before 2026-08-12, and started failing on
-# 2026-08-26 for reasons having nothing to do with what it tests.
+# while d14 fell on or before 2026-08-12, and has failed since
+# 2026-08-27 for reasons having nothing to do with what it tests.
+# (On 2026-08-26 d14 == 2026-08-12 == oldest, so it still passed.)
+# To be precise about the old block's power: it was HALF falsifiable, not
+# non-falsifiable. A cutoff skewed EARLY (d14-1, which #23 produced under
+# Etc/GMT+12 for UTC hours 00:00-11:59) did make it fail; a cutoff skewed
+# LATE (d14+1) did not. The rebuild catches both directions.
 #
 # Why two cases and not one: Etc/GMT-14 (UTC+14) and Etc/GMT+12 (UTC-12)
 # are 26h apart, so they are never on the same calendar date (verified
@@ -338,11 +343,24 @@ nudge_store() {  # $1 = date carried by the sole probable in the store
   assert_ok $? "#23 nudge fixture: sole probable dated $1 appended"
   "$ROOT/scripts/trust" GROUNDING.yaml >/dev/null
 }
-nudge_line() {   # $1 = TZ; prints the nudge line, empty when it did not fire
+nudge_line() {   # $1 = TZ; prints the PROJECT nudge line, empty if it did not fire
+  # grep -v '\[global\]' matters: the same wording appears for the global
+  # store, and a developer's real ~/.claude/anoti store carries probables.
+  # The block's HOME isolation already prevents that leak, but relying on
+  # it silently is how this assertion would go green for the wrong reason
+  # (skeptic, R3 cycle 1).
   printf '{"session_id":"tz3"}' | TZ="$1" "$ROOT/scripts/retrieve" \
     | jq -r '.hookSpecificOutput.additionalContext // ""' \
+    | grep -v '\[global\]' \
     | grep -E 'review recommended: [0-9]+ probable record' || true
 }
+# The two zones must actually resolve to different calendar dates, or the
+# whole design collapses: an unresolvable TZ silently becomes UTC on some
+# platforms (a runner without tzdata), both columns agree, and a broken
+# local-calendar cutoff passes every assertion below. Assert the
+# precondition rather than assume it (skeptic, R3 cycle 1).
+[ "$(TZ=Etc/GMT-14 date +%F)" != "$(TZ=Etc/GMT+12 date +%F)" ]
+assert_ok $? "#23 precondition: Etc/GMT-14 and Etc/GMT+12 resolve to different calendar dates (tzdata present)"
 d14="$(date -u -v-14d +%F 2>/dev/null || date -u -d '14 days ago' +%F)"
 d13="$(date -u -v-13d +%F 2>/dev/null || date -u -d '13 days ago' +%F)"
 nudge_store "$d14"

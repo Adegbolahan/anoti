@@ -68,20 +68,30 @@ case "$tool" in
     [ -f "$AD/allow-default-branch" ] && exit 0
     # Resolve the branch from the repo that actually CONTAINS the target:
     # walk up to the nearest EXISTING ancestor, so a write that creates a
-    # new directory still resolves inside its own repo (#25). The previous
-    # fallback to "." read the session repo's branch whenever the parent
-    # was missing, denying correctly-branched writes in worktrees and
-    # sibling repos -- and misreporting the branch in the message. The walk
-    # terminates when dirname stops changing ("/" and "." are fixpoints),
-    # and leaves a relative path's "." alone: for "README.md" the session
-    # repo IS the right repo, so this must not be blanket fail-open.
-    d="$(dirname "$p")"
+    # new directory still resolves inside its own repo (#25, #24). The
+    # previous fallback to "." read the session repo's branch whenever the
+    # parent was missing, denying correctly-branched writes in worktrees
+    # and sibling repos -- and naming a branch the target repo is not on.
+    #
+    # Absolutise before walking: $p is re-interpreted against the walked-to
+    # directory, so a relative "../node_modules/x" from a subdirectory made
+    # `git -C .. check-ignore ../node_modules/x` report "outside repository"
+    # and silently lose the gitignore exemption (skeptic, R3 cycle 1).
+    # Absolutising also keeps the plain relative case honest: "README.md"
+    # resolves to $PWD, which is the session repo -- correctly so. This is
+    # deliberately NOT a blanket fail-open on an unresolvable directory:
+    # the gate must keep denying genuine default-branch edits.
+    #
+    # The walk terminates on the dirname fixpoint ("/" and "." map to
+    # themselves), which also covers paths whose ancestor is a file.
+    gp="$p"; case "$gp" in /*) ;; *) gp="$PWD/$gp" ;; esac
+    d="$(dirname "$gp")"
     while [ ! -d "$d" ]; do
       pd="$(dirname "$d")"; [ "$pd" = "$d" ] && break; d="$pd"
     done
     br="$(git -C "$d" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
     [ -n "$br" ] || exit 0
-    git -C "$d" check-ignore -q "$p" 2>/dev/null && exit 0
+    git -C "$d" check-ignore -q "$gp" 2>/dev/null && exit 0
     db="$(git -C "$d" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"; db="${db#origin/}"
     if [ "$br" = "${db:-main}" ] || [ "$br" = "main" ] || [ "$br" = "master" ]; then
       decide deny "edit action on the default branch ($br) — implement on a feature branch or worktree (git skill). Human-gated override: touch $AD/allow-default-branch"

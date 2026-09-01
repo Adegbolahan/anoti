@@ -241,10 +241,33 @@ out="$(ask "$tmp/session/brand/new/c.ts")"
 printf '%s' "$out" | grep -q '"permissionDecision": *"deny"'
 assert_ok $? "#25: a missing-parent write inside a repo on main is STILL denied"
 
-# gitignored paths are recognised in the target repo, not the session repo
-printf 'ignored/\n' > "$tmp/other/.gitignore"
-out="$(ask "$tmp/other/ignored/deep/d.ts")"
-[ -z "$out" ]; assert_ok $? "#25: check-ignore is evaluated against the target repo"
+# check-ignore must run against the TARGET repo. The target repo here is
+# deliberately on **main**, not on a feature branch: on a feature branch
+# the branch rule allows the write anyway, so the assertion would pass
+# even with check-ignore deleted from the gate entirely -- it would
+# duplicate the assertion above instead of testing check-ignore (G004;
+# caught by the skeptic on R3 cycle 1). With the repo on main, the ONLY
+# thing that can allow this write is the gitignore exemption resolving in
+# the right repo.
+mk "$tmp/ignoring"                                   # stays on main
+printf 'ignored/\n' > "$tmp/ignoring/.gitignore"
+out="$(ask "$tmp/ignoring/ignored/deep/d.ts")"
+[ -z "$out" ]; assert_ok $? "#25: check-ignore is evaluated against the target repo (target repo on main: only the ignore rule can allow this)"
+
+# a relative target that traverses upward is resolved against the session
+# cwd, not against the directory the walk lands on. Before absolutising,
+# `git -C .. check-ignore ../ignored/x` reported "outside repository" and
+# the gitignore exemption was silently lost (skeptic, R3 cycle 1).
+mkdir -p "$tmp/session/sub"
+printf 'ignored/\n' > "$tmp/session/.gitignore"
+out="$(cd "$tmp/session/sub" && printf '{"session_id":"bp25","tool_name":"Write","tool_input":{"file_path":"../ignored/deep/e.ts"}}' | "$ROOT/scripts/inhibit")"
+[ -z "$out" ]; assert_ok $? "#25: a relative ../ target keeps its gitignore exemption (path absolutised before the walk)"
+
+# the plain relative case is unchanged: dirname is "." and the session
+# repo really is the right repo, so a tracked file on main is still denied
+out="$(cd "$tmp/session" && printf '{"session_id":"bp25","tool_name":"Edit","tool_input":{"file_path":"README.md"}}' | "$ROOT/scripts/inhibit")"
+printf '%s' "$out" | grep -q '"permissionDecision": *"deny"'
+assert_ok $? "#25: a plain relative path on main is still denied (absolutising did not fail open)"
 ); rm -rf "$tmp"
 
 # --- #9 session-consume: mark-applied candidate consumption ---

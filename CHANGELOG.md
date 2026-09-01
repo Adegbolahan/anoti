@@ -23,6 +23,11 @@ their message (CI enforces the section exists and is non-empty).
   Reproduced #24's exact recipe (a worktree created with
   `git worktree add -b`, then a write to a new `.claude/skills/<name>/`
   directory): denied before, allowed after — #24 is the same defect.
+  The target path is absolutised before the walk: a relative `../`-prefixed
+  target was otherwise re-interpreted against the directory the walk landed
+  on, so `git -C .. check-ignore ../ignored/x` reported "outside repository"
+  and the gitignore exemption was lost (it failed closed, denying a write it
+  should have allowed).
 
 ## [0.5.30] — 2026-08-23
 
@@ -36,8 +41,15 @@ their message (CI enforces the section exists and is non-empty).
   apart, so never on the same calendar date as each other, which makes a
   local cutoff detectable at any hour of the day (G010). The review-nudge
   case asserts both directions (a probable exactly 14 UTC-days old fires;
-  one 13 days old does not) and demotes the fixture's own probable first,
-  so the assertion is able to fail at all (G004). The consolidate
+  one 13 days old does not) and demotes the fixture's own probable first.
+  The block it replaces was half-falsifiable rather than non-falsifiable —
+  it would have caught a cutoff skewed early, which is what #23 produced
+  under `Etc/GMT+12` for UTC hours 00:00–11:59, but not one skewed late —
+  and it had become a time bomb, passing only while the 14-day mark fell
+  on or before the fixture probable's own date and failing unconditionally
+  from 2026-08-27. The zone pair is now asserted to resolve to different
+  calendar dates, so the design cannot silently collapse to UTC on a
+  runner without tzdata. The consolidate
   skill and `/anoti:review` now say note-text dates come from
   `date -u +%F` so notes and stamps agree.
 

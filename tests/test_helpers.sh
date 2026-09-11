@@ -80,6 +80,18 @@ mkdir -p .anoti
 assert_ok $? "state dir self-ignoring via .anoti/.gitignore"
 ); rm -rf "$tmp"
 
+# ...including presence, which creates the state dir in projects that never
+# adopted anoti: it resolves the dir WITHOUT --require, so an unadopted repo
+# falls back to the cwd-relative ".anoti". classify bails there (it does pass
+# --require) and no bootstrap gitignore fragment exists, so presence is the
+# first and only writer -- unseeded, the dir surfaces in the user's git status.
+tmp="$(mktemp -d)"; ( cd "$tmp"; git init -q .
+printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","session_id":"gi","tool_input":{"command":"ls"},"tool_response":{}}' \
+  | "$ROOT/scripts/presence" >/dev/null 2>&1
+[ "$(cat .anoti/.gitignore 2>/dev/null)" = "*" ] && [ -z "$(git status --porcelain 2>/dev/null)" ]
+assert_ok $? "presence seeds the self-ignore in an unadopted repo (state dir invisible to git)"
+); rm -rf "$tmp"
+
 # --- global trust adjacency (spec: global-memory-tier) ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"

@@ -19,7 +19,11 @@ LESSONS-LEARNT.md, specs/, plans/).
   toplevel (or CWD with a warning if not a repo).
 - Git hygiene: append `templates/gitignore-fragment` (`.anoti/`) to the
   project `.gitignore` if missing; workspace files themselves are
-  committed — shared ground truth deserves history.
+  committed — shared ground truth deserves history. That fragment is the
+  belt only: whichever helper creates the state dir also writes a
+  `.gitignore` of `*` inside it, so the dir stays invisible to git before
+  bootstrap has run, in a project that never adopted anoti, and when
+  `state_dir:` maps it somewhere the fragment does not name.
 - After creating GROUNDING.yaml from the template: run
   `scripts/validate-workspace`, `scripts/regen-index`, then
   `scripts/trust` so retrieval loads it from the first session.

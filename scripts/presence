@@ -34,6 +34,9 @@ fi
 haystack="$tin $outcome"
 
 d="$AD/sessions"; mkdir -p "$d" 2>/dev/null || exit 0
+# whoever creates the state dir seeds its self-ignore (presence creates it in
+# projects that never adopted anoti, where nothing else will)
+[ -f "$AD/.gitignore" ] || printf '*\n' 2>/dev/null > "$AD/.gitignore" || true
 pf="$d/$sid.presence.yaml"
 lock_store "$pf" || exit 0
 trap 'unlock_store "$pf"' EXIT

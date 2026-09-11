@@ -3,6 +3,35 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.32] — 2026-09-11
+
+- **The presence hook seeds the state dir's self-ignore, like every other
+  creator** (audit of state-dir creators). Six helpers that can create
+  `<state-dir>/` already wrote a `.gitignore` of `*` inside it
+  (`append-classification`, `append-pending`, `persist-session`, `review-debt`,
+  `session-append`, `trust`); `scripts/presence` was the one remaining helper
+  that creates the state dir itself, and it did not. (`consolidation-gate` also
+  calls `mkdir -p "$AD/sessions"`, but every gate that can reach those calls
+  first requires a file *inside* the state dir, so it only ever adds the
+  `sessions/` subdir to a dir that already exists.) Presence is also where it
+  matters most, because it is the only creator that runs where no other guard
+  exists: presence resolves the
+  state dir *without* `--require`, so in a repo that never adopted anoti it falls
+  back to the cwd-relative `.anoti/`, while `classify` (which does pass
+  `--require`) exits and no bootstrap gitignore fragment was ever appended.
+  Presence is then the only thing that creates the dir (other hooks append to
+  `telemetry.log` only once it exists), and a single Bash or Edit call in an
+  unrelated project left `?? .anoti/` in `git status` — one `git add -A` from
+  being committed. Reproduced in a plain repo carrying nothing but the installed
+  plugin: `?? .anoti/` before, clean status after. Adopted projects were covered
+  twice over (bootstrap's `.anoti/` fragment, plus whichever helper seeded
+  first), which is why this survived — the gap was invisible in exactly the
+  projects anoti is developed in.
+  **Upgrading:** the ignore appears the next time presence runs, but files
+  already tracked stay tracked — if `git ls-files .anoti` prints anything, run
+  `git rm -r --cached .anoti` once and commit the removal (it leaves the
+  deletion staged).
+
 ## [0.5.31] — 2026-08-31
 
 - **The branch gate resolves the branch from the repo that contains the

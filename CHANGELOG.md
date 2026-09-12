@@ -3,6 +3,54 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.6.0] — 2026-09-12
+
+- **`/anoti:implement` is an architect-led, contract-based lifecycle.** It was a
+  linear single-session checklist that dispatched no role at all — the only role
+  word in the file was "conductor", once, at line 51 — while `roles/` held 23
+  hats and `agents/explorer.md` / `agents/skeptic.md` sat unused. The architect
+  now leads and owns the **interface contract** (component boundaries, exact
+  signatures and data shapes, error modes, invariants) as the single source of
+  truth, and every phase boundary declares what it `requires`, what it
+  `produces`, how the next phase `verifies` it, and the one owner it
+  `rejects to`. Seven phases: discovery; requirements
+  (`requirements-analyst`, acceptance criteria with stable ids); design
+  (`architect`, plus `ui-designer` when UI is touched and `explorer`/`skeptic`
+  per unknown); acceptance tests; build; independent review; close.
+
+- **The acceptance tests are written and ratified before any code exists.** `qa`
+  authors one failing test per criterion, each citing its criterion id and the
+  interface element it exercises, with a RED transcript. The architect then
+  gates them in four steps: read the suite against the contract; dispatch a
+  `skeptic` to refute the claim that passing them means the feature is correct;
+  relay findings verbatim to the **original** `qa` spawn (D011) rather than a
+  fresh one; and on acceptance dispatch the builder with **fresh context**, so
+  it implements to the contract and the suite instead of to QA's reasoning about
+  them. The builder never edits QA's tests — a disputed test returns through the
+  gate. Previously the builder wrote its own tests and a reviewer audited them
+  afterwards, which is a test shaped by the code it exists to falsify.
+
+- **The rest of the plugin was brought into sync, not just the command.** A
+  command cannot bind a spawn, so the duties live in the profiles as well:
+  `roles/architect.md` owns the contract and the test gate (including
+  commissioning the gap hunt), `roles/qa.md` cites criterion ids and knows fix
+  rounds resume it, `roles/requirements-analyst.md` gives criteria stable ids,
+  `roles/ui-designer.md` folds component states into the contract, and
+  `roles/conductor.md` is scoped to non-feature cascades — as is the cascade in
+  `skills/deliberate/SKILL.md`, since one entry point gets one lifecycle owner.
+  `skills/policy-test-driven/SKILL.md` splits its four steps: 1-2 belong to
+  `qa`, 3-4 to the builder, and the builder inherits QA's RED evidence instead
+  of producing its own. `docs/SKILL-MAP.md` inbound paths and the README command
+  line follow. Spawn arithmetic is stated rather than implied, and honestly: six
+  spawns are mandatory, plus one per unknown and one more when UI is touched, so
+  two unknowns reach 8, which is the ≤ 8-per-session cap exactly, and UI makes 9,
+  which exceeds it — at which point the human raises the cap explicitly or the
+  phases sequence across sessions. An **entry
+  test** keeps trivial work out: a single-file change behind an existing
+  interface goes straight to `/anoti:review-work`, since six mandatory spawns for
+  a one-line change would contradict US-002.
+  Spec: `docs/specs/2026-09-12-architect-led-lifecycle-design.md`.
+
 ## [0.5.33] — 2026-09-11
 
 - **The state-dir self-ignore is linted, not merely conventional** (0.5.32

@@ -19,6 +19,11 @@ pixels-in-code — the design is proposed and agreed as an artifact, then
 handed to a builder; accessibility (contrast, focus order, target size)
 is part of the design, not the implementation's problem.
 
+**In the feature lifecycle (`/anoti:implement`) this role runs before the
+architect closes the contract**, whenever UI is touched: tokens and component
+states are decided in design, then folded into the interface contract so `qa`
+can write tests against named states rather than guessing them.
+
 **Boundaries:** advisory — design specs and mockups to `specs/` or
 `docs/`, never pixels-in-code; implementation belongs to the frontend or
 mobile builder. Proposals are ratified before build

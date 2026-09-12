@@ -35,11 +35,11 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | Skill       | Reached from                                                                                                    |
 | ----------- | --------------------------------------------------------------------------------------------------------------- |
 | attend      | classify hook; implement; policy-trace-to-frame                                                                 |
-| deliberate  | **attend (handoff)**; implement (multi-component note); plan skill; practitioner; policy-parallel-breadth       |
+| deliberate  | **attend (handoff)**; plan skill; practitioner; policy-parallel-breadth (non-feature cascade; implement is architect-led) |
 | consolidate | Stop gate; inhibit deny message; /anoti:consolidate; implement; consolidator agent; bootstrap; policy-retrospect |
 | bootstrap   | retrieve bootstrap offer; /anoti:new; /anoti:update; skillify skill (named skillify before 0.5.29)              |
 | skillify    | policy-retrospect (what should be skillified → TODOS queue); consolidate step 11; demo routing row; Stop-hook retrospect nudge |
-| spec        | implement (spec gate); bootstrap maintenance map; **architect role**                                            |
+| spec        | implement Phase 2 (the architect files it); bootstrap maintenance map; **architect role**                        |
 | plan        | deliberate lifetime rule; conductor role; bootstrap maintenance map                                             |
 | direction   | visionary, product-manager, requirements-analyst roles; bootstrap                                               |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |
@@ -55,7 +55,7 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | escalate-destructive   | all 23                             | inhibition decision table                                |
 | retrospect             | none — **session-level by design** | consolidate skill (its reflective step)                  |
 | draft-for-ratification | 11 (advisory)                      | direction skill; cascade gates                           |
-| test-driven            | 8 (builders)                       | implement Phase 3                                        |
+| test-driven            | 8 (builders)                       | implement Phases 3-4 (qa authors RED, builder makes GREEN) |
 | adversarial-handoff    | 7 (builders)                       | spec/plan skills ("documents of consequence"); implement |
 | parallel-breadth       | 2 (architect, ux-researcher)       | deliberate                                               |
 | visual-verify          | 2 (frontend, mobile)               | —                                                        |

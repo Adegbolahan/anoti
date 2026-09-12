@@ -56,8 +56,10 @@ standard.
   human-gated memory-organ writes, and edits on the default branch (D020
   — a feature branch or worktree, or the human's `allow-default-branch`
   override). Consequential commands ask; they never silently block.
-- **Commands:** `/anoti:new`, `/anoti:implement` (feature workflow with a
-  mandatory spec gate), `/anoti:review-work` (pre-ship review with an
+- **Commands:** `/anoti:new`, `/anoti:implement` (architect-led, contract-based
+  feature lifecycle: requirements → design → acceptance tests → build →
+  independent review, with a mandatory spec gate and the tests written and
+  ratified before any code), `/anoti:review-work` (pre-ship review with an
   evidence contract and cycle cap), `/anoti:update`, `/anoti:review`
   (memory ratification), `/anoti:recall`, `/anoti:consolidate`.
 - **A 23-role practitioner system** led by the conductor, with

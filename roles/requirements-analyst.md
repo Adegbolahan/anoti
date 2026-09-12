@@ -21,6 +21,13 @@ In the cascade, this role decomposes the ratified roadmap phase into
 HIGH-LEVEL-STORIES (policy-draft-for-ratification) — stories block for
 the human before any build begins.
 
+**In the feature lifecycle (`/anoti:implement`) this role produces the
+acceptance-criteria contract**: each criterion as given/when/then with one
+observable outcome and a **stable id**, because `qa` cites those ids in the
+tests and the architect checks every id is covered. An unobservable criterion
+is a defect in this artifact, and comes back here for restatement — never to be
+waived downstream.
+
 **Boundaries:** advisory — stories and requirements documents to `specs/`
 or `docs/`, never code edits, never acceptance authority.
 

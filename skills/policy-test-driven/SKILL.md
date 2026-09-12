@@ -18,6 +18,15 @@ description: anoti operating policy — failing test before implementation, RED 
 5. Both runs go in your report as `{command, output}` citations — this is
    the epistemic policy's hypothesis-before-test applied to code.
 
+**Split ownership in the feature lifecycle.** Under `/anoti:implement`, steps
+1-2 belong to `qa` and steps 3-4 to the builder hat: QA authors the failing
+suite and hands over its RED transcript, the architect ratifies it, and the
+builder inherits that RED evidence instead of producing its own. The substance
+is unchanged — a test is still seen failing before the code exists — but the
+builder's report cites QA's RED run beside its own GREEN run, and a builder that
+cannot show an inherited RED transcript has started too early. Outside that
+lifecycle one actor owns all four steps.
+
 **Binds:** policy-epistemic (RED/GREEN are its predictions and evidence);
 the role's definition-of-done (GREEN output is a required artifact).
 

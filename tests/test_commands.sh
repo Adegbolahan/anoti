@@ -43,3 +43,83 @@ grep -q "anoti digest" "$ROOT/commands/update.md"
 assert_ok $? "#21 update names the runnable digest action"
 grep -qi "recall coverage\|triggers" "$ROOT/commands/update.md"
 assert_ok $? "#20 update reports trigger coverage on migration"
+
+# --- architect-led contract lifecycle (spec: docs/specs/2026-09-12-architect-led-lifecycle-design.md) ---
+IMP="$ROOT/commands/implement.md"
+ok=0
+for r in requirements-analyst architect qa reviewer explorer skeptic ui-designer; do
+  grep -q -- "$r" "$IMP" || { echo "implement does not name role: $r" >&2; ok=1; }
+done
+assert_eq "$ok" "0" "implement names every hat its phases dispatch"
+
+for k in requires produces "verified by" "rejects to"; do
+  assert_eq "$(grep -c -- "^- $k" "$IMP")" "8" "implement: all 8 phases declare '$k'"
+done
+
+qal="$(grep -n '^## Phase 3: Acceptance tests' "$IMP" | cut -d: -f1)"
+bl="$(grep -n '^## Phase 4: Build' "$IMP" | cut -d: -f1)"
+[ -n "$qal" ] && [ -n "$bl" ] && [ "$qal" -lt "$bl" ]
+assert_ok $? "implement: acceptance tests precede the build phase"
+
+grep -q '^## Phase 3-gate: the architect ratifies the tests' "$IMP" \
+  && grep -q 'never the builder' "$IMP" \
+  && grep -qi 'does not begin until' "$IMP"
+assert_ok $? "implement: architect ratifies the tests, findings to qa, builder blocked"
+
+# gate sequence: architect reads, skeptic hunts gaps, the ORIGINAL qa spawn fixes,
+# then the builder is dispatched with fresh context
+grep -qi 'Gap hunt' "$IMP" && grep -q 'skeptic' "$IMP"
+assert_ok $? "implement: a skeptic hunts gaps in the ratified suite"
+grep -qi 'resume the original `qa` spawn' "$IMP" && grep -q 'D011' "$IMP" && grep -qi 'verbatim' "$IMP"
+assert_ok $? "implement: fix rounds resume the original qa spawn, findings verbatim (D011)"
+grep -qi 'dispatch the builder with fresh context' "$IMP"
+assert_ok $? "implement: the builder is dispatched with fresh context"
+grep -qi 'skeptic' "$ROOT/roles/architect.md"
+assert_ok $? "architect role commissions the gap hunt"
+grep -q 'D011' "$ROOT/roles/qa.md" && grep -qi 'fresh context' "$ROOT/roles/qa.md"
+assert_ok $? "qa role knows fix rounds resume it and the builder starts fresh"
+
+grep -qi 'interface contract' "$IMP"; assert_ok $? "implement: names the interface contract"
+grep -qi 'no edits to the tests' "$IMP" && grep -qi 'back through the Phase 3 gate' "$IMP"
+assert_ok $? "implement: builder cannot edit QA's tests"
+grep -qi 'RED transcript' "$IMP" && grep -qi 'citing its AC id' "$IMP"
+assert_ok $? "implement: RED transcript and AC-id citation required"
+grep -qi 'only dispatcher' "$IMP" && grep -q '3 concurrent' "$IMP" && grep -q '8 per session' "$IMP"
+assert_ok $? "implement: single-dispatcher rule and spawn budget stated"
+
+# the conductor is scoped out of this path in all three places that must agree
+grep -qi 'conductor is not in this path' "$IMP" \
+  && grep -qi 'architect-led' "$ROOT/skills/deliberate/SKILL.md" \
+  && grep -qi 'non-feature' "$ROOT/roles/conductor.md"
+assert_ok $? "conductor scoped out of the feature lifecycle in command, skill and role"
+
+# the hats carry their own contract duties -- a command alone would not bind a spawn
+grep -qi 'interface contract' "$ROOT/roles/architect.md" \
+  && grep -qi 'ratifying the acceptance tests' "$ROOT/roles/architect.md"
+assert_ok $? "architect role owns the interface contract and the test gate"
+grep -qi 'RED transcript' "$ROOT/roles/qa.md" && grep -q 'requirements-analyst' "$ROOT/roles/qa.md"
+assert_ok $? "qa role authors RED tests and bounces unobservable criteria"
+grep -qi 'stable id' "$ROOT/roles/requirements-analyst.md"
+assert_ok $? "requirements-analyst role gives criteria stable ids"
+grep -qi 'folded into the interface contract' "$ROOT/roles/ui-designer.md"
+assert_ok $? "ui-designer role hands its states into the contract"
+grep -qi 'split ownership' "$ROOT/skills/policy-test-driven/SKILL.md"
+assert_ok $? "test-driven policy splits RED/GREEN ownership across qa and builder"
+
+# --- R6 cycle-1 findings: entry test, honest budget, dual rework owners ---
+grep -qi 'Entry test' "$IMP" && grep -q 'US-002' "$IMP" && grep -q 'review-work' "$IMP"
+assert_ok $? "implement: an entry test keeps trivial work out (cites US-002)"
+# prose wraps across lines, so collapse whitespace before matching
+IMPFLAT="$(tr '\n' ' ' < "$IMP" | tr -s ' ')"
+printf '%s' "$IMPFLAT" | grep -qi 'six spawns are mandatory' \
+  && printf '%s' "$IMPFLAT" | grep -qi 'ask the human to raise the cap'
+assert_ok $? "implement: states 6 mandatory spawns and requires a human raise above the cap"
+grep -q 'rejects to: `qa` when a test is wrong' "$IMP" \
+  && grep -qi 'cannot be made to fail' "$IMP"
+assert_ok $? "implement: Phase 3 names both rework owners with the criterion bounce capped"
+printf '%s' "$IMPFLAT" | grep -qi 'one continuous spawn' \
+  && printf '%s' "$IMPFLAT" | grep -qi 'One architect spawn serves the whole lifecycle'
+assert_ok $? "implement: one architect spawn serves Phase 2 and the ratification gate"
+# the command must not reference infrastructure absent from this release
+! grep -qE 'anoti-board|anoti board|board skill' "$IMP"
+assert_ok $? "implement: no reference to the uncommitted board deliverable"

@@ -35,6 +35,11 @@ Entry test: slow-path work AND genuinely multi-step. Single-role tasks skip
 the cascade entirely. The main session is the only dispatcher and only
 writer throughout.
 
+**Scope:** this cascade is conductor-led and covers non-feature work. A feature
+entered through `/anoti:implement` runs that command's architect-led,
+contract-based lifecycle instead — one lifecycle owner per entry point. The
+dispatcher rule, hat assignment, and spawn budget above bind both paths.
+
 1. **Frame** — from attend.
 2. **Cascade plan** — spawn the practitioner in the `conductor` role with
    frame + workspace digest. It returns a cited plan: roadmap

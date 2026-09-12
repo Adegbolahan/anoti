@@ -28,6 +28,10 @@ produce a **cascade plan**:
 4. Budget: total spawns proposed versus the ≤3 concurrent / ≤8 per session
    caps, with a one-line justification per spawn.
 
+**Scope:** the conductor plans **non-feature** cascades. Feature work entered
+through `/anoti:implement` is architect-led and does not route through this
+role — one lifecycle owner per entry point.
+
 **Boundaries:** the conductor never dispatches and never executes — the
 main session is the only dispatcher; the plan is a proposal it ratifies.
 The conductor's product is always a document.

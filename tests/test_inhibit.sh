@@ -47,6 +47,47 @@ SQL')"
 printf '%s' "$out" | grep -q '"deny"'; assert_ok $? "heredoc SQL fed to a client is still denied"
 ); rm -rf "$tmp"
 
+# --- board mutations get the same default-branch protection as Write/Edit,
+# and board approve always asks (recorded human decisions cannot be verified) ---
+tmp="$(mktemp -d)"; (
+mk() { git init -q -b main "$1" && git -C "$1" -c user.email=t@t.t -c user.name=t commit --allow-empty -m init -q; }
+mk "$tmp/repo"; mkdir -p "$tmp/repo/.anoti"
+cd "$tmp/repo"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}')" "deny" "board work on main is denied"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board init Project"}}')" "deny" "board init on main is denied"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board approve work-0001 --packet X --note done"}}')" "deny" "board approve on main is denied (branch check wins over ask)"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board list"}}')" "allow" "board list (non-mutating) is not gated"
+touch .anoti/allow-default-branch
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}')" "allow" "human override file allows board mutation on main"
+rm .anoti/allow-default-branch
+git switch -q -c feature-x
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}')" "allow" "board work on a feature branch is allowed"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board approve work-0001 --packet X --note done"}}')" "ask" "board approve on a feature branch still asks for human confirmation"
+); rm -rf "$tmp"
+
+# --- board mutation gate must not fire on prose that merely mentions
+# "board" + a verb, only on an actual invocation (review finding) ---
+tmp="$(mktemp -d)"; (
+mk() { git init -q -b main "$1" && git -C "$1" -c user.email=t@t.t -c user.name=t commit --allow-empty -m init -q; }
+mk "$tmp/repo"
+cd "$tmp/repo"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"echo board work needed before shipping"}}')" "allow" "prose mentioning board+verb is not a board mutation"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"git commit -m \"board approve flow implemented\""}}')" "allow" "commit message mentioning board approve is not a board mutation"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}')" "deny" "a real board work invocation on main is still denied"
+); rm -rf "$tmp"
+
+# --- board mutation branch check must resolve the repo a leading `cd`
+# actually targets, not this hook process's own $PWD (review finding) ---
+tmp="$(mktemp -d)"; (
+mk() { git init -q -b main "$1" && git -C "$1" -c user.email=t@t.t -c user.name=t commit --allow-empty -m init -q; }
+mk "$tmp/main-repo"
+mk "$tmp/feature-repo"; git -C "$tmp/feature-repo" switch -q -c feature-y
+cd "$tmp/feature-repo"
+assert_eq "$(d "$(printf '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"cd %s && /path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}' "$tmp/main-repo")")" "deny" "cd into a sibling repo on main is denied even though session cwd is a feature branch"
+cd "$tmp/main-repo"
+assert_eq "$(d "$(printf '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"cd %s && /path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}' "$tmp/feature-repo")")" "allow" "cd into a sibling repo on a feature branch is allowed even though session cwd is main"
+); rm -rf "$tmp"
+
 # --- the plugin's own templates are not memory organs ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 mkdir -p .anoti templates

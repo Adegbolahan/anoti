@@ -49,6 +49,16 @@ its own in `.claude/anoti.local.md` frontmatter (`story_path:`, `roadmap_path:`,
 wins. Read the frontmatter once in Phase 0 and use the mapped paths after;
 never assume `docs/`.
 
+**Durable board:** when `.anoti-board/state.json` exists, use the board skill
+alongside these phases — its default workflow mirrors them, step for step. Find
+or create the feature once with `--story US-XXX` (the id Phase 0 found or
+drafted), load its assignment context, and record each phase's output and the
+review evidence through `scripts/anoti board`. Its `test-ratification` step
+carries `independent:`, so the board mechanically refuses a ratification
+submitted by whoever authored the tests — the same separation the Phase 3-gate
+requires. The board owns work status; these contracts remain in force. Do not
+create a second independent task lifecycle or memory store.
+
 ## Phase 0: Discovery — you
 
 - requires: the request, and `.claude/anoti.local.md` read once.

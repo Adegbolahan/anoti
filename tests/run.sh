@@ -14,8 +14,14 @@ assert_ok() { # exitcode label
 }
 command -v yq >/dev/null || { echo "missing dependency: yq"; exit 1; }
 command -v jq >/dev/null || { echo "missing dependency: jq"; exit 1; }
+command -v python3 >/dev/null || { echo "missing dependency: python3"; exit 1; }
 # shellcheck disable=SC1090  # test files are sourced dynamically by design
 for t in "$ROOT"/tests/test_*.sh; do . "$t"; done
+if python3 -m unittest discover -s "$ROOT/tests" -p 'test_board.py' -v; then
+  echo "P" >> "$RESULTS"
+else
+  echo "F" >> "$RESULTS"; echo "FAIL: test_board.py (python unittest)"
+fi
 PASS="$(grep -c '^P' "$RESULTS")"; FAIL="$(grep -c '^F' "$RESULTS")"
 rm -f "$RESULTS"
 echo "passed: $PASS  failed: $FAIL"

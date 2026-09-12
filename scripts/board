@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+# board <init|work|list|next|orient|context|submit|approve|note|sync> — native Anoti work records
+"""Local, single-checkout coordination. No model runner or server."""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+import time
+
+PLUGIN = Path(__file__).resolve().parent.parent
+DIRECTORY = '.anoti-board'
+
+def require(condition, message):
+    if not condition: raise ValueError(message)
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+def atomic(path, content):
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix='.write-')
+    try:
+        with os.fdopen(fd, 'w') as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            mode = os.stat(path).st_mode & 0o777
+        except FileNotFoundError:
+            mode = 0o644
+        os.chmod(name, mode)
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name): os.unlink(name)
+
+def workflow(path):
+    result = subprocess.run(['yq', '-o=json', '.', str(path)], capture_output=True, text=True)
+    require(result.returncode == 0, result.stderr)
+    data = json.loads(result.stdout)
+    require(isinstance(data, dict) and data.get('version') == 1, 'Expected workflow version: 1')
+    steps = data.get('steps')
+    require(isinstance(steps, list) and steps, 'Workflow needs ordered steps')
+    require(steps[-1].get('type') == 'gate', 'Workflow must finish with human acceptance')
+    ids = []
+    for step in steps:
+        require(isinstance(step, dict), 'Invalid step')
+        sid = step.get('id', '')
+        require(isinstance(sid, str) and re.fullmatch(r'[a-z][a-z0-9-]*', sid), 'Invalid step ID')
+        require(sid not in ids, 'Duplicate step ID')
+        ids.append(sid)
+        require(step.get('type') in ('task', 'gate'), 'Step must be task or gate')
+        if step['type'] == 'task':
+            role = step.get('role', '')
+            require(isinstance(role, str) and re.fullmatch(r'[a-z][a-z0-9-]*', role), 'Invalid role')
+            require((PLUGIN/'roles'/f'{role}.md').is_file(), f'Unknown Anoti role: {role}')
+            require(isinstance(step.get('output'), str) and step['output'].strip(), 'Task needs output name')
+        if 'rework' in step: require(step['rework'] in ids[:-1], 'Rework must target an earlier step')
+    return data
+
+def acquire_lock(lock, timeout=60, poll=0.05):
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return
+        except BlockingIOError:
+            if time.monotonic() >= deadline:
+                raise ValueError(f'Timed out waiting for the board lock ({timeout}s) — a concurrent writer holds it; retry')
+            time.sleep(poll)
+
+def root():
+    for p in (Path.cwd(), *Path.cwd().parents):
+        if (p/DIRECTORY/'state.json').is_file(): return p/DIRECTORY
+        if (p/'.git').exists(): break
+    raise ValueError('No Anoti board. Run anoti board init NAME.')
+
+def step_for(state, item):
+    return state['workflow']['steps'][item['step']]
+
+def context(state, item):
+    ancestors = []
+    parent = item['parent']
+    while parent:
+        require(parent not in {a['id'] for a in ancestors}, 'Corrupt board: parent cycle')
+        ancestor = state['items'][parent]
+        ancestors.append(ancestor)
+        parent = ancestor['parent']
+    step = step_for(state, item) if item['status'] != 'done' else None
+    return {'project': state['project'], 'item': item, 'ancestors': ancestors,
+            'dependencies': [state['items'][i] for i in item['dependencies']],
+            'step': step, 'role': state['roles'].get(step.get('role')) if step else None}
+
+def view(folder, state):
+    lines = ['# '+state['project']['name'], '', '<!-- Generated; use anoti board commands to edit. -->', '']
+    for item in state['items'].values():
+        lines += [f"## {item['id']} — {item['title']}", '', f"Status: {item['status']}",
+                  item['description'], '', 'Acceptance:', *['- '+c for c in item['acceptance']],
+                  '', f"Story: {item.get('story') or 'untraced'}; parent: {item['parent'] or 'none'}; dependencies: {', '.join(item['dependencies']) or 'none'}", '']
+        for entry in item['history']:
+            lines += [f"### {entry['step']} · {entry['actor']} · {entry['kind']}", entry['body'],
+                      *['- '+e for e in entry.get('evidence', [])], '']
+    atomic(folder/'BOARD.md', '\n'.join(lines))
+
+def parser():
+    p = argparse.ArgumentParser(description='Anoti project board and role handoffs')
+    sub = p.add_subparsers(dest='op', required=True)
+    init = sub.add_parser('init'); init.add_argument('name'); init.add_argument('--brief', default=''); init.add_argument('--workflow')
+    for name in ('list', 'next', 'orient', 'sync'): sub.add_parser(name)
+    work = sub.add_parser('work'); work.add_argument('title'); work.add_argument('--description', required=True); work.add_argument('--accept', action='append', required=True); work.add_argument('--story'); work.add_argument('--parent'); work.add_argument('--depends', action='append', default=[])
+    ctx = sub.add_parser('context'); ctx.add_argument('item')
+    submit = sub.add_parser('submit'); submit.add_argument('item'); submit.add_argument('--actor', required=True); submit.add_argument('--packet', required=True); submit.add_argument('--result', required=True)
+    approve = sub.add_parser('approve'); approve.add_argument('item'); approve.add_argument('--packet', required=True); approve.add_argument('--note', required=True); approve.add_argument('--reject', action='store_true')
+    note = sub.add_parser('note'); note.add_argument('item'); note.add_argument('--actor', required=True); note.add_argument('--text', required=True)
+    return p
+
+def main():
+    args = parser().parse_args()
+    if args.op == 'init':
+        definition = workflow(Path(args.workflow) if args.workflow else PLUGIN/'templates/board-workflow.yaml')
+        roles = {}
+        for step in definition['steps']:
+            if step['type'] == 'task':
+                role = step['role']
+                roles[role] = (PLUGIN/'roles'/f'{role}.md').read_text()
+        state = {'version': 1, 'revision': 0, 'project': {'name': args.name, 'brief': args.brief},
+                 'workflow': definition, 'roles': roles, 'items': {}}
+        folder = Path.cwd()/DIRECTORY
+        require(not (folder/'state.json').is_file(), f'Board already initialized at {folder}')
+        folder.mkdir(exist_ok=True)
+        atomic(folder/'.gitignore', '.lock\n.write-*\n')
+        atomic(folder/'state.json', json.dumps(state, indent=2)+'\n')
+        view(folder, state)
+        print(json.dumps({'created': str(folder), 'project': args.name})); return
+    folder = root()
+    with (folder/'.lock').open('a') as lock:
+        acquire_lock(lock)
+        state = json.loads((folder/'state.json').read_text())
+        require(state.get('version') == 1, 'Unsupported board version')
+        result = None
+        mutating = args.op in ('work', 'submit', 'approve', 'note')
+        if args.op == 'work':
+            require(args.title.strip() and args.description.strip() and all(c.strip() for c in args.accept), 'Work requires nonempty title, description and acceptance')
+            story = None
+            if args.story is not None:
+                story = args.story.strip()
+                require(re.fullmatch(r'US-\d{3,}', story, re.IGNORECASE), 'Story must be a US-nnn id from the stories organ')
+                story = story.upper()
+            elif args.parent in state['items']:
+                story = state['items'][args.parent].get('story')
+            for link in ([args.parent] if args.parent else []) + args.depends:
+                require(link in state['items'], f'Unknown related item: {link}')
+            if args.parent: require(state['items'][args.parent]['status'] != 'done', 'Cannot add work to an accepted parent')
+            ancestors = set()
+            parent = args.parent
+            while parent:
+                require(parent not in ancestors, 'Corrupt board: parent cycle')
+                ancestors.add(parent)
+                parent = state['items'][parent]['parent']
+            require(not ancestors.intersection(args.depends), 'A child cannot depend on acceptance of its ancestor')
+            iid = f"work-{len(state['items'])+1:04d}"
+            item = {'id': iid, 'title': args.title, 'description': args.description, 'acceptance': args.accept,
+                    'story': story, 'parent': args.parent, 'dependencies': args.depends, 'step': 0, 'status': 'active', 'history': []}
+            state['items'][iid] = item
+            result = item
+        elif args.op in ('context', 'submit', 'approve', 'note'):
+            require(args.item in state['items'], 'Unknown work item')
+            item = state['items'][args.item]
+            packet = context(state, item)
+            if args.op == 'context': result = {'packet': digest(packet), 'context': packet}
+            else:
+                require(item['status'] != 'done', 'Accepted work is immutable; create follow-up work')
+                step = step_for(state, item)
+                if args.op == 'note':
+                    require(args.actor.strip() and args.text.strip(), 'Actor and note cannot be empty')
+                    item['history'].append({'step': step['id'], 'actor': args.actor, 'kind': 'note', 'body': args.text})
+                else:
+                    require(args.packet == digest(packet), 'Stale context; load context again and reconcile before submitting')
+                    if args.op == 'approve':
+                        require(step['type'] == 'gate', 'This step is not a human gate')
+                        require(args.note.strip(), 'Record the human decision')
+                        outcome = 'changes_requested' if args.reject else 'ready'
+                        entry = {'step': step['id'], 'actor': 'human', 'kind': 'decision', 'body': args.note}
+                    else:
+                        require(step['type'] == 'task', 'Human approval is required')
+                        require(args.actor.strip() and args.actor != 'human', 'Supply a distinct agent/session identity')
+                        supplied = json.loads(Path(args.result).read_text())
+                        require(isinstance(supplied, dict), 'Result must be a JSON object')
+                        outcome = supplied.get('outcome')
+                        require(outcome in ('ready', 'changes_requested'), 'Outcome must be ready or changes_requested')
+                        require(supplied.get('kind') == step['output'], 'Wrong output kind for this step')
+                        require(isinstance(supplied.get('body'), str) and supplied['body'].strip(), 'Output body is required')
+                        require(isinstance(supplied.get('evidence'), list) and supplied['evidence'] and all(isinstance(e, str) and e.strip() for e in supplied['evidence']), 'Provide evidence references')
+                        if step.get('independent'):
+                            require('rework' in step, 'Independent review step needs a rework target to identify its authors')
+                            builders = {h['actor'] for h in item['history'] if h['step'] == step['rework']}
+                            require(args.actor not in builders, 'Reviewer must be independent of implementation authors')
+                        entry = {'step': step['id'], 'actor': args.actor, 'kind': supplied['kind'], 'body': supplied['body'], 'evidence': supplied['evidence']}
+                    if outcome == 'changes_requested':
+                        require('rework' in step, 'This step has no rework route')
+                        target = next(i for i,s in enumerate(state['workflow']['steps']) if s['id'] == step['rework'])
+                    else: target = item['step'] + 1
+                    if target == len(state['workflow']['steps']):
+                        related = item['dependencies'] + [i['id'] for i in state['items'].values() if i['parent'] == item['id']]
+                        require(all(state['items'][i]['status'] == 'done' for i in related), 'Children and dependencies must be accepted first')
+                    item['history'].append(entry)
+                    item['step'] = target
+                    item['status'] = 'done' if target == len(state['workflow']['steps']) else 'active'
+                result = item
+        else:
+            result = [{'id': i['id'], 'title': i['title'], 'status': i['status'], 'story': i.get('story'),
+                       'next': step_for(state, i) if i['status'] != 'done' else None} for i in state['items'].values()
+                      if args.op == 'list' or i['status'] != 'done']
+        if mutating:
+            state['revision'] += 1
+            atomic(folder/'state.json', json.dumps(state, indent=2)+'\n')
+        if mutating or args.op == 'sync': view(folder, state)
+        print(json.dumps(result, indent=2))
+
+if __name__ == '__main__':
+    try: main()
+    except (ValueError, OSError, KeyError, TypeError) as error:
+        print(f'anoti board: {error}', file=sys.stderr); sys.exit(1)

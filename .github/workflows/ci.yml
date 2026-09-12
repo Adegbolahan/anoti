@@ -44,7 +44,7 @@ jobs:
       - name: Lint scripts
         shell: bash
         run: |
-          mapfile -t files < <(git ls-files 'scripts/*' 'benchmark/run-arm' 'benchmark/build-arm-c' 'tests/run.sh')
+          mapfile -t files < <(git ls-files 'scripts/*' 'benchmark/run-arm' 'benchmark/build-arm-c' 'tests/run.sh' | grep -vx 'scripts/board')
           printf 'linting %d file(s)\n' "${#files[@]}"
           shellcheck -S warning "${files[@]}"
 

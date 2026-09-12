@@ -3,6 +3,46 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.6.1] — 2026-09-12
+
+- **A native work board** (`scripts/anoti board`, `/anoti:board`, board skill).
+  Persistent work records with an ordered YAML workflow, role context packets and
+  evidence-bearing handoffs, canonical in `.anoti-board/state.json` with a
+  generated `BOARD.md` view. Mutations are file-locked and atomically replaced; a
+  submission carries the context digest, so a stale packet is refused; acceptance
+  requires children and dependencies to be accepted first. The inhibition hook
+  gates board mutations like any other write — denied on the default branch, and
+  `board approve` always asks, because a recorded human decision cannot be
+  verified.
+
+- **Its default workflow mirrors `/anoti:implement`'s architect-led lifecycle**,
+  step for step: requirements (`requirements-analyst`) → design (`architect`, the
+  interface contract) → human plan approval → acceptance tests (`qa`) → test
+  ratification (`architect`) → implementation → independent review → human
+  acceptance. There is no conductor step, because feature work is architect-led.
+  Two steps carry `independent:`, which makes the board refuse a submission from
+  any actor who authored the step it reworks — so the architect ratifying the
+  tests cannot be whoever wrote them, and the reviewer cannot be an
+  implementation author. That separation is enforced by the tool rather than
+  advised in prose. A rejected ratification returns to the tests, and a builder
+  disputing a test routes through the ratification step via `rework:` instead of
+  editing it.
+
+- **Board work carries the story it serves.** `work --story US-nnn` names the
+  ratified story from the stories organ, so delivery traces to the value register
+  the way `attend`'s frames do; `list`/`next`/`orient` report `"story": null` for
+  untraced work so the gap stays visible, and a `--parent` child inherits its
+  parent's story. The id is shape-checked only — the board never reads the
+  stories organ. Board acceptance is delivery, never story ratification: a
+  register row is a separate human decision, moved by draft per the direction
+  skill.
+
+- **The board note in `commands/implement.md` is verified structurally.** 0.6.0's
+  keyword guard against referencing absent infrastructure is replaced by a check
+  that every `skills/`, `scripts/`, `templates/` and `docs/` path the command
+  names resolves on disk — closing the R6 cycle-3 residue that a keyword list
+  only catches the phrasings its author thought of.
+
 ## [0.6.0] — 2026-09-12
 
 - **`/anoti:implement` is an architect-led, contract-based lifecycle.** It was a

@@ -1,0 +1,37 @@
+version: 1
+steps:
+  - id: requirements
+    type: task
+    role: requirements-analyst
+    output: acceptance-criteria
+  - id: design
+    type: task
+    role: architect
+    output: interface-contract
+  - id: plan-approval
+    type: gate
+    rework: design
+  - id: acceptance-tests
+    type: task
+    role: qa
+    output: failing-tests
+  - id: test-ratification
+    type: task
+    role: architect
+    output: ratification
+    independent: true
+    rework: acceptance-tests
+  - id: implementation
+    type: task
+    role: backend
+    output: implementation
+    rework: test-ratification
+  - id: review
+    type: task
+    role: reviewer
+    output: review
+    independent: true
+    rework: implementation
+  - id: acceptance
+    type: gate
+    rework: implementation

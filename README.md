@@ -56,6 +56,11 @@ standard.
   human-gated memory-organ writes, and edits on the default branch (D020
   — a feature branch or worktree, or the human's `allow-default-branch`
   override). Consequential commands ask; they never silently block.
+- **A native workflow board:** `scripts/anoti board` manages YAML workflows,
+  connected work records, role handoffs, and evidence in `.anoti-board/`.
+  Its default workflow mirrors `/anoti:implement`'s phases. Uses Python 3 and
+  the existing `yq` dependency; no compiled runtime or server.
+  See [board integration](docs/BOARD-INTEGRATION.md).
 - **Commands:** `/anoti:new`, `/anoti:implement` (architect-led, contract-based
   feature lifecycle: requirements → design → acceptance tests → build →
   independent review, with a mandatory spec gate and the tests written and

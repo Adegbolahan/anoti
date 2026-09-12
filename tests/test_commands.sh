@@ -121,5 +121,14 @@ printf '%s' "$IMPFLAT" | grep -qi 'one continuous spawn' \
   && printf '%s' "$IMPFLAT" | grep -qi 'One architect spawn serves the whole lifecycle'
 assert_ok $? "implement: one architect spawn serves Phase 2 and the ratification gate"
 # the command must not reference infrastructure absent from this release
-! grep -qE 'anoti-board|anoti board|board skill' "$IMP"
-assert_ok $? "implement: no reference to the uncommitted board deliverable"
+# Structural, not keyword-based: the real defect was prose pointing at
+# infrastructure absent from the release, and a keyword guard only catches the
+# phrasings you thought of (R6 cycle-3 residue). Every path the command names
+# must resolve on disk.
+missing=""
+for ref in $(grep -oE '`(skills|scripts|templates|docs)/[A-Za-z0-9_./-]+`' "$IMP" | tr -d '`' | sort -u); do
+  [ -e "$ROOT/$ref" ] || missing="$missing $ref"
+done
+grep -q 'scripts/anoti board' "$IMP" && { [ -x "$ROOT/scripts/board" ] || missing="$missing scripts/board"; }
+grep -q 'board skill' "$IMP" && { [ -f "$ROOT/skills/board/SKILL.md" ] || missing="$missing skills/board/SKILL.md"; }
+[ -z "$missing" ]; assert_ok $? "implement references only infrastructure that exists -- missing:$missing"

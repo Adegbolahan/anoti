@@ -40,6 +40,7 @@ gate/inhibit ──▶ /anoti:consolidate ──▶ consolidate skill ──▶ 
 | bootstrap   | retrieve bootstrap offer; /anoti:new; /anoti:update; skillify skill (named skillify before 0.5.29)              |
 | skillify    | policy-retrospect (what should be skillified → TODOS queue); consolidate step 11; demo routing row; Stop-hook retrospect nudge |
 | spec        | implement Phase 2 (the architect files it); bootstrap maintenance map; **architect role**                        |
+| board       | /anoti:board; implement (durable board note); demo routing table                                                 |
 | plan        | deliberate lifetime rule; conductor role; bootstrap maintenance map                                             |
 | direction   | visionary, product-manager, requirements-analyst roles; bootstrap                                               |
 | feedback    | policy-retrospect (anoti-friction routing); SessionStart digest (pending.md surfaces queued drafts)             |

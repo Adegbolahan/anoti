@@ -116,6 +116,74 @@ case "$tool" in
       && ! printf '%s' "$c" | grep -qE 'localhost|127\.0\.0\.1'; then
       decide deny "catastrophic: destructive SQL against non-local target"
     fi
+    # deny row 4 / ask: board mutations write .anoti-board/state.json — same
+    # default-branch protection as Write/Edit (review finding: a Bash-run
+    # "anoti board" bypassed it entirely).
+    #
+    # Detection is anchored to the START of each ;/&/|-delimited command
+    # segment (after stripping at most one leading VAR=val env-assignment),
+    # so "board" must be the command actually being run, not a word inside
+    # some other command's arguments — plain prose like `echo board work
+    # needed` or `git commit -m "board approve flow implemented"` no longer
+    # trips this (review finding: false deny/ask on prose, the same failure
+    # mode deny row 3 was hardened against above).
+    #
+    # board's root()/init resolve state from Path.cwd() at RUN time, which is
+    # NOT this hook process's own $PWD — that is the session's original
+    # directory and can differ from the repo the command will actually run
+    # in (review finding: `cd /tmp/other && anoti board ...` against a
+    # differently-branched sibling repo silently bypassed the gate, the same
+    # bug #25/#24 fixed for Write/Edit above). Resolve the best available
+    # approximation instead: start from the hook input's own cwd, then
+    # replay this command's own leading `cd` segments, in order, up to the
+    # segment that invokes board — the same way a shell would. This is not a
+    # full shell parser: subshells, `pushd`, quoting tricks, and non-board
+    # command-wrapper prefixes (sudo/env/time) are not unwound and fail
+    # open, per this file's stated design.
+    board_seg=""
+    bd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
+    [ -n "$bd" ] && [ -d "$bd" ] || bd="$PWD"
+    while IFS= read -r seg; do
+      t="$(printf '%s' "$seg" | sed -E 's/^[[:space:]]*//; s/^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+//')"
+      case "$t" in
+        cd|cd[[:space:]]*)
+          arg="$(printf '%s' "$t" | sed -E 's/^cd([[:space:]]+--)?[[:space:]]*//; s/[[:space:]].*$//')"
+          arg="${arg%\"}"; arg="${arg#\"}"; arg="${arg%\'}"; arg="${arg#\'}"
+          # $arg is text parsed out of the command string, so a user-typed
+          # `cd ~/x` arrives as the literal characters — matching that literal
+          # prefix and expanding it via $HOME is the point, not a bug.
+          # shellcheck disable=SC2088
+          case "$arg" in
+            /*) bd="$arg" ;;
+            '') bd="$HOME" ;;
+            '~') bd="$HOME" ;;
+            '~/'*) bd="$HOME/${arg#'~/'}" ;;
+            *) bd="$bd/$arg" ;;
+          esac ;;
+        *)
+          if printf '%s' "$t" | grep -qE '^([^[:space:];&|]*/)?(anoti[[:space:]]+board|board)[[:space:]]+(init|work|submit|approve|note)([[:space:]]|$)'; then
+            board_seg="$t"; break
+          fi ;;
+      esac
+    done < <(printf '%s\n' "$c" | tr ';&|' '\n')
+    if [ -n "$board_seg" ]; then
+      if [ ! -f "$AD/allow-default-branch" ]; then
+        bbr="$(git -C "$bd" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+        if [ -n "$bbr" ]; then
+          bdb="$(git -C "$bd" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)"; bdb="${bdb#origin/}"
+          if [ "$bbr" = "${bdb:-main}" ] || [ "$bbr" = "main" ] || [ "$bbr" = "master" ]; then
+            decide deny "board mutation on the default branch ($bbr) — implement on a feature branch or worktree (git skill). Human-gated override: touch $AD/allow-default-branch"
+          fi
+        fi
+      fi
+      # approve records a human decision but the CLI cannot verify one occurred
+      # (docs/BOARD-INTEGRATION.md: actor/approval are recorded assertions, not
+      # authentication) — route through the permission prompt so an actual
+      # human confirms this exact call before it is recorded.
+      if printf '%s' "$board_seg" | grep -qE '^([^[:space:];&|]*/)?(anoti[[:space:]]+board|board)[[:space:]]+approve([[:space:]]|$)'; then
+        decide ask "board approve records a human decision — confirm you are relaying the actual human's approve/reject, not asserting it yourself"
+      fi
+    fi
     # review-debt ask (spec docs/specs/2026-08-19-review-debt-design.md §4.5):
     # integration — git merge / gh pr merge on the default branch, or any git
     # push — while the project has OPEN review debt asks with the owed subjects

@@ -3,6 +3,26 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.6.3] — 2026-09-12
+
+- **A quoted env-assignment value silently disabled the board-mutation gate.**
+  The env-assignment stripper treated a value as a bare non-space run, so
+  `MSG="hello world" anoti board work …` truncated mid-value and left a fragment
+  matching no invocation pattern: `board_seg` stayed empty and the whole deny/ask
+  block no-opped. On the default branch that is an allow where a deny was
+  required. It compounded with the `cd`-chain replay — the same mangling on a
+  `cd` segment left the resolved directory un-updated, so the gate fell back to
+  the session's own cwd and reinstated the #25/#24 wrong-repo class for board
+  mutations. Reproduced live before and after, with four regression assertions,
+  each mutation-verified. The stripper now accepts bare, `"double-quoted"` and
+  `'single-quoted'` values; escaped quotes inside a quoted value stay unparsed,
+  consistent with this gate's stated non-goal of being a shell parser. The defect
+  entered with the board gate in 0.6.1, and 0.6.2 closed the
+  multiple-assignment variant of the same class while leaving this one.
+
+- **A stale comment** said the stripper removed "at most one" leading
+  assignment, which 0.6.2 had already made repeating.
+
 ## [0.6.2] — 2026-09-12
 
 - **The board-mutation branch gate was bypassable by an interpreter prefix.**

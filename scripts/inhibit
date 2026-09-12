@@ -121,7 +121,8 @@ case "$tool" in
     # "anoti board" bypassed it entirely).
     #
     # Detection is anchored to the START of each ;/&/|-delimited command
-    # segment (after stripping at most one leading VAR=val env-assignment),
+    # segment (after stripping any leading VAR=val env-assignments, whose
+    # values may be bare, "double-quoted" or 'single-quoted'),
     # so "board" must be the command actually being run, not a word inside
     # some other command's arguments — plain prose like `echo board work
     # needed` or `git commit -m "board approve flow implemented"` no longer
@@ -144,10 +145,18 @@ case "$tool" in
     # an uninstalled script, not an adversarial wrapper, and it bypassed this
     # gate completely until the pattern below admitted it.
     board_seg=""
+    sq="'"   # an env-assignment value may be single-quoted; see envstrip below
+    # A quoted value may contain spaces. Treating the value as a bare non-space
+    # run truncated `MSG="a b" anoti board work ...` into `b" anoti board ...`,
+    # which matched no invocation pattern, so board_seg stayed empty and the
+    # whole deny/ask block no-opped -- a silent gate bypass (R3 cycle 2). The
+    # same mangling on a `cd` segment left bd un-updated, reinstating the
+    # #25/#24 wrong-repo class for board mutations.
+    envstrip="s/^[[:space:]]*//; s/^([A-Za-z_][A-Za-z0-9_]*=(\"[^\"]*\"|${sq}[^${sq}]*${sq}|[^[:space:]]*)[[:space:]]+)*//"
     bd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
     [ -n "$bd" ] && [ -d "$bd" ] || bd="$PWD"
     while IFS= read -r seg; do
-      t="$(printf '%s' "$seg" | sed -E 's/^[[:space:]]*//; s/^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*//')"
+      t="$(printf '%s' "$seg" | sed -E "$envstrip")"
       case "$t" in
         cd|cd[[:space:]]*)
           arg="$(printf '%s' "$t" | sed -E 's/^cd([[:space:]]+--)?[[:space:]]*//; s/[[:space:]].*$//')"

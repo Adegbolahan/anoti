@@ -84,6 +84,11 @@ assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"ec
 assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"python3.11 /path/to/anoti/scripts/board work Feature --description Scope --accept Verified"}}')" "deny" "versioned interpreter (python3.11) board work on main is denied"
 assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"pypy3 /path/to/anoti/scripts/board work Feature --description Scope --accept Verified"}}')" "deny" "alternate interpreter (pypy3) board work on main is denied"
 assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"FOO=bar BAZ=qux python3 /path/to/anoti/scripts/board work F --description S --accept W"}}')" "deny" "two env assignments before the interpreter do not defeat the gate"
+# R3 cycle 2: a quoted value containing a space truncated the segment into a
+# fragment matching nothing, so the gate silently no-opped
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"MSG=\"hello world\" /path/to/anoti/scripts/anoti board work F --description S --accept W"}}')" "deny" "double-quoted env value with a space does not defeat the gate"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"NOTE='"'"'looks done'"'"' /path/to/anoti/scripts/anoti board approve work-0001 --packet X --note done"}}')" "deny" "single-quoted env value with a space does not defeat the gate"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"A=1 B=\"x y\" /path/to/anoti/scripts/anoti board work F --description S --accept W"}}')" "deny" "bare and quoted env assignments together do not defeat the gate"
 ); rm -rf "$tmp"
 
 # --- board mutation branch check must resolve the repo a leading `cd`
@@ -94,6 +99,12 @@ mk "$tmp/main-repo"
 mk "$tmp/feature-repo"; git -C "$tmp/feature-repo" switch -q -c feature-y
 cd "$tmp/feature-repo"
 assert_eq "$(d "$(printf '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"cd %s && /path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}' "$tmp/main-repo")")" "deny" "cd into a sibling repo on main is denied even though session cwd is a feature branch"
+# ...and the same with a quoted env value, which used to leave bd un-updated and
+# silently fall back to the session cwd -- the #25/#24 class, via the stripper
+# built with jq: printf would collapse the \" escapes and emit invalid JSON,
+# which jq then drops -- an "allow" that proves nothing about the gate
+j="$(jq -nc --arg c "MSG=\"a b\" cd $tmp/main-repo && /path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified" '{session_id:"b",tool_name:"Bash",tool_input:{command:$c}}')"
+assert_eq "$(d "$j")" "deny" "quoted env value before a cd does not lose the target repo"
 cd "$tmp/main-repo"
 assert_eq "$(d "$(printf '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"cd %s && /path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}' "$tmp/feature-repo")")" "allow" "cd into a sibling repo on a feature branch is allowed even though session cwd is main"
 ); rm -rf "$tmp"

@@ -14,6 +14,10 @@ case "$sub" in
     id="${1:?record id required}"; trig="${2:?trigger required}"
     AD="$("$SELF/anoti-dir" --require)" || exit 1   # writers require anchoring (G003), scripts/anoti-dir:10
     ff="$AD/presence-feedback.tsv"
+    # BEFORE locking, or lock_store spins ~60s on an uncreatable lock dir and the
+    # mark is lost — a fresh clone has no state dir at all, it is gitignored
+    [ -d "$AD" ] || mkdir -p "$AD" 2>/dev/null || { echo "feedback: cannot create state dir $AD" >&2; exit 1; }
+    [ -f "$AD/.gitignore" ] || printf '*\n' 2>/dev/null > "$AD/.gitignore" || true
     lock_store "$ff" || exit 1
     trap 'unlock_store "$ff"' EXIT
     [ -f "$ff" ] || : > "$ff"
@@ -45,6 +49,9 @@ case "$sub" in
     id="${1:?record id required}"; trig="${2:-}"
     AD="$("$SELF/anoti-dir" --require)" || exit 1
     ff="$AD/presence-feedback.tsv"
+    # before locking: with no state dir the lock cannot be made, and clearing
+    # nothing should answer at once rather than after the ~60s lock timeout
+    [ -f "$ff" ] || { echo "feedback: no presence-feedback.tsv; nothing to clear" >&2; exit 1; }
     lock_store "$ff" || exit 1
     trap 'unlock_store "$ff"' EXIT
     [ -f "$ff" ] || { echo "feedback: no presence-feedback.tsv; nothing to clear" >&2; exit 1; }

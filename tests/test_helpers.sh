@@ -92,6 +92,41 @@ printf '{"hook_event_name":"PostToolUse","tool_name":"Bash","session_id":"gi","t
 assert_ok $? "presence seeds the self-ignore in an unadopted repo (state dir invisible to git)"
 ); rm -rf "$tmp"
 
+# The self-ignore is a CLASS invariant, not a property of whichever creator
+# someone remembered to exercise: presence shipped unseeded for TEN releases
+# (fc6b786, first shipped 0.5.22, through 0.5.31). Creators were tested
+# one at a time -- append-classification here, review-debt since 0.5.27 in
+# test_review_debt.sh:58 -- and the class was never enumerated. Linted so a
+# further creator fails CI
+# instead of shipping: a script that mkdirs and knows the state dir must write
+# the seed EXPRESSION, not merely mention .gitignore (matching the bare string
+# would pass on a comment -- the e5a7b5e class). Known limits, deliberate: this
+# is a lint over scripts/ only, so skills/ prose instructing a raw mkdir (e.g.
+# skills/feedback/SKILL.md) is outside it; so is a creator whose mkdir lives in
+# a sourced helper (the literal 'mkdir' never appears in its own file), and a
+# commented-out seed still reads as present. Conversely a script that calls
+# anoti-dir but mkdirs something unrelated would be flagged -- exclude it here
+# rather than adding a seed it has no business writing. A text search suggests; the
+# behavioural probes above settle (G004/G008).
+miss=""
+for f in "$ROOT"/scripts/*; do
+  grep -q 'mkdir' "$f" 2>/dev/null || continue
+  grep -qEi '\$\{?(ad|tdir)\b|anoti-dir' "$f" 2>/dev/null || continue
+  grep -qE '>[[:space:]]*"\$\{?[A-Za-z_]+\}?/\.gitignore"' "$f" || miss="$miss $(basename "$f")"
+done
+[ -z "$miss" ]; assert_ok $? "every state-dir creator writes the seed '*' -- unseeded:$miss"
+
+# `feedback mark` is a writer in a project whose state dir need not exist yet (a
+# fresh clone gitignores it away). It must create and seed the dir BEFORE
+# locking, or lock_store spins on an uncreatable lock dir and times out at ~60s.
+tmp="$(mktemp -d)"; ( cd "$tmp"; git init -q .
+printf 'version: 3\nrecords: []\nevents: []\n' > GROUNDING.yaml
+"$ROOT/scripts/feedback" mark D001 some-trigger >/dev/null 2>&1
+[ -f .anoti/presence-feedback.tsv ] && [ "$(cat .anoti/.gitignore 2>/dev/null)" = "*" ] \
+  && [ -z "$(git status --porcelain -- .anoti 2>/dev/null)" ]
+assert_ok $? "feedback mark creates and seeds the state dir when it does not exist yet"
+); rm -rf "$tmp"
+
 # --- global trust adjacency (spec: global-memory-tier) ---
 tmp="$(mktemp -d)"; ( cd "$tmp"
 HOME="$tmp/home"; export HOME; mkdir -p "$HOME/.claude/anoti"

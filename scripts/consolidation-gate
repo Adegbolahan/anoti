@@ -5,6 +5,10 @@
 set -u
 SELF="$(cd "$(dirname "$0")" && pwd)"
 AD="$("$SELF/anoti-dir")"
+# Its gates make this unreachable with $AD absent (see the 0.5.32 entry), but
+# the invariant is enforced by a test over ALL creators — an exception list is
+# the thing that rots, so this seeds too rather than being exempted.
+mkstate() { mkdir -p "$AD/sessions" 2>/dev/null; [ -f "$AD/.gitignore" ] || printf '*\n' 2>/dev/null > "$AD/.gitignore" || true; }
 input="$(cat 2>/dev/null || true)"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)" || exit 0
 [ -n "$sid" ] || exit 0
@@ -25,7 +29,7 @@ review_debt_block() {
   rows="$(awk -F'\t' -v s="$sid" 'NF==0{next} NF!=7||$1!~/^R[0-9]+$/||$2!~/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/||($5!="open"&&$5!="deferred"&&$5!="closed"){bad=1;exit} $3==s && $5=="open" { r=r $1 " " $4 "; "; i=i sep $1; sep="," } END { if (!bad && r!="") printf "%s\t%s", r, i }' "$rd" 2>/dev/null)"
   [ -n "$rows" ] || return 0
   tab="$(printf '\t')"; ids="${rows##*"$tab"}"; rows="${rows%"$tab"*}"
-  mkdir -p "$AD/sessions" 2>/dev/null; : > "$mk" 2>/dev/null
+  mkstate; : > "$mk" 2>/dev/null
   printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "review-debt" "block" "$ids" >> "$AD/telemetry.log" 2>/dev/null || true
   jq -n --arg r "anoti: adversarial review owed for work this session opened: ${rows%; } — run the reviewer and close the row (anoti review-debt close <id> \"<verdict>\"), or defer it with a written reason (anoti review-debt defer <id> \"<reason>\"). Silent skipping is the failure mode this gate exists to prevent (D026)." '{decision:"block",reason:$r}'
   exit 0
@@ -70,7 +74,7 @@ EOF2
     fi
     reason="anoti: the retrospective recorded for this session is stale — $after tool events since it (threshold $th). Before this session ends, re-run policy-retrospect over the later work (anything to skillify? irrelevant injections?) and record it again: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. A stale mark keeps the state as abandoned at session end."
     note="stale after=$after"
-    mkdir -p "$AD/sessions" 2>/dev/null; printf 'stale:%s' "$ev" > "$mk" 2>/dev/null
+    mkstate; printf 'stale:%s' "$ev" > "$mk" 2>/dev/null
   else
     [ -f "$mk" ] && return 0
     slow=0; frames=0
@@ -82,7 +86,7 @@ EOF2
     [ "$slow" -gt 0 ] || [ "$frames" -gt 0 ] || [ "$ev" -ge "$th" ] || return 0
     reason="anoti: this session is now nontrivial and no retrospective is recorded (policy-retrospect). Before it ends: anything to skillify? — a procedure performed twice becomes a queue entry (anoti append-todo <todos> \"skillify: <steps>\") or a skill now (skillify skill); count the presence injections that were irrelevant; then record it: anoti mark-retrospect $sid empty|filed irrelevant-injections N [<id>:<trigger> ...]. This reminder fires once; unrecorded (or recorded then followed by $th+ more tool events), the session state is kept as abandoned and resurfaces next session."
     note="slow=$slow frames=$frames events=$ev"
-    mkdir -p "$AD/sessions" 2>/dev/null; printf 'first' > "$mk" 2>/dev/null
+    mkstate; printf 'first' > "$mk" 2>/dev/null
   fi
   printf '%s\t%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect-nudge" "block" "$note" >> "$AD/telemetry.log" 2>/dev/null || true
   jq -n --arg r "$reason" '{decision:"block",reason:$r}'

@@ -3,6 +3,65 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.5.33] — 2026-09-11
+
+- **The state-dir self-ignore is linted, not merely conventional** (0.5.32
+  follow-up; reviewer residue). 0.5.32 fixed `scripts/presence` and pinned it
+  behaviourally, but the invariant itself rested on memory — and memory is what
+  failed: presence was unseeded from birth at `fc6b786`, first shipped in
+  0.5.22, and stayed that way for **ten releases**, through 0.5.31. Creators were tested one at
+  a time and the class was never enumerated: `append-classification` carried a
+  seed assertion, `review-debt` gained its own at 0.5.27
+  (`tests/test_review_debt.sh:58`) — but nothing ever asked whether the property
+  held for *every* creator, so presence was on no one's list.
+  `tests/test_helpers.sh` now lints
+  it: a script under `scripts/` that calls `mkdir` and knows the state dir must
+  write the seed *expression*, not merely mention `.gitignore` — matching the
+  bare string would pass on a comment. Limits are deliberate and stated in the
+  test: it covers `scripts/` only, so prose in `skills/` instructing a raw
+  `mkdir` is outside it, as is a creator that never names the dir or calls
+  `anoti-dir`; a text search suggests, the behavioural probes beside it settle.
+  `scripts/consolidation-gate` seeds rather than being exempted — its gates
+  still make an unseeded creation unreachable, but an exception list is the
+  part that rots.
+
+- **`feedback` could not write in a project whose state dir did not exist yet.**
+  `mark` resolved `$AD` and then locked `$AD/presence-feedback.tsv` without
+  creating `$AD`, so `lock_store` spun on a lock dir it could never make. That
+  is the normal state of a **fresh clone** — the state dir is gitignored, so it
+  is absent until something creates it. Measured: 77s, exit 1, the mark lost;
+  now 0s, exit 0, ledger written and the dir seeded. `clear` was worse: it
+  locked first too, so with no state dir it spent the same ~78s and exited 1
+  reporting `store-lock: timed out waiting ... a concurrent writer holds it`
+  — a false diagnosis naming a writer that never existed and a lock dir that
+  was never created, while its own "nothing to clear" check sat below the lock
+  and never ran. It now answers at once, with the authoritative check kept
+  inside the lock. This was a generalisation failure, not a discovery: the
+  identical defect was found, fixed and regression-tested in `review-debt` at
+  0.5.27, whose `tests/test_review_debt.sh:56` asserts "add creates the state
+  dir on a fresh clone instead of spinning". `feedback` (first shipped 0.5.26)
+  already had the identical shape and kept it through the five releases that
+  followed, because the fix was applied to the script in hand rather than to
+  the class. `scripts/review-debt:38-39` documented the required order the
+  whole time.
+
+- **`mark-retrospect` lost the record it exists to write, while exiting 0.** It resolves
+  `$AD` with `--require` and appended its one durable telemetry line with `>>`,
+  which cannot create a directory — so in a fresh clone the line went nowhere
+  while the script still exited 0. Downstream, `consolidation-gate` then found
+  no `retrospect` row and nudged as though none had been recorded — once per
+  session, its marker (`$AD/sessions/$sid.retrospect-nudged`) suppressing
+  repeats within that session and, being keyed by session id, suppressing
+  nothing in the next one — while `cleanup-session` moved the session to
+  abandoned: precisely the outcome the
+  script exists to prevent. It now creates
+  and seeds the dir before writing.
+
+- **Three inert `2>/dev/null` redirections corrected**, across two scripts
+  (`scripts/review-debt`, and both branches of `scripts/mark-retrospect`). Redirections bind left to right, so
+  `> "$f" 2>/dev/null` sets stdout before stderr and the shell reports a failed
+  open on the still-open fd 2 — the defect fixed in presence for 0.5.32.
+
 ## [0.5.32] — 2026-09-11
 
 - **The presence hook seeds the state dir's self-ignore, like every other

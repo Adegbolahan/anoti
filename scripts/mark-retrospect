@@ -51,9 +51,14 @@ if [ "${3:-}" = "irrelevant-injections" ]; then
   pairs_csv="${pairs_csv%,}"
   [ -n "$pairs_csv" ] && pairs_field="$(printf '\tpairs=%s' "$pairs_csv")"
 fi
+# the telemetry line IS the record here, and `>>` cannot create its directory:
+# in a fresh clone (state dir gitignored, so absent) the append failed and the
+# retrospective was silently lost while the script still exited 0
+[ -d "$AD" ] || mkdir -p "$AD" 2>/dev/null || { echo "mark-retrospect: cannot create state dir $AD" >&2; exit 1; }
+[ -f "$AD/.gitignore" ] || printf '*\n' 2>/dev/null > "$AD/.gitignore" || true
 if [ -n "$irr" ]; then
-  printf '%s\t%s\t%s\t%s\tirrelevant=%s%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" "$irr" "$pairs_field" >> "$AD/telemetry.log" 2>/dev/null || true
+  printf '%s\t%s\t%s\t%s\tirrelevant=%s%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" "$irr" "$pairs_field" 2>/dev/null >> "$AD/telemetry.log" || true
 else
-  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" >> "$AD/telemetry.log" 2>/dev/null || true
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$sid" "retrospect" "$state" 2>/dev/null >> "$AD/telemetry.log" || true
 fi
 exit 0

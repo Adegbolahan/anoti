@@ -38,7 +38,7 @@ add_row() {
   # state dir may not exist yet (fresh clone before trust) -- create it
   # BEFORE locking, or lock_store spins on an uncreatable lock dir
   [ -d "$AD" ] || mkdir -p "$AD" 2>/dev/null || { echo "review-debt: cannot create state dir $AD" >&2; return 1; }
-  [ -f "$AD/.gitignore" ] || printf '*\n' > "$AD/.gitignore" 2>/dev/null || true
+  [ -f "$AD/.gitignore" ] || printf '*\n' 2>/dev/null > "$AD/.gitignore" || true
   lock_store "$ff" || return 1
   trap 'unlock_store "$ff"' EXIT
   [ -f "$ff" ] || : > "$ff"

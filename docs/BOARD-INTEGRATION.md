@@ -15,7 +15,7 @@ From any project:
 
 Initialization snapshots `templates/board-workflow.yaml` and the referenced native
 Anoti roles. Use `init --workflow FILE` for a custom ordered workflow. The default
-default mirrors `/anoti:implement`'s architect-led lifecycle: requirements
+mirrors `/anoti:implement`'s delivery phases: requirements
 (`requirements-analyst`) → design (`architect`, the interface contract) → human plan
 approval → acceptance tests (`qa`) → test ratification (`architect`) → implementation
 → independent review → human acceptance. There is no conductor step: feature work is
@@ -24,7 +24,10 @@ architect-led, and the conductor plans non-feature cascades.
 Two steps carry `independent:`, which makes the board refuse a submission from any
 actor who authored the step it reworks — the architect ratifying the tests cannot be
 whoever wrote them, and the reviewer cannot be an implementation author. That
-separation is enforced, not advised. A rejected ratification returns to the tests, a
+separation is checked, not merely advised — though actor names are recorded
+assertions rather than authentication, so the check raises the cost of collapsing
+the two roles rather than making it impossible, and it compares the actor string
+exactly. A rejected ratification returns to the tests, a
 rejected review or acceptance to implementation, and a builder disputing a test
 routes through the ratification step instead of editing it. `ui-designer` is not in
 the default and the implementation role defaults to `backend`: a fixed workflow

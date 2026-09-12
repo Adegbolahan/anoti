@@ -74,6 +74,16 @@ cd "$tmp/repo"
 assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"echo board work needed before shipping"}}')" "allow" "prose mentioning board+verb is not a board mutation"
 assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"git commit -m \"board approve flow implemented\""}}')" "allow" "commit message mentioning board approve is not a board mutation"
 assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"/path/to/anoti/scripts/anoti board work Feature --description Scope --accept Verified"}}')" "deny" "a real board work invocation on main is still denied"
+# R7: a direct interpreter prefix bypassed the gate completely -- running an
+# uninstalled script as `python3 <path>/board ...` is ordinary, not adversarial
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"python3 /path/to/anoti/scripts/board work Feature --description Scope --accept Verified"}}')" "deny" "python3-invoked board work on main is denied"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"sh /path/to/anoti/scripts/board approve work-0001 --packet X --note done"}}')" "deny" "sh-invoked board approve on main is denied"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"python3 /path/to/anoti/scripts/board list"}}')" "allow" "python3-invoked board list (non-mutating) is not gated"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"echo python3 board work needed before shipping"}}')" "allow" "prose naming an interpreter and board is not a mutation"
+# R7 cycle 2: enumerate-don't-generalise left ordinary forms open
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"python3.11 /path/to/anoti/scripts/board work Feature --description Scope --accept Verified"}}')" "deny" "versioned interpreter (python3.11) board work on main is denied"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"pypy3 /path/to/anoti/scripts/board work Feature --description Scope --accept Verified"}}')" "deny" "alternate interpreter (pypy3) board work on main is denied"
+assert_eq "$(d '{"session_id":"b","tool_name":"Bash","tool_input":{"command":"FOO=bar BAZ=qux python3 /path/to/anoti/scripts/board work F --description S --accept W"}}')" "deny" "two env assignments before the interpreter do not defeat the gate"
 ); rm -rf "$tmp"
 
 # --- board mutation branch check must resolve the repo a leading `cd`

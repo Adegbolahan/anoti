@@ -50,11 +50,14 @@ wins. Read the frontmatter once in Phase 0 and use the mapped paths after;
 never assume `docs/`.
 
 **Durable board:** when `.anoti-board/state.json` exists, use the board skill
-alongside these phases — its default workflow mirrors them, step for step. Find
+alongside these phases — its default workflow mirrors the delivery ones. Phase 0's
+discovery and Phase 6's close have no board step, and its implementation role is
+fixed where Phase 4 lets the plan assign one, since a fixed workflow cannot be
+conditional. Find
 or create the feature once with `--story US-XXX` (the id Phase 0 found or
 drafted), load its assignment context, and record each phase's output and the
 review evidence through `scripts/anoti board`. Its `test-ratification` step
-carries `independent:`, so the board mechanically refuses a ratification
+carries `independent:`, so the board refuses a ratification
 submitted by whoever authored the tests — the same separation the Phase 3-gate
 requires. The board owns work status; these contracts remain in force. Do not
 create a second independent task lifecycle or memory store.

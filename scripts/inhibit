@@ -139,12 +139,15 @@ case "$tool" in
     # segment that invokes board — the same way a shell would. This is not a
     # full shell parser: subshells, `pushd`, quoting tricks, and non-board
     # command-wrapper prefixes (sudo/env/time) are not unwound and fail
-    # open, per this file's stated design.
+    # open, per this file's stated design. A direct interpreter prefix IS
+    # covered (R7): `python3 <path>/board work ...` is the ordinary way to run
+    # an uninstalled script, not an adversarial wrapper, and it bypassed this
+    # gate completely until the pattern below admitted it.
     board_seg=""
     bd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
     [ -n "$bd" ] && [ -d "$bd" ] || bd="$PWD"
     while IFS= read -r seg; do
-      t="$(printf '%s' "$seg" | sed -E 's/^[[:space:]]*//; s/^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+//')"
+      t="$(printf '%s' "$seg" | sed -E 's/^[[:space:]]*//; s/^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*//')"
       case "$t" in
         cd|cd[[:space:]]*)
           arg="$(printf '%s' "$t" | sed -E 's/^cd([[:space:]]+--)?[[:space:]]*//; s/[[:space:]].*$//')"
@@ -161,7 +164,7 @@ case "$tool" in
             *) bd="$bd/$arg" ;;
           esac ;;
         *)
-          if printf '%s' "$t" | grep -qE '^([^[:space:];&|]*/)?(anoti[[:space:]]+board|board)[[:space:]]+(init|work|submit|approve|note)([[:space:]]|$)'; then
+          if printf '%s' "$t" | grep -qE '^(([^[:space:];&|]*/)?(python[0-9.]*|pypy[0-9.]*|sh|bash|zsh|dash|ksh|perl|ruby)[[:space:]]+)?([^[:space:];&|]*/)?(anoti[[:space:]]+board|board)[[:space:]]+(init|work|submit|approve|note)([[:space:]]|$)'; then
             board_seg="$t"; break
           fi ;;
       esac

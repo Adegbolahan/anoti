@@ -47,6 +47,7 @@ def workflow(path):
     require(isinstance(steps, list) and steps, 'Workflow needs ordered steps')
     require(steps[-1].get('type') == 'gate', 'Workflow must finish with human acceptance')
     ids = []
+    types = {}
     for step in steps:
         require(isinstance(step, dict), 'Invalid step')
         sid = step.get('id', '')
@@ -59,7 +60,13 @@ def workflow(path):
             require(isinstance(role, str) and re.fullmatch(r'[a-z][a-z0-9-]*', role), 'Invalid role')
             require((PLUGIN/'roles'/f'{role}.md').is_file(), f'Unknown Anoti role: {role}')
             require(isinstance(step.get('output'), str) and step['output'].strip(), 'Task needs output name')
+        types[sid] = step['type']
         if 'rework' in step: require(step['rework'] in ids[:-1], 'Rework must target an earlier step')
+        if step.get('independent'):
+            require('rework' in step, 'An independent step needs a rework target to identify its authors')
+            # a gate's only actor is 'human', so reworking to one leaves no
+            # authors to exclude and the independence check passes vacuously
+            require(types.get(step['rework']) == 'task', 'An independent step must rework to a task step, or it has no authors to exclude')
     return data
 
 def acquire_lock(lock, timeout=60, poll=0.05):
@@ -130,11 +137,13 @@ def main():
         state = {'version': 1, 'revision': 0, 'project': {'name': args.name, 'brief': args.brief},
                  'workflow': definition, 'roles': roles, 'items': {}}
         folder = Path.cwd()/DIRECTORY
-        require(not (folder/'state.json').is_file(), f'Board already initialized at {folder}')
         folder.mkdir(exist_ok=True)
-        atomic(folder/'.gitignore', '.lock\n.write-*\n')
-        atomic(folder/'state.json', json.dumps(state, indent=2)+'\n')
-        view(folder, state)
+        with (folder/'.lock').open('a') as lock:   # else two inits race the check below
+            acquire_lock(lock)
+            require(not (folder/'state.json').is_file(), f'Board already initialized at {folder}')
+            atomic(folder/'.gitignore', '.lock\n.write-*\n')
+            atomic(folder/'state.json', json.dumps(state, indent=2)+'\n')
+            view(folder, state)
         print(json.dumps({'created': str(folder), 'project': args.name})); return
     folder = root()
     with (folder/'.lock').open('a') as lock:
@@ -223,5 +232,5 @@ def main():
 
 if __name__ == '__main__':
     try: main()
-    except (ValueError, OSError, KeyError, TypeError) as error:
+    except (ValueError, OSError, KeyError, TypeError, IndexError) as error:
         print(f'anoti board: {error}', file=sys.stderr); sys.exit(1)

@@ -3,6 +3,59 @@
 All notable changes to anoti. Release tags carry the matching section as
 their message (CI enforces the section exists and is non-empty).
 
+## [0.6.2] — 2026-09-12
+
+- **The board-mutation branch gate was bypassable by an interpreter prefix.**
+  `scripts/inhibit`'s detection anchored on a segment starting with `board` or
+  `anoti board`, so `python3 <path>/scripts/board work ...` — the ordinary way to
+  run an uninstalled script — was allowed on the default branch while the wrapper
+  form was correctly denied. Reproduced live both before and after. The pattern
+  now admits an optional interpreter token, matched by shape rather than
+  enumerated — `python[0-9.]*` and `pypy[0-9.]*` alongside `sh`/`bash`/`zsh`/
+  `dash`/`ksh`/`perl`/`ruby` — because a versioned `python3.11` is what anyone
+  with pyenv or several interpreters actually types, and an enumeration missed it.
+  A second, pre-existing bypass of the same class is closed with it: the
+  env-assignment stripper removed only one leading `VAR=val`, so
+  `FOO=bar BAZ=qux python3 …/board work` defeated detection entirely; it now
+  strips repeatedly. `sudo`/`env`/`time` wrappers stay disclaimed as they were,
+  and prose naming an interpreter alongside `board` still passes.
+
+- **An `independent:` step reworking to a gate made its own guard vacuous.** The
+  workflow validator required only that `rework:` name an earlier step, so a
+  schema-valid workflow could point an independent review at a gate — whose only
+  actor is `human` — leaving no authors to exclude, and one actor could submit
+  both a task and its own "independent" review of it. An `independent:` step's
+  `rework:` target must now be a `task`. The shipped default never tripped this;
+  nothing stopped a custom workflow, or a later edit to the default.
+
+- **The parent/dependency guarantees had no tests at all.** Acceptance blocking on
+  unfinished children and dependencies, the unknown-link check, the
+  accepted-parent lock and the ancestor-dependency rule could each be deleted
+  with the suite staying green. All four are now covered, along with five
+  workflow-validator rules, and each of the nine was mutation-verified to fail
+  when its guard is removed. The first attempt at the unknown-link test did not
+  qualify: deleting that guard still failed, via a `KeyError` further down, so
+  asserting "this fails" proved nothing. `Board.call` now takes `err=` and pins
+  the expected refusal message, because a refusal for the wrong reason is not
+  coverage. The one negative assertion left unpinned proved the point: deleting
+  the empty-steps guard kept the suite green, because the next line raised an
+  `IndexError` that escaped `main()`'s except tuple as a traceback rather than a
+  clean refusal. That message is pinned now and `IndexError` joins the tuple, so
+  a regression there fails cleanly instead of crashing.
+
+- **`board init` raced its own already-initialised check.** It tested for
+  `state.json` and wrote outside the lock, so two concurrent inits could both
+  pass the check with the last writer winning silently. `init` now takes the same
+  lock every other mutation does.
+
+- **Three claims softened to what the mechanism actually delivers.** The
+  independence check compares an actor string exactly, and actor names are
+  recorded assertions rather than authentication, so "enforced by the tool"
+  became "checked"; the board workflow mirrors the lifecycle's *delivery* phases
+  rather than matching it "step for step", since Phase 0's discovery and Phase 6's
+  close have no board step and the implementation role is fixed where Phase 4
+  lets the plan assign one; and a doubled "default default" is fixed.
+
 ## [0.6.1] — 2026-09-12
 
 - **A native work board** (`scripts/anoti board`, `/anoti:board`, board skill).
@@ -16,15 +69,16 @@ their message (CI enforces the section exists and is non-empty).
   verified.
 
 - **Its default workflow mirrors `/anoti:implement`'s architect-led lifecycle**,
-  step for step: requirements (`requirements-analyst`) → design (`architect`, the
+  for its delivery phases: requirements (`requirements-analyst`) → design (`architect`, the
   interface contract) → human plan approval → acceptance tests (`qa`) → test
   ratification (`architect`) → implementation → independent review → human
   acceptance. There is no conductor step, because feature work is architect-led.
   Two steps carry `independent:`, which makes the board refuse a submission from
   any actor who authored the step it reworks — so the architect ratifying the
   tests cannot be whoever wrote them, and the reviewer cannot be an
-  implementation author. That separation is enforced by the tool rather than
-  advised in prose. A rejected ratification returns to the tests, and a builder
+  implementation author. That separation is checked by the tool rather than merely
+  advised — though it compares the actor string exactly, and actor names are
+  recorded assertions rather than authentication. A rejected ratification returns to the tests, and a builder
   disputing a test routes through the ratification step via `rework:` instead of
   editing it.
 
